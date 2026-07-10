@@ -1,0 +1,12 @@
+# Força LF para todos os arquivos de texto neste repositório
+* text=auto eol=lf
+
+# Binários — sem conversão
+*.ico binary
+*.png binary
+*.jpg binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
