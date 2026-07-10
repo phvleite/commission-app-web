@@ -1,11 +1,5 @@
 import mongoose, { Mongoose } from 'mongoose'
 
-const MONGODB_URI = process.env.MONGODB_URI
-
-if (!MONGODB_URI) {
-    throw new Error('MONGODB_URI não definida nas variáveis de ambiente')
-}
-
 interface MongooseCache {
     conn: Mongoose | null
     promise: Promise<Mongoose> | null
@@ -20,10 +14,20 @@ const cached: MongooseCache = global.mongooseCache ?? { conn: null, promise: nul
 global.mongooseCache = cached
 
 export async function connectDB(): Promise<Mongoose> {
+    if (mongoose.connection.readyState === 1) {
+        return mongoose
+    }
+
+    const mongoUri = process.env.MONGODB_URI
+
+    if (!mongoUri) {
+        throw new Error('MONGODB_URI não definida nas variáveis de ambiente')
+    }
+
     if (cached.conn) return cached.conn
 
     if (!cached.promise) {
-        cached.promise = mongoose.connect(MONGODB_URI as string)
+        cached.promise = mongoose.connect(mongoUri)
     }
 
     cached.conn = await cached.promise
