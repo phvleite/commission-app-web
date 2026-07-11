@@ -2,6 +2,7 @@ import { Schema, model, models, Types, Document } from 'mongoose'
 import type { WithTenant, WithTimestamps } from '@/types'
 
 export type UserRole = 'admin' | 'manager' | 'seller'
+const MAX_USERS_PER_TENANT_BASIC = 2
 
 export interface IUser extends WithTenant, WithTimestamps {
     _id: Types.ObjectId
@@ -27,5 +28,19 @@ const userSchema = new Schema<UserDocument>(
 )
 
 userSchema.index({ tenantId: 1, email: 1 }, { unique: true })
+
+userSchema.pre('save', async function preSaveUserLimit() {
+    if (!this.isNew) {
+        return
+    }
+
+    const totalUsers = await (this.constructor as typeof User).countDocuments({
+        tenantId: this.tenantId,
+    })
+
+    if (totalUsers >= MAX_USERS_PER_TENANT_BASIC) {
+        throw new Error('Limite de 2 usuarios por tenant no pacote basico.')
+    }
+})
 
 export const User = models.User ?? model<UserDocument>('User', userSchema)
