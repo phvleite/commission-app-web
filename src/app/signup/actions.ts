@@ -8,6 +8,8 @@ import { User } from '@/models/User'
 export interface SignupFormState {
     error?: string
     success?: string
+    tenantSlug?: string
+    loginUrl?: string
 }
 
 const INITIAL_STATE: SignupFormState = {}
@@ -27,9 +29,10 @@ export async function registerTenantAndAdmin(
     _prevState: SignupFormState = INITIAL_STATE,
     formData: FormData,
 ): Promise<SignupFormState> {
+    void _prevState
+
     const companyName = formData.get('companyName')?.toString().trim()
     const legalName = formData.get('legalName')?.toString().trim()
-    const tenantSlugInput = formData.get('tenantSlug')?.toString().trim()
 
     const adminName = formData.get('adminName')?.toString().trim()
     const adminEmail = formData.get('adminEmail')?.toString().trim().toLowerCase()
@@ -60,7 +63,7 @@ export async function registerTenantAndAdmin(
         return { error: 'Informe um email valido.' }
     }
 
-    const tenantSlug = toSlug(tenantSlugInput || companyName)
+    const tenantSlug = toSlug(companyName)
 
     if (!tenantSlug) {
         return { error: 'Nao foi possivel gerar um slug valido para o tenant.' }
@@ -124,6 +127,8 @@ export async function registerTenantAndAdmin(
     }
 
     return {
-        success: 'Cadastro concluido. Agora faca login com tenant, email e senha do usuario admin.',
+        success: `Cadastro concluido. Seu codigo de acesso da empresa: ${tenantSlug}`,
+        tenantSlug,
+        loginUrl: `/login?tenant=${tenantSlug}`,
     }
 }

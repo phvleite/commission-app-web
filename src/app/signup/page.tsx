@@ -28,13 +28,13 @@ export default async function SignupPage() {
 
                     <div className="mt-8 grid gap-3 sm:grid-cols-2">
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                            <p className="text-xs tracking-[0.1em] text-slate-200 uppercase">
+                            <p className="text-xs tracking-widest text-slate-200 uppercase">
                                 Tenant
                             </p>
                             <p className="mt-2 text-sm font-medium">Identidade unica da empresa</p>
                         </div>
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                            <p className="text-xs tracking-[0.1em] text-slate-200 uppercase">
+                            <p className="text-xs tracking-widest text-slate-200 uppercase">
                                 Acesso
                             </p>
                             <p className="mt-2 text-sm font-medium">
@@ -44,16 +44,24 @@ export default async function SignupPage() {
                     </div>
                 </div>
 
-                <div className="bg-[var(--color-surface)] px-6 py-8 sm:px-10 sm:py-10">
-                    <h2 className="gold-bar-title text-2xl font-semibold text-[var(--color-primary-strong)]">
+                <div className="bg-(--color-surface) px-6 py-8 sm:px-10 sm:py-10">
+                    <h2 className="gold-bar-title text-2xl font-semibold text-(--color-primary-strong)">
                         Crie sua conta
                     </h2>
-                    <p className="mt-3 mb-6 text-sm leading-7 text-[var(--color-muted)]">
-                        Ja possui cadastro?{' '}
-                        <a className="font-semibold text-[var(--color-primary)]" href="/login">
-                            Fazer login
-                        </a>
-                    </p>
+                    <div
+                        id="login-guide"
+                        className="mt-3 mb-6 rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3"
+                    >
+                        <p className="text-sm leading-7 text-amber-900">
+                            Cadastro concluido?{' '}
+                            <a
+                                className="font-extrabold text-amber-950 underline decoration-2 underline-offset-2"
+                                href="/login"
+                            >
+                                Faca login aqui
+                            </a>
+                        </p>
+                    </div>
 
                     <SignupForm />
                 </div>

@@ -43,7 +43,6 @@ describe('signup action', () => {
             form({
                 companyName: 'Empresa Alpha',
                 legalName: 'Empresa Alpha LTDA',
-                tenantSlug: 'empresa-alpha',
                 adminName: 'Admin Alpha',
                 adminEmail: 'admin@alpha.com',
                 password: 'Senha@123',
@@ -58,6 +57,8 @@ describe('signup action', () => {
         )
 
         expect(result.success).toBeDefined()
+        expect(result.tenantSlug).toBe('empresa-alpha')
+        expect(result.loginUrl).toBe('/login?tenant=empresa-alpha')
 
         const tenant = await Tenant.findOne({ slug: 'empresa-alpha' })
         const user = await User.findOne({ email: 'admin@alpha.com' })
@@ -74,7 +75,6 @@ describe('signup action', () => {
             form({
                 companyName: 'Empresa A',
                 legalName: 'Empresa A LTDA',
-                tenantSlug: 'empresa-a',
                 adminName: 'Admin A',
                 adminEmail: 'admin@a.com',
                 password: 'Senha@123',
@@ -85,9 +85,8 @@ describe('signup action', () => {
         const result = await registerTenantAndAdmin(
             {},
             form({
-                companyName: 'Empresa B',
+                companyName: 'Empresa A',
                 legalName: 'Empresa B LTDA',
-                tenantSlug: 'empresa-a',
                 adminName: 'Admin B',
                 adminEmail: 'admin@b.com',
                 password: 'Senha@123',

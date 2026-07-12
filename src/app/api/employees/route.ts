@@ -1,6 +1,10 @@
 import { Types } from 'mongoose'
 import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
+import {
+    sectorPercentageBlockedResponse,
+    validateActiveSectorsPercentage,
+} from '@/lib/api/business-rules'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 
@@ -15,6 +19,11 @@ export async function GET(request: Request) {
     const includeInactive = searchParams.get('includeInactive') === 'true'
 
     await connectDB()
+
+    const sectorsValidation = await validateActiveSectorsPercentage(user.tenantId)
+    if (!sectorsValidation.valid) {
+        return sectorPercentageBlockedResponse(sectorsValidation.total)
+    }
 
     const employees = await Employee.find({
         tenantId: user.tenantId,
@@ -73,6 +82,11 @@ export async function POST(request: Request) {
     }
 
     await connectDB()
+
+    const sectorsValidation = await validateActiveSectorsPercentage(user.tenantId)
+    if (!sectorsValidation.valid) {
+        return sectorPercentageBlockedResponse(sectorsValidation.total)
+    }
 
     const sector = await Sector.findOne({ _id: sectorId, tenantId: user.tenantId }).lean()
 

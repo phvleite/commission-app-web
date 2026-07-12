@@ -28,13 +28,13 @@ export default async function LoginPage() {
 
                     <div className="mt-8 grid gap-3 sm:grid-cols-2">
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                            <p className="text-xs tracking-[0.1em] text-slate-200 uppercase">
+                            <p className="text-xs tracking-widest text-slate-200 uppercase">
                                 Seguranca
                             </p>
                             <p className="mt-2 text-sm font-medium">Sessao JWT por tenant</p>
                         </div>
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                            <p className="text-xs tracking-[0.1em] text-slate-200 uppercase">
+                            <p className="text-xs tracking-widest text-slate-200 uppercase">
                                 Base
                             </p>
                             <p className="mt-2 text-sm font-medium">Auth.js v5 + MongoDB</p>
@@ -42,17 +42,17 @@ export default async function LoginPage() {
                     </div>
                 </div>
 
-                <div className="bg-[var(--color-surface)] px-6 py-8 sm:px-10 sm:py-10">
-                    <h2 className="gold-bar-title text-2xl font-semibold text-[var(--color-primary-strong)]">
+                <div className="bg-(--color-surface) px-6 py-8 sm:px-10 sm:py-10">
+                    <h2 className="gold-bar-title text-2xl font-semibold text-(--color-primary-strong)">
                         Acesse sua conta
                     </h2>
-                    <p className="mt-3 mb-6 text-sm leading-7 text-[var(--color-muted)]">
+                    <p className="mt-3 mb-6 text-sm leading-7 text-(--color-muted)">
                         Use as credenciais cadastradas para seu tenant.
                     </p>
 
-                    <p className="mb-6 text-sm leading-7 text-[var(--color-muted)]">
+                    <p className="mb-6 text-sm leading-7 text-(--color-muted)">
                         Nao possui cadastro?{' '}
-                        <a className="font-semibold text-[var(--color-primary)]" href="/signup">
+                        <a className="font-semibold text-(--color-primary)" href="/signup">
                             Criar empresa
                         </a>
                     </p>

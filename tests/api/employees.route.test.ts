@@ -36,7 +36,7 @@ describe('API employees routes', () => {
 
     it('POST cria colaborador para tenant autenticado', async () => {
         const tenantId = new Types.ObjectId()
-        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 30 })
+        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
 
         setSession(tenantId.toString(), 'admin')
 
@@ -60,7 +60,8 @@ describe('API employees routes', () => {
     it('POST rejeita setor de outro tenant', async () => {
         const tenantA = new Types.ObjectId()
         const tenantB = new Types.ObjectId()
-        const sectorB = await Sector.create({ tenantId: tenantB, name: 'B', percentage: 10 })
+        await Sector.create({ tenantId: tenantA, name: 'A', percentage: 100 })
+        const sectorB = await Sector.create({ tenantId: tenantB, name: 'B', percentage: 100 })
 
         setSession(tenantA.toString(), 'admin')
 
@@ -82,8 +83,8 @@ describe('API employees routes', () => {
     it('GET lista somente colaboradores do tenant autenticado', async () => {
         const tenantA = new Types.ObjectId()
         const tenantB = new Types.ObjectId()
-        const sectorA = await Sector.create({ tenantId: tenantA, name: 'A', percentage: 10 })
-        const sectorB = await Sector.create({ tenantId: tenantB, name: 'B', percentage: 20 })
+        const sectorA = await Sector.create({ tenantId: tenantA, name: 'A', percentage: 100 })
+        const sectorB = await Sector.create({ tenantId: tenantB, name: 'B', percentage: 100 })
 
         await Employee.create({
             tenantId: tenantA,
@@ -108,9 +109,22 @@ describe('API employees routes', () => {
         expect(payload.data[0].name).toBe('A User')
     })
 
+    it('GET bloqueia servico quando soma de setores ativos e diferente de 100', async () => {
+        const tenantId = new Types.ObjectId()
+        await Sector.create({ tenantId, name: 'A', percentage: 60 })
+
+        setSession(tenantId.toString(), 'manager')
+
+        const res = await GET(new Request('http://localhost/api/employees'))
+        expect(res.status).toBe(409)
+
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toContain('soma dos percentuais dos setores ativos deve ser 100%')
+    })
+
     it('PATCH atualiza colaborador', async () => {
         const tenantId = new Types.ObjectId()
-        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 30 })
+        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
         const employee = await Employee.create({
             tenantId,
             name: 'Original',
@@ -136,7 +150,7 @@ describe('API employees routes', () => {
 
     it('DELETE inativa colaborador (soft delete)', async () => {
         const tenantId = new Types.ObjectId()
-        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 30 })
+        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
         const employee = await Employee.create({
             tenantId,
             name: 'Inativar',

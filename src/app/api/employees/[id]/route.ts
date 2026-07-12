@@ -1,6 +1,10 @@
 import { Types } from 'mongoose'
 import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
+import {
+    sectorPercentageBlockedResponse,
+    validateActiveSectorsPercentage,
+} from '@/lib/api/business-rules'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 
@@ -76,6 +80,11 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     await connectDB()
 
+    const sectorsValidation = await validateActiveSectorsPercentage(user.tenantId)
+    if (!sectorsValidation.valid) {
+        return sectorPercentageBlockedResponse(sectorsValidation.total)
+    }
+
     if (update.sectorId) {
         const sector = await Sector.findOne({
             _id: update.sectorId,
@@ -120,6 +129,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
     }
 
     await connectDB()
+
+    const sectorsValidation = await validateActiveSectorsPercentage(user.tenantId)
+    if (!sectorsValidation.valid) {
+        return sectorPercentageBlockedResponse(sectorsValidation.total)
+    }
 
     const employee = await Employee.findOne({ _id: id, tenantId: user.tenantId })
 
