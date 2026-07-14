@@ -26,7 +26,7 @@ export default async function DashboardLayout({
                 sectorsOk={sectorStatus.valid}
                 sectorsTotal={sectorStatus.total}
             />
-            <div className="lg:pl-72">
+            <div className="lg:pl-[260px]">
                 <div className="px-4 py-6 sm:px-6 sm:py-8">{children}</div>
             </div>
         </div>
