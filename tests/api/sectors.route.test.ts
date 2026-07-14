@@ -88,8 +88,26 @@ describe('API sectors routes', () => {
         expect(res.status).toBe(200)
 
         const payload = (await res.json()) as { data: Array<{ name: string }> }
-        expect(payload.data).toHaveLength(1)
-        expect(payload.data[0].name).toBe('A')
+        expect(payload.data.some((item) => item.name === 'A')).toBe(true)
+        expect(payload.data.some((item) => item.name === 'MERITOCRACIA')).toBe(true)
+    })
+
+    it('GET garante setor MERITOCRACIA quando ainda nao existe', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId, 'manager')
+
+        const res = await GET(new Request('http://localhost/api/sectors?includeInactive=true'))
+        expect(res.status).toBe(200)
+
+        const meritocracia = await Sector.findOne({
+            tenantId,
+            isMeritocracia: true,
+            name: 'MERITOCRACIA',
+        }).lean()
+
+        expect(meritocracia).not.toBeNull()
+        expect(meritocracia?.percentage).toBe(0)
+        expect(meritocracia?.active).toBe(true)
     })
 
     it('PATCH atualiza setor do tenant', async () => {
