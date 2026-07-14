@@ -8,7 +8,6 @@ interface Props {
     userName?: string | null
     role?: string | null
     sectorsOk: boolean
-    sectorsTotal: number
 }
 
 const MENU_ITEMS = [
@@ -18,7 +17,7 @@ const MENU_ITEMS = [
     { href: '/dashboard/situations', label: 'Situacoes', requiresSectorsOk: true },
     { href: '/dashboard/sales', label: 'Vendas', requiresSectorsOk: true },
     { href: '/dashboard/commissions', label: 'Comissoes', requiresSectorsOk: true },
-    { href: '/dashboard/company-users', label: 'Manutencao' },
+    { href: '/dashboard/company-users', label: 'Empresa/Usuarios' },
 ]
 
 function ItemLink({
@@ -60,7 +59,7 @@ function ItemLink({
     )
 }
 
-export function SidebarNav({ userName, role, sectorsOk, sectorsTotal }: Props) {
+export function SidebarNav({ userName, role, sectorsOk }: Props) {
     const pathname = usePathname()
     const [open, setOpen] = useState(false)
 
@@ -79,16 +78,6 @@ export function SidebarNav({ userName, role, sectorsOk, sectorsTotal }: Props) {
             <aside className="sidebar hidden lg:block">
                 <div className="flex h-full flex-col">
                     <h2 className="sidebar-title">Commission App</h2>
-
-                    <div
-                        className={`mb-4 rounded-xl border px-3 py-2 text-xs font-semibold ${
-                            sectorsOk
-                                ? 'border-emerald-300/40 bg-emerald-400/10 text-emerald-100'
-                                : 'border-amber-300/40 bg-amber-400/10 text-amber-100'
-                        }`}
-                    >
-                        Setores ativos: {sectorsTotal}% {sectorsOk ? '(OK)' : '(bloqueio ativo)'}
-                    </div>
 
                     <nav>
                         <ul>
@@ -121,17 +110,6 @@ export function SidebarNav({ userName, role, sectorsOk, sectorsTotal }: Props) {
                     />
                     <div className="sidebar relative h-full w-60 border-r border-white/20">
                         <h2 className="sidebar-title">Commission App</h2>
-
-                        <div
-                            className={`mb-4 rounded-xl border px-3 py-2 text-xs font-semibold ${
-                                sectorsOk
-                                    ? 'border-emerald-300/40 bg-emerald-400/10 text-emerald-100'
-                                    : 'border-amber-300/40 bg-amber-400/10 text-amber-100'
-                            }`}
-                        >
-                            Setores ativos: {sectorsTotal}%{' '}
-                            {sectorsOk ? '(OK)' : '(bloqueio ativo)'}
-                        </div>
 
                         <nav>
                             <ul>

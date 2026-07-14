@@ -14,13 +14,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         Credentials({
             name: 'Credentials',
             credentials: {
-                tenantSlug: { label: 'Tenant', type: 'text' },
                 email: { label: 'Email', type: 'email' },
                 password: { label: 'Password', type: 'password' },
             },
             authorize: async (credentials) => {
                 return authorizeCredentials({
-                    tenantSlug: toOptionalString(credentials?.tenantSlug),
                     email: toOptionalString(credentials?.email),
                     password: toOptionalString(credentials?.password),
                 })

@@ -1,10 +1,8 @@
 import { connectDB } from '@/lib/db'
 import { verifyPassword } from '@/lib/password'
-import { Tenant } from '@/models/Tenant'
 import { User, type UserRole } from '@/models/User'
 
 export interface AuthorizeCredentialsInput {
-    tenantSlug?: string
     email?: string
     password?: string
 }
@@ -17,25 +15,31 @@ export interface AuthorizedUser {
     role: UserRole
 }
 
-export async function authorizeCredentials(
-    credentials: AuthorizeCredentialsInput,
-): Promise<AuthorizedUser | null> {
-    const tenantSlug = credentials.tenantSlug?.trim().toLowerCase()
-    const email = credentials.email?.trim().toLowerCase()
-    const password = credentials.password
+export async function authorizeCredentials({
+    email: rawEmail,
+    password: rawPassword,
+}: AuthorizeCredentialsInput): Promise<AuthorizedUser | null> {
+    const email = rawEmail?.trim().toLowerCase()
+    const password = rawPassword
 
-    if (!tenantSlug || !email || !password) {
+    if (!email || !password) {
         return null
     }
 
     await connectDB()
 
-    const tenant = await Tenant.findOne({ slug: tenantSlug, active: true }).lean()
-    if (!tenant) {
+    const users = await User.find({
+        email,
+        active: true,
+    })
+        .limit(2)
+        .lean()
+
+    if (users.length !== 1) {
         return null
     }
 
-    const user = await User.findOne({ tenantId: tenant._id, email, active: true }).lean()
+    const user = users[0]
     if (!user) {
         return null
     }

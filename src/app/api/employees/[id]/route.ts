@@ -97,6 +97,13 @@ export async function PATCH(request: Request, context: RouteContext) {
                 { status: 404 },
             )
         }
+
+        if (sector.isMeritocracia) {
+            return Response.json(
+                { error: 'Setor de meritocracia nao pode ser vinculado a colaborador.' },
+                { status: 400 },
+            )
+        }
     }
 
     const employee = await Employee.findOne({ _id: id, tenantId: user.tenantId })

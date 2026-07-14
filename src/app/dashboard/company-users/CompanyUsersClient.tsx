@@ -61,6 +61,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
         password: '',
         role: 'seller' as UserRole,
     })
+    const [showNewUserForm, setShowNewUserForm] = useState(false)
 
     const canManageUsers = userRole === 'admin'
     const canEditCompany = userRole === 'admin' || userRole === 'manager'
@@ -115,6 +116,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                 const merged = [...prev, payload.data as CompanyUser]
                 return merged.sort((a, b) => a.name.localeCompare(b.name))
             })
+            setShowNewUserForm(false)
             setSuccess('Usuario criado com sucesso.')
         } catch (createError) {
             setError(createError instanceof Error ? createError.message : 'Erro ao criar usuario.')
@@ -175,7 +177,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                 Configuracoes da empresa
             </p>
             <h1 className="mt-2 text-3xl font-semibold text-(--color-primary-strong)">
-                Empresa e usuarios
+                <span className="gold-bar-title block">Empresa e usuarios</span>
             </h1>
             <p className="mt-3 text-sm leading-7 text-(--color-muted)">
                 Aqui voce pode atualizar os dados da empresa e gerenciar os usuarios cadastrados.
@@ -195,7 +197,9 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
 
             <div className="mt-8 grid gap-6 lg:grid-cols-2">
                 <div className="rounded-2xl border border-(--color-border) bg-white/60 p-5">
-                    <h2 className="text-xl font-semibold text-(--color-primary-strong)">Empresa</h2>
+                    <h2 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
+                        Empresa
+                    </h2>
                     <p className="mt-2 text-sm text-(--color-muted)">
                         Codigo da empresa:{' '}
                         <span className="font-semibold">{company?.slug ?? '-'}</span>
@@ -337,73 +341,86 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                 </div>
 
                 <div className="rounded-2xl border border-(--color-border) bg-white/60 p-5">
-                    <h2 className="text-xl font-semibold text-(--color-primary-strong)">
+                    <h2 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
                         Usuarios
                     </h2>
                     <p className="mt-2 text-sm text-(--color-muted)">
-                        Usuarios ativos: <span className="font-semibold">{totalActiveUsers}</span>
+                        Usuarios ativos: <span className="font-semibold">{totalActiveUsers}</span> |
+                        Limite do pacote basico: <span className="font-semibold">2</span>
                     </p>
 
-                    <form className="mt-4 space-y-3" onSubmit={handleCreateUser}>
-                        <input
-                            placeholder="Nome"
-                            className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
-                            value={newUser.name}
-                            onChange={(event) =>
-                                setNewUser((prev) => ({ ...prev, name: event.target.value }))
-                            }
-                            required
-                            disabled={!canManageUsers}
-                        />
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
-                            value={newUser.email}
-                            onChange={(event) =>
-                                setNewUser((prev) => ({ ...prev, email: event.target.value }))
-                            }
-                            required
-                            disabled={!canManageUsers}
-                        />
-                        <input
-                            type="password"
-                            placeholder="Senha temporaria"
-                            className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
-                            value={newUser.password}
-                            onChange={(event) =>
-                                setNewUser((prev) => ({
-                                    ...prev,
-                                    password: event.target.value,
-                                }))
-                            }
-                            required
-                            disabled={!canManageUsers}
-                        />
-                        <select
-                            className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
-                            value={newUser.role}
-                            onChange={(event) =>
-                                setNewUser((prev) => ({
-                                    ...prev,
-                                    role: event.target.value as UserRole,
-                                }))
-                            }
-                            disabled={!canManageUsers}
-                        >
-                            <option value="seller">Seller</option>
-                            <option value="manager">Manager</option>
-                            <option value="admin">Admin</option>
-                        </select>
-
+                    {canManageUsers ? (
                         <button
-                            type="submit"
-                            className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
-                            disabled={!canManageUsers}
+                            type="button"
+                            className="mt-4 rounded-xl border border-(--color-border) bg-white px-4 py-2 text-sm font-semibold text-(--color-primary-strong) hover:bg-slate-100"
+                            onClick={() => setShowNewUserForm((prev) => !prev)}
                         >
-                            Incluir usuario
+                            {showNewUserForm ? 'Cancelar novo usuario' : 'Novo usuario'}
                         </button>
-                    </form>
+                    ) : null}
+
+                    {showNewUserForm ? (
+                        <form className="mt-4 space-y-3" onSubmit={handleCreateUser}>
+                            <input
+                                placeholder="Nome"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={newUser.name}
+                                onChange={(event) =>
+                                    setNewUser((prev) => ({ ...prev, name: event.target.value }))
+                                }
+                                required
+                                disabled={!canManageUsers}
+                            />
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={newUser.email}
+                                onChange={(event) =>
+                                    setNewUser((prev) => ({ ...prev, email: event.target.value }))
+                                }
+                                required
+                                disabled={!canManageUsers}
+                            />
+                            <input
+                                type="password"
+                                placeholder="Senha temporaria"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={newUser.password}
+                                onChange={(event) =>
+                                    setNewUser((prev) => ({
+                                        ...prev,
+                                        password: event.target.value,
+                                    }))
+                                }
+                                required
+                                disabled={!canManageUsers}
+                            />
+                            <select
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={newUser.role}
+                                onChange={(event) =>
+                                    setNewUser((prev) => ({
+                                        ...prev,
+                                        role: event.target.value as UserRole,
+                                    }))
+                                }
+                                disabled={!canManageUsers}
+                            >
+                                <option value="seller">Seller</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
+
+                            <button
+                                type="submit"
+                                className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
+                                disabled={!canManageUsers}
+                            >
+                                Incluir usuario
+                            </button>
+                        </form>
+                    ) : null}
 
                     <div className="mt-5 space-y-2">
                         {users.map((user) => (

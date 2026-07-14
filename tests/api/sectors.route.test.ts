@@ -89,10 +89,10 @@ describe('API sectors routes', () => {
 
         const payload = (await res.json()) as { data: Array<{ name: string }> }
         expect(payload.data.some((item) => item.name === 'A')).toBe(true)
-        expect(payload.data.some((item) => item.name === 'MERITOCRACIA')).toBe(true)
+        expect(payload.data.some((item) => item.name === 'B')).toBe(false)
     })
 
-    it('GET garante setor MERITOCRACIA quando ainda nao existe', async () => {
+    it('GET nao cria setor MERITOCRACIA automaticamente', async () => {
         const tenantId = new Types.ObjectId().toString()
         setSession(tenantId, 'manager')
 
@@ -105,9 +105,30 @@ describe('API sectors routes', () => {
             name: 'MERITOCRACIA',
         }).lean()
 
-        expect(meritocracia).not.toBeNull()
-        expect(meritocracia?.percentage).toBe(0)
-        expect(meritocracia?.active).toBe(true)
+        expect(meritocracia).toBeNull()
+    })
+
+    it('POST bloqueia novo setor comum quando meritocracia esta ativa', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId, 'admin')
+
+        await Sector.create({
+            tenantId,
+            name: 'MERITOCRACIA',
+            percentage: 0,
+            active: true,
+            isMeritocracia: true,
+        })
+
+        const res = await POST(
+            new Request('http://localhost/api/sectors', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: 'Comercial', percentage: 30 }),
+            }),
+        )
+
+        expect(res.status).toBe(409)
     })
 
     it('PATCH atualiza setor do tenant', async () => {

@@ -24,9 +24,8 @@ export default async function DashboardLayout({
                 userName={session.user.name}
                 role={session.user.role}
                 sectorsOk={sectorStatus.valid}
-                sectorsTotal={sectorStatus.total}
             />
-            <div className="lg:pl-[260px]">
+            <div className="lg:pl-65">
                 <div className="px-4 py-6 sm:px-6 sm:py-8">{children}</div>
             </div>
         </div>

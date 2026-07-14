@@ -239,7 +239,7 @@ export function SignupForm() {
                         </button>
                         {state.loginUrl ? (
                             <a
-                                className="inline-flex items-center rounded-lg bg-(--color-primary) px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                                className="inline-flex items-center rounded-lg border border-(--color-primary-strong) bg-(--color-primary-strong) px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110"
                                 href={state.loginUrl}
                             >
                                 Fazer login agora

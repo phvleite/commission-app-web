@@ -13,17 +13,17 @@ export async function authenticate(
     _prevState: LoginFormState = INITIAL_STATE,
     formData: FormData,
 ): Promise<LoginFormState> {
-    const tenantSlug = formData.get('tenantSlug')?.toString().trim().toLowerCase()
+    void _prevState
+
     const email = formData.get('email')?.toString().trim().toLowerCase()
     const password = formData.get('password')?.toString()
 
-    if (!tenantSlug || !email || !password) {
-        return { error: 'Preencha tenant, email e senha.' }
+    if (!email || !password) {
+        return { error: 'Preencha email e senha.' }
     }
 
     try {
         await signIn('credentials', {
-            tenantSlug,
             email,
             password,
             redirectTo: '/dashboard',
