@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 type UserRole = 'admin' | 'manager' | 'seller'
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function SectorsClient({ userRole, initialSectors }: Props) {
+    const router = useRouter()
     const [sectors, setSectors] = useState<SectorItem[]>(initialSectors)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
@@ -67,6 +69,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
             setName('')
             setPercentage('')
             setSuccess('Setor criado com sucesso.')
+            router.refresh()
         } catch (createError) {
             setError(createError instanceof Error ? createError.message : 'Erro ao criar setor.')
         }
@@ -91,6 +94,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                 prev.map((item) => (item._id === sector._id ? { ...item, active: false } : item)),
             )
             setSuccess('Setor inativado com sucesso.')
+            router.refresh()
         } catch (toggleError) {
             setError(toggleError instanceof Error ? toggleError.message : 'Erro ao inativar setor.')
         }

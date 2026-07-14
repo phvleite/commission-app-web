@@ -7,25 +7,45 @@ import { useState } from 'react'
 interface Props {
     userName?: string | null
     role?: string | null
+    sectorsOk: boolean
+    sectorsTotal: number
 }
 
 const MENU_ITEMS = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/dashboard/company-users', label: 'Empresa e usuarios' },
     { href: '/dashboard/sectors', label: 'Setores' },
+    { href: '/dashboard/employees', label: 'Colaboradores', requiresSectorsOk: true },
+    { href: '/dashboard/situations', label: 'Situacoes', requiresSectorsOk: true },
+    { href: '/dashboard/sales', label: 'Vendas', requiresSectorsOk: true },
+    { href: '/dashboard/commissions', label: 'Comissoes', requiresSectorsOk: true },
 ]
 
 function ItemLink({
     href,
     label,
     active,
+    disabled,
     onClick,
 }: {
     href: string
     label: string
     active: boolean
+    disabled?: boolean
     onClick?: () => void
 }) {
+    if (disabled) {
+        return (
+            <span
+                aria-disabled="true"
+                className="block cursor-not-allowed rounded-xl px-3 py-2 text-sm font-semibold text-slate-400"
+                title="Habilitado quando a soma dos setores ativos for 100%"
+            >
+                {label}
+            </span>
+        )
+    }
+
     return (
         <Link
             href={href}
@@ -41,7 +61,7 @@ function ItemLink({
     )
 }
 
-export function SidebarNav({ userName, role }: Props) {
+export function SidebarNav({ userName, role, sectorsOk, sectorsTotal }: Props) {
     const pathname = usePathname()
     const [open, setOpen] = useState(false)
 
@@ -66,6 +86,16 @@ export function SidebarNav({ userName, role }: Props) {
                         Menu
                     </h2>
 
+                    <div
+                        className={`mt-4 rounded-xl border px-3 py-2 text-xs font-semibold ${
+                            sectorsOk
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : 'border-amber-200 bg-amber-50 text-amber-900'
+                        }`}
+                    >
+                        Setores ativos: {sectorsTotal}% {sectorsOk ? '(OK)' : '(bloqueio ativo)'}
+                    </div>
+
                     <nav className="mt-6 space-y-2">
                         {MENU_ITEMS.map((item) => (
                             <ItemLink
@@ -73,6 +103,7 @@ export function SidebarNav({ userName, role }: Props) {
                                 href={item.href}
                                 label={item.label}
                                 active={pathname === item.href}
+                                disabled={Boolean(item.requiresSectorsOk && !sectorsOk)}
                             />
                         ))}
                     </nav>
@@ -102,6 +133,17 @@ export function SidebarNav({ userName, role }: Props) {
                             Menu
                         </h2>
 
+                        <div
+                            className={`mt-4 rounded-xl border px-3 py-2 text-xs font-semibold ${
+                                sectorsOk
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : 'border-amber-200 bg-amber-50 text-amber-900'
+                            }`}
+                        >
+                            Setores ativos: {sectorsTotal}%{' '}
+                            {sectorsOk ? '(OK)' : '(bloqueio ativo)'}
+                        </div>
+
                         <nav className="mt-6 space-y-2">
                             {MENU_ITEMS.map((item) => (
                                 <ItemLink
@@ -109,6 +151,7 @@ export function SidebarNav({ userName, role }: Props) {
                                     href={item.href}
                                     label={item.label}
                                     active={pathname === item.href}
+                                    disabled={Boolean(item.requiresSectorsOk && !sectorsOk)}
                                     onClick={() => setOpen(false)}
                                 />
                             ))}

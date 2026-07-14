@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
+import { validateActiveSectorsPercentage } from '@/lib/api/business-rules'
+import { connectDB } from '@/lib/db'
 import { SidebarNav } from './_components/SidebarNav'
 
 export default async function DashboardLayout({
@@ -13,9 +15,17 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
+    await connectDB()
+    const sectorStatus = await validateActiveSectorsPercentage(session.user.tenantId)
+
     return (
         <div className="app-shell min-h-screen">
-            <SidebarNav userName={session.user.name} role={session.user.role} />
+            <SidebarNav
+                userName={session.user.name}
+                role={session.user.role}
+                sectorsOk={sectorStatus.valid}
+                sectorsTotal={sectorStatus.total}
+            />
             <div className="lg:pl-72">
                 <div className="px-4 py-6 sm:px-6 sm:py-8">{children}</div>
             </div>

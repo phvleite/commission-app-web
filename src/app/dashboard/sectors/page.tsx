@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
+import { ensureMeritocraciaSector } from '@/lib/api/business-rules'
 import { connectDB } from '@/lib/db'
 import { Sector } from '@/models/Sector'
 import { SectorsClient } from './SectorsClient'
@@ -12,6 +13,7 @@ export default async function SectorsPage() {
     }
 
     await connectDB()
+    await ensureMeritocraciaSector(session.user.tenantId)
 
     const sectors = await Sector.find({ tenantId: session.user.tenantId }).sort({ name: 1 }).lean()
 
