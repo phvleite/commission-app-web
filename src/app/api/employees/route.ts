@@ -94,6 +94,13 @@ export async function POST(request: Request) {
         return Response.json({ error: 'Setor nao encontrado para este tenant.' }, { status: 404 })
     }
 
+    if (sector.isMeritocracia) {
+        return Response.json(
+            { error: 'Setor de meritocracia nao pode ser vinculado a colaborador.' },
+            { status: 400 },
+        )
+    }
+
     const employee = await Employee.create({
         tenantId: user.tenantId,
         name,

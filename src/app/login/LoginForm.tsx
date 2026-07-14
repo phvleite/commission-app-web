@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { useFormStatus } from 'react-dom'
 import { authenticate, type LoginFormState } from './actions'
 
@@ -23,29 +22,9 @@ function SubmitButton() {
 
 export function LoginForm() {
     const [state, formAction] = useActionState(authenticate, INITIAL_STATE)
-    const searchParams = useSearchParams()
-    const tenantSlug = searchParams.get('tenant') ?? ''
 
     return (
         <form action={formAction} className="space-y-5" noValidate>
-            <div className="space-y-2">
-                <label
-                    className="text-sm font-medium text-(--color-primary-strong)"
-                    htmlFor="tenantSlug"
-                >
-                    Codigo da empresa (tenant)
-                </label>
-                <input
-                    id="tenantSlug"
-                    name="tenantSlug"
-                    autoComplete="organization"
-                    placeholder="empresa-abc"
-                    defaultValue={tenantSlug}
-                    className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
-                    required
-                />
-            </div>
-
             <div className="space-y-2">
                 <label
                     className="text-sm font-medium text-(--color-primary-strong)"

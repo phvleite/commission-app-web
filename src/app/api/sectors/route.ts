@@ -1,6 +1,5 @@
 import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
-import { ensureMeritocraciaSector } from '@/lib/api/business-rules'
 import { Sector } from '@/models/Sector'
 
 export async function GET(request: Request) {
@@ -14,7 +13,6 @@ export async function GET(request: Request) {
     const includeInactive = searchParams.get('includeInactive') === 'true'
 
     await connectDB()
-    await ensureMeritocraciaSector(user.tenantId)
 
     const sectors = await Sector.find({
         tenantId: user.tenantId,
@@ -55,6 +53,30 @@ export async function POST(request: Request) {
     }
 
     await connectDB()
+
+    const activeMeritocracia = await Sector.findOne({
+        tenantId: user.tenantId,
+        active: true,
+        isMeritocracia: true,
+    })
+        .select('_id')
+        .lean()
+
+    if (activeMeritocracia && !body.isMeritocracia) {
+        return Response.json(
+            {
+                error: 'Nao e permitido cadastrar novo setor enquanto o setor de meritocracia estiver ativo.',
+            },
+            { status: 409 },
+        )
+    }
+
+    if (activeMeritocracia && body.isMeritocracia) {
+        return Response.json(
+            { error: 'Ja existe um setor de meritocracia ativo para esta empresa.' },
+            { status: 409 },
+        )
+    }
 
     try {
         const sector = await Sector.create({

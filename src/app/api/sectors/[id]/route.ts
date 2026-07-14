@@ -64,13 +64,6 @@ export async function PATCH(request: Request, context: RouteContext) {
         return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
     }
 
-    if (sector.isMeritocracia && update.active === false) {
-        return Response.json(
-            { error: 'Setor de meritocracia nao pode ser inativado.' },
-            { status: 400 },
-        )
-    }
-
     try {
         Object.assign(sector, update)
         await sector.save()
@@ -115,13 +108,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
     if (!sector) {
         return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
-    }
-
-    if (sector.isMeritocracia) {
-        return Response.json(
-            { error: 'Setor de meritocracia nao pode ser inativado.' },
-            { status: 400 },
-        )
     }
 
     sector.active = false

@@ -18,12 +18,11 @@ export default async function LoginPage() {
                     </p>
 
                     <h1 className="mt-6 text-3xl leading-tight font-semibold sm:text-4xl">
-                        Login multi-tenant
+                        Login da plataforma
                     </h1>
 
                     <p className="mt-4 text-sm leading-7 text-slate-200 sm:text-base">
-                        Entre com o slug da sua empresa, email e senha para acessar sua area de
-                        comissoes.
+                        Entre com email e senha para acessar sua area de comissoes.
                     </p>
 
                     <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -34,9 +33,7 @@ export default async function LoginPage() {
                             <p className="mt-2 text-sm font-medium">Sessao JWT por tenant</p>
                         </div>
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                            <p className="text-xs tracking-widest text-slate-200 uppercase">
-                                Base
-                            </p>
+                            <p className="text-xs tracking-widest text-slate-200 uppercase">Base</p>
                             <p className="mt-2 text-sm font-medium">Auth.js v5 + MongoDB</p>
                         </div>
                     </div>
@@ -47,7 +44,7 @@ export default async function LoginPage() {
                         Acesse sua conta
                     </h2>
                     <p className="mt-3 mb-6 text-sm leading-7 text-(--color-muted)">
-                        Use as credenciais cadastradas para seu tenant.
+                        Use as credenciais cadastradas para sua empresa.
                     </p>
 
                     <p className="mb-6 text-sm leading-7 text-(--color-muted)">

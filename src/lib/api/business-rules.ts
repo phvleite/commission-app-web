@@ -42,9 +42,13 @@ export async function ensureMeritocraciaSector(tenantId: string): Promise<void> 
 export async function validateActiveSectorsPercentage(
     tenantId: string,
 ): Promise<SectorPercentageValidationResult> {
-    await ensureMeritocraciaSector(tenantId)
-
-    const sectors = await Sector.find({ tenantId, active: true }).select('percentage').lean()
+    const sectors = await Sector.find({
+        tenantId,
+        active: true,
+        isMeritocracia: { $ne: true },
+    })
+        .select('percentage')
+        .lean()
 
     const total = sectors.reduce((sum, sector) => sum + Number(sector.percentage ?? 0), 0)
     const normalizedTotal = Math.round(total * 100) / 100
