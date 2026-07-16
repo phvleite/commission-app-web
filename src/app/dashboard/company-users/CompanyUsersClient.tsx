@@ -352,7 +352,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                     {canManageUsers ? (
                         <button
                             type="button"
-                            className="mt-4 rounded-xl border border-(--color-border) bg-white px-4 py-2 text-sm font-semibold text-(--color-primary-strong) hover:bg-slate-100"
+                            className={`${showNewUserForm ? 'cancel-button' : 'primary-button'} mt-4 rounded-xl px-4 py-2 text-sm font-semibold`}
                             onClick={() => setShowNewUserForm((prev) => !prev)}
                         >
                             {showNewUserForm ? 'Cancelar novo usuario' : 'Novo usuario'}
@@ -443,7 +443,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                     {canManageUsers ? (
                                         <button
                                             type="button"
-                                            className="rounded-lg border border-(--color-border) px-2 py-1 text-xs font-semibold text-(--color-primary-strong) hover:bg-slate-100"
+                                            className="primary-button rounded-lg px-2 py-1 text-xs font-semibold"
                                             onClick={() =>
                                                 handleToggleUserActive(user._id, !user.active)
                                             }

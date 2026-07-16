@@ -64,6 +64,23 @@ export async function PATCH(request: Request, context: RouteContext) {
         return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
     }
 
+    if (update.isMeritocracia === true) {
+        const existingMeritocracia = await Sector.findOne({
+            tenantId: user.tenantId,
+            isMeritocracia: true,
+            _id: { $ne: sector._id },
+        })
+            .select('_id')
+            .lean()
+
+        if (existingMeritocracia) {
+            return Response.json(
+                { error: 'Ja existe um setor marcado como meritocracia para esta empresa.' },
+                { status: 409 },
+            )
+        }
+    }
+
     try {
         Object.assign(sector, update)
         await sector.save()

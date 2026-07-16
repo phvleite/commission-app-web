@@ -11,12 +11,14 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const includeInactive = searchParams.get('includeInactive') === 'true'
+    const excludeMeritocracia = searchParams.get('excludeMeritocracia') === 'true'
 
     await connectDB()
 
     const sectors = await Sector.find({
         tenantId: user.tenantId,
         ...(includeInactive ? {} : { active: true }),
+        ...(excludeMeritocracia ? { isMeritocracia: { $ne: true } } : {}),
     })
         .sort({ name: 1 })
         .lean()
@@ -54,28 +56,20 @@ export async function POST(request: Request) {
 
     await connectDB()
 
-    const activeMeritocracia = await Sector.findOne({
-        tenantId: user.tenantId,
-        active: true,
-        isMeritocracia: true,
-    })
-        .select('_id')
-        .lean()
+    if (body.isMeritocracia) {
+        const existingMeritocracia = await Sector.findOne({
+            tenantId: user.tenantId,
+            isMeritocracia: true,
+        })
+            .select('_id')
+            .lean()
 
-    if (activeMeritocracia && !body.isMeritocracia) {
-        return Response.json(
-            {
-                error: 'Nao e permitido cadastrar novo setor enquanto o setor de meritocracia estiver ativo.',
-            },
-            { status: 409 },
-        )
-    }
-
-    if (activeMeritocracia && body.isMeritocracia) {
-        return Response.json(
-            { error: 'Ja existe um setor de meritocracia ativo para esta empresa.' },
-            { status: 409 },
-        )
+        if (existingMeritocracia) {
+            return Response.json(
+                { error: 'Ja existe um setor marcado como meritocracia para esta empresa.' },
+                { status: 409 },
+            )
+        }
     }
 
     try {

@@ -92,6 +92,22 @@ textarea {
     transform: translateY(1px);
 }
 
+.cancel-button {
+    background: var(--danger);
+    color: #ffffff;
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.cancel-button:hover {
+    background: var(--primary-soft);
+}
+
+.cancel-button:active {
+    transform: translateY(1px);
+}
+
 .sidebar {
     position: fixed;
     top: 0;
