@@ -45,7 +45,6 @@ export async function validateActiveSectorsPercentage(
     const sectors = await Sector.find({
         tenantId,
         active: true,
-        isMeritocracia: { $ne: true },
     })
         .select('percentage')
         .lean()

@@ -29,17 +29,20 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
     const [editingSectorId, setEditingSectorId] = useState<string | null>(null)
     const [editName, setEditName] = useState('')
     const [editPercentage, setEditPercentage] = useState('')
+    const [editIsMeritocracia, setEditIsMeritocracia] = useState(false)
 
     const canWrite = userRole === 'admin' || userRole === 'manager'
-    const hasActiveMeritocracia = useMemo(
-        () => sectors.some((sector) => sector.active && sector.isMeritocracia),
+    const sectorWithMeritocracia = useMemo(
+        () => sectors.find((sector) => sector.isMeritocracia),
         [sectors],
     )
+    const meritocraciaSectorId = sectorWithMeritocracia?._id ?? null
+    const hasMeritocraciaAssigned = Boolean(sectorWithMeritocracia)
 
     const totalPercentage = useMemo(
         () =>
             sectors
-                .filter((sector) => sector.active && !sector.isMeritocracia)
+                .filter((sector) => sector.active)
                 .reduce((sum, sector) => sum + sector.percentage, 0),
         [sectors],
     )
@@ -131,6 +134,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                 body: JSON.stringify({
                     name: editName,
                     percentage: Number(editPercentage),
+                    isMeritocracia: editIsMeritocracia,
                 }),
             })
 
@@ -147,6 +151,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                                   ...item,
                                   name: editName,
                                   percentage: Number(editPercentage),
+                                  isMeritocracia: editIsMeritocracia,
                               }
                             : item,
                     )
@@ -201,7 +206,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     required
-                    disabled={!canWrite || hasActiveMeritocracia}
+                    disabled={!canWrite}
                 />
                 <input
                     type="number"
@@ -213,12 +218,12 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                     value={percentage}
                     onChange={(event) => setPercentage(event.target.value)}
                     required
-                    disabled={!canWrite || hasActiveMeritocracia || isMeritocracia}
+                    disabled={!canWrite}
                 />
                 <button
                     type="submit"
                     className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
-                    disabled={!canWrite || hasActiveMeritocracia}
+                    disabled={!canWrite}
                 >
                     Adicionar setor
                 </button>
@@ -231,103 +236,129 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                     onChange={(event) => {
                         const checked = event.target.checked
                         setIsMeritocracia(checked)
-                        if (checked) {
-                            setPercentage('0')
-                        }
                     }}
-                    disabled={!canWrite || hasActiveMeritocracia}
+                    disabled={!canWrite || hasMeritocraciaAssigned}
                 />
                 Criar como setor de meritocracia
             </label>
 
-            {hasActiveMeritocracia ? (
+            {hasMeritocraciaAssigned ? (
                 <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    Setor de meritocracia ativo: novos setores ficam bloqueados enquanto ele estiver
-                    habilitado.
+                    Ja existe um setor marcado como meritocracia. Para transferir ou remover essa
+                    marcacao, edite o proprio setor.
                 </p>
             ) : null}
 
             <div className="mt-6 space-y-2">
-                {sectors.map((sector) => (
-                    <div
-                        key={sector._id}
-                        className="rounded-xl border border-(--color-border) bg-white px-4 py-3"
-                    >
-                        <div className="flex items-center justify-between gap-4">
-                            <div>
-                                <p className="text-sm font-semibold text-(--color-primary-strong)">
-                                    {sector.name}
-                                </p>
-                                <p className="text-xs text-(--color-muted)">
-                                    Percentual: {sector.percentage}% | Status:{' '}
-                                    {sector.active ? 'Ativo' : 'Inativo'}
-                                </p>
-                                {sector.isMeritocracia ? (
-                                    <p className="mt-1 text-xs font-semibold text-amber-700">
-                                        Tipo: Meritocracia
+                {sectors.map((sector) => {
+                    const showEditMeritocraciaOption =
+                        !meritocraciaSectorId || meritocraciaSectorId === sector._id
+
+                    return (
+                        <div
+                            key={sector._id}
+                            className="rounded-xl border border-(--color-border) bg-white px-4 py-3"
+                        >
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-semibold text-(--color-primary-strong)">
+                                        {sector.name}
                                     </p>
+                                    <p className="text-xs text-(--color-muted)">
+                                        Percentual: {sector.percentage}% | Status:{' '}
+                                        {sector.active ? 'Ativo' : 'Inativo'}
+                                    </p>
+                                    {sector.isMeritocracia ? (
+                                        <p className="mt-1 text-xs font-semibold text-amber-700">
+                                            Tipo: Meritocracia
+                                        </p>
+                                    ) : null}
+                                </div>
+
+                                {canWrite ? (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold"
+                                            onClick={() => {
+                                                setEditingSectorId(sector._id)
+                                                setEditName(sector.name)
+                                                setEditPercentage(String(sector.percentage))
+                                                setEditIsMeritocracia(sector.isMeritocracia)
+                                            }}
+                                        >
+                                            Editar
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold"
+                                            onClick={() => handleToggleActive(sector)}
+                                        >
+                                            {sector.active ? 'Inativar' : 'Ativar'}
+                                        </button>
+                                    </div>
                                 ) : null}
                             </div>
 
-                            {canWrite ? (
-                                <div className="flex items-center gap-2">
+                            {editingSectorId === sector._id ? (
+                                <div
+                                    className={`mt-3 grid gap-2 ${
+                                        showEditMeritocraciaOption
+                                            ? 'sm:grid-cols-[1fr_140px_auto_auto_auto]'
+                                            : 'sm:grid-cols-[1fr_140px_auto_auto]'
+                                    }`}
+                                >
+                                    <input
+                                        className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none"
+                                        value={editName}
+                                        onChange={(event) => setEditName(event.target.value)}
+                                    />
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none"
+                                        value={editPercentage}
+                                        onChange={(event) => setEditPercentage(event.target.value)}
+                                    />
+                                    {showEditMeritocraciaOption ? (
+                                        <label className="flex items-center gap-2 rounded-lg border border-(--color-border) bg-white px-3 text-xs font-semibold text-(--color-primary-strong)">
+                                            <input
+                                                type="checkbox"
+                                                checked={editIsMeritocracia}
+                                                onChange={(event) => {
+                                                    const checked = event.target.checked
+                                                    setEditIsMeritocracia(checked)
+                                                }}
+                                            />
+                                            Meritocracia
+                                        </label>
+                                    ) : null}
                                     <button
                                         type="button"
-                                        className="rounded-lg border border-(--color-border) px-3 py-1 text-xs font-semibold text-(--color-primary-strong) hover:bg-slate-100"
+                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                        onClick={() => handleSaveEdition(sector._id)}
+                                    >
+                                        Salvar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"
                                         onClick={() => {
-                                            setEditingSectorId(sector._id)
-                                            setEditName(sector.name)
-                                            setEditPercentage(String(sector.percentage))
+                                            setEditingSectorId(null)
+                                            setEditIsMeritocracia(false)
+                                            setEditName('')
+                                            setEditPercentage('')
                                         }}
                                     >
-                                        Editar
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        className="rounded-lg border border-(--color-border) px-3 py-1 text-xs font-semibold text-(--color-primary-strong) hover:bg-slate-100"
-                                        onClick={() => handleToggleActive(sector)}
-                                    >
-                                        {sector.active ? 'Inativar' : 'Ativar'}
+                                        Cancelar
                                     </button>
                                 </div>
                             ) : null}
                         </div>
-
-                        {editingSectorId === sector._id ? (
-                            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_140px_auto_auto]">
-                                <input
-                                    className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none"
-                                    value={editName}
-                                    onChange={(event) => setEditName(event.target.value)}
-                                />
-                                <input
-                                    type="number"
-                                    min={0}
-                                    max={100}
-                                    className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none"
-                                    value={editPercentage}
-                                    onChange={(event) => setEditPercentage(event.target.value)}
-                                    disabled={sector.isMeritocracia}
-                                />
-                                <button
-                                    type="button"
-                                    className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
-                                    onClick={() => handleSaveEdition(sector._id)}
-                                >
-                                    Salvar
-                                </button>
-                                <button
-                                    type="button"
-                                    className="rounded-lg border border-(--color-border) px-3 py-2 text-xs font-semibold text-(--color-primary-strong)"
-                                    onClick={() => setEditingSectorId(null)}
-                                >
-                                    Cancelar
-                                </button>
-                            </div>
-                        ) : null}
-                    </div>
-                ))}
+                    )
+                })}
             </div>
         </section>
     )
