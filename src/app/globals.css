@@ -108,6 +108,17 @@ textarea {
     transform: translateY(1px);
 }
 
+.date-field {
+    min-width: 0;
+    padding-right: 2.4rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.date-field::-webkit-calendar-picker-indicator {
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
+
 .sidebar {
     position: fixed;
     top: 0;
