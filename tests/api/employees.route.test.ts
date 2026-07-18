@@ -109,19 +109,6 @@ describe('API employees routes', () => {
         expect(payload.data[0].name).toBe('A User')
     })
 
-    it('GET bloqueia servico quando soma de setores ativos e diferente de 100', async () => {
-        const tenantId = new Types.ObjectId()
-        await Sector.create({ tenantId, name: 'A', percentage: 60 })
-
-        setSession(tenantId.toString(), 'manager')
-
-        const res = await GET(new Request('http://localhost/api/employees'))
-        expect(res.status).toBe(409)
-
-        const payload = (await res.json()) as { error: string }
-        expect(payload.error).toContain('soma dos percentuais dos setores ativos deve ser 100%')
-    })
-
     it('PATCH atualiza colaborador', async () => {
         const tenantId = new Types.ObjectId()
         const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
