@@ -8,7 +8,6 @@ import { User } from '@/models/User'
 export interface SignupFormState {
     error?: string
     success?: string
-    tenantSlug?: string
     loginUrl?: string
 }
 
@@ -127,8 +126,7 @@ export async function registerTenantAndAdmin(
     }
 
     return {
-        success: `Cadastro concluido. Seu codigo de acesso da empresa: ${tenantSlug}`,
-        tenantSlug,
-        loginUrl: `/login?tenant=${tenantSlug}`,
+        success: 'Cadastro concluido com sucesso. Voce ja pode entrar com email e senha.',
+        loginUrl: '/login',
     }
 }

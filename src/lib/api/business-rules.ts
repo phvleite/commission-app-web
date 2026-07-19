@@ -5,10 +5,49 @@ export interface SectorPercentageValidationResult {
     total: number
 }
 
+export async function ensureMeritocraciaSector(tenantId: string): Promise<void> {
+    const existing = await Sector.findOne({
+        tenantId,
+        isMeritocracia: true,
+    })
+        .select('_id')
+        .lean()
+
+    if (existing) {
+        return
+    }
+
+    try {
+        await Sector.create({
+            tenantId,
+            name: 'MERITOCRACIA',
+            percentage: 0,
+            active: true,
+            isMeritocracia: true,
+        })
+    } catch (error) {
+        if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            (error as { code?: number }).code === 11000
+        ) {
+            return
+        }
+
+        throw error
+    }
+}
+
 export async function validateActiveSectorsPercentage(
     tenantId: string,
 ): Promise<SectorPercentageValidationResult> {
-    const sectors = await Sector.find({ tenantId, active: true }).select('percentage').lean()
+    const sectors = await Sector.find({
+        tenantId,
+        active: true,
+    })
+        .select('percentage')
+        .lean()
 
     const total = sectors.reduce((sum, sector) => sum + Number(sector.percentage ?? 0), 0)
     const normalizedTotal = Math.round(total * 100) / 100

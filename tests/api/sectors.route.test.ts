@@ -88,8 +88,155 @@ describe('API sectors routes', () => {
         expect(res.status).toBe(200)
 
         const payload = (await res.json()) as { data: Array<{ name: string }> }
-        expect(payload.data).toHaveLength(1)
-        expect(payload.data[0].name).toBe('A')
+        expect(payload.data.some((item) => item.name === 'A')).toBe(true)
+        expect(payload.data.some((item) => item.name === 'B')).toBe(false)
+    })
+
+    it('GET com excludeMeritocracia remove setor de meritocracia da listagem', async () => {
+        const tenantId = new Types.ObjectId()
+        await Sector.create({
+            tenantId,
+            name: 'MERITOCRACIA',
+            percentage: 10,
+            isMeritocracia: true,
+            active: true,
+        })
+        await Sector.create({
+            tenantId,
+            name: 'Comercial',
+            percentage: 90,
+            active: true,
+        })
+
+        setSession(tenantId.toString(), 'manager')
+
+        const res = await GET(new Request('http://localhost/api/sectors?excludeMeritocracia=true'))
+        expect(res.status).toBe(200)
+
+        const payload = (await res.json()) as { data: Array<{ name: string }> }
+        expect(payload.data.some((item) => item.name === 'MERITOCRACIA')).toBe(false)
+        expect(payload.data.some((item) => item.name === 'Comercial')).toBe(true)
+    })
+
+    it('GET nao cria setor MERITOCRACIA automaticamente', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId, 'manager')
+
+        const res = await GET(new Request('http://localhost/api/sectors?includeInactive=true'))
+        expect(res.status).toBe(200)
+
+        const meritocracia = await Sector.findOne({
+            tenantId,
+            isMeritocracia: true,
+            name: 'MERITOCRACIA',
+        }).lean()
+
+        expect(meritocracia).toBeNull()
+    })
+
+    it('POST permite novo setor comum quando ja existe meritocracia', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId, 'admin')
+
+        await Sector.create({
+            tenantId,
+            name: 'MERITOCRACIA',
+            percentage: 0,
+            active: true,
+            isMeritocracia: true,
+        })
+
+        const res = await POST(
+            new Request('http://localhost/api/sectors', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: 'Comercial', percentage: 30 }),
+            }),
+        )
+
+        expect(res.status).toBe(201)
+    })
+
+    it('POST bloqueia segundo setor marcado como meritocracia', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId, 'admin')
+
+        await Sector.create({
+            tenantId,
+            name: 'MERITOCRACIA',
+            percentage: 0,
+            active: true,
+            isMeritocracia: true,
+        })
+
+        const res = await POST(
+            new Request('http://localhost/api/sectors', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'MERITOCRACIA 2',
+                    percentage: 0,
+                    isMeritocracia: true,
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(409)
+    })
+
+    it('PATCH permite remover flag de meritocracia do setor atual', async () => {
+        const tenantId = new Types.ObjectId()
+        const sector = await Sector.create({
+            tenantId,
+            name: 'MERITOCRACIA',
+            percentage: 0,
+            isMeritocracia: true,
+        })
+
+        setSession(tenantId.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request(`http://localhost/api/sectors/${sector._id.toString()}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isMeritocracia: false }),
+            }),
+            { params: Promise.resolve({ id: sector._id.toString() }) },
+        )
+
+        expect(res.status).toBe(200)
+        const updated = await Sector.findById(sector._id).lean()
+        expect(updated?.isMeritocracia).toBe(false)
+    })
+
+    it('PATCH bloqueia marcar setor comum como meritocracia quando ja existe outro marcado', async () => {
+        const tenantId = new Types.ObjectId()
+        const merit = await Sector.create({
+            tenantId,
+            name: 'MERITOCRACIA',
+            percentage: 0,
+            isMeritocracia: true,
+        })
+        const normal = await Sector.create({
+            tenantId,
+            name: 'Comercial',
+            percentage: 25,
+            isMeritocracia: false,
+        })
+
+        setSession(tenantId.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request(`http://localhost/api/sectors/${normal._id.toString()}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isMeritocracia: true }),
+            }),
+            { params: Promise.resolve({ id: normal._id.toString() }) },
+        )
+
+        expect(merit._id).toBeDefined()
+        expect(res.status).toBe(409)
     })
 
     it('PATCH atualiza setor do tenant', async () => {

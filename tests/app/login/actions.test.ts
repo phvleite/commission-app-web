@@ -38,7 +38,7 @@ describe('login authenticate action', () => {
 
     it('retorna erro quando faltam campos obrigatorios', async () => {
         const result = await authenticate({}, makeFormData({ email: 'teste@a.com' }))
-        expect(result).toEqual({ error: 'Preencha tenant, email e senha.' })
+        expect(result).toEqual({ error: 'Preencha email e senha.' })
         expect(signInMock).not.toHaveBeenCalled()
     })
 
@@ -48,14 +48,12 @@ describe('login authenticate action', () => {
         await authenticate(
             {},
             makeFormData({
-                tenantSlug: ' Empresa-ABC ',
                 email: ' TESTE@A.COM ',
                 password: '123456',
             }),
         )
 
         expect(signInMock).toHaveBeenCalledWith('credentials', {
-            tenantSlug: 'empresa-abc',
             email: 'teste@a.com',
             password: '123456',
             redirectTo: '/dashboard',
@@ -68,7 +66,6 @@ describe('login authenticate action', () => {
         const result = await authenticate(
             {},
             makeFormData({
-                tenantSlug: 'empresa-abc',
                 email: 'teste@a.com',
                 password: 'errada',
             }),
@@ -83,7 +80,6 @@ describe('login authenticate action', () => {
         const result = await authenticate(
             {},
             makeFormData({
-                tenantSlug: 'empresa-abc',
                 email: 'teste@a.com',
                 password: '123456',
             }),
