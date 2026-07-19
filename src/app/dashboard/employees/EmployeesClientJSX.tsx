@@ -50,15 +50,15 @@ export function EmployeesClientJSX(
         setEditSectorId,
         setEditAdmissionDate,
         setEditDismissalDate,
+
+        showForm,
+        setShowForm,
+        filteredEmployeesCount,
     } = props
 
     return (
         <section className="panel mx-auto w-full max-w-5xl p-6 sm:p-8">
             {/* Título */}
-            <p className="text-xs tracking-widest text-(--color-primary) uppercase">
-                Configurações de colaboradores
-            </p>
-
             <h1 className="gold-bar-title mt-2 text-3xl font-semibold text-(--color-primary-strong)">
                 Colaboradores
             </h1>
@@ -67,6 +67,44 @@ export function EmployeesClientJSX(
                 Gerencie os colaboradores da empresa. Você pode filtrar, adicionar, editar ou
                 inativar colaboradores conforme necessário.
             </p>
+
+
+            {/* Botão Novo Colaborador */}
+            {canWrite ? (
+                <div className="mt-6 flex justify-start">
+                    <button
+                        type="button"
+                        onClick={() => setShowForm(!showForm)}
+                        className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
+                    >
+                        {showForm ? 'Fechar' : 'Novo colaborador'}
+                    </button>
+                </div>
+            ) : null}
+
+            {/* Card Novo Colaborador */}
+            {showForm ? (
+                <div className="mt-6 rounded-xl border border-(--color-border) bg-white p-6">
+                    <h2 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
+                        Novo Colaborador
+                    </h2>
+
+                    <EmployeesForm
+                        name={name}
+                        sectorId={sectorId}
+                        admissionDate={admissionDate}
+                        dismissalDate={dismissalDate}
+                        sectors={sectors}
+                        canWrite={canWrite}
+                        setName={setName}
+                        setSectorId={setSectorId}
+                        setAdmissionDate={setAdmissionDate}
+                        setDismissalDate={setDismissalDate}
+                        handleCreateEmployee={handleCreateEmployee}
+                        onCancel={() => setShowForm(false)}
+                    />
+               </div>
+            ) : null}
 
             {/* Mensagens */}
             {error ? (
@@ -93,21 +131,7 @@ export function EmployeesClientJSX(
                 setOrderBy={setOrderBy}
                 setSearch={setSearch}
                 clearFilters={clearFilters}
-            />
-
-            {/* Formulário de criação */}
-            <EmployeesForm
-                name={name}
-                sectorId={sectorId}
-                admissionDate={admissionDate}
-                dismissalDate={dismissalDate}
-                sectors={sectors}
-                canWrite={canWrite}
-                setName={setName}
-                setSectorId={setSectorId}
-                setAdmissionDate={setAdmissionDate}
-                setDismissalDate={setDismissalDate}
-                handleCreateEmployee={handleCreateEmployee}
+                filteredEmployeesCount={filteredEmployeesCount}
             />
 
             {/* Lista */}

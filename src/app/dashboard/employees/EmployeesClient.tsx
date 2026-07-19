@@ -112,6 +112,16 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
     const [editSectorId, setEditSectorId] = useState('')
     const [editAdmissionDate, setEditAdmissionDate] = useState('')
     const [editDismissalDate, setEditDismissalDate] = useState('')
+    const [showForm, setShowForm] = useState(false)
+
+    const filteredEmployeesCount = employees.filter((e) => {
+        if (filterStatus === 'active' && !e.active) return false
+        if (filterStatus === 'inactive' && e.active) return false
+        if (filterSector !== 'all' && e.sectorId !== filterSector) return false
+        if (search.trim() && !e.name.toLowerCase().includes(search.toLowerCase())) return false
+        return true
+    }).length
+
 
     // ===========================
     // FUNÇÃO: CRIAR COLABORADOR
@@ -313,5 +323,9 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
         setEditSectorId,
         setEditAdmissionDate,
         setEditDismissalDate,
+
+        showForm,
+        setShowForm,
+        filteredEmployeesCount,
     }
 }
