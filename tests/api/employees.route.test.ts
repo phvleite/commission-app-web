@@ -109,19 +109,6 @@ describe('API employees routes', () => {
         expect(payload.data[0].name).toBe('A User')
     })
 
-    it('GET bloqueia servico quando soma de setores ativos e diferente de 100', async () => {
-        const tenantId = new Types.ObjectId()
-        await Sector.create({ tenantId, name: 'A', percentage: 60 })
-
-        setSession(tenantId.toString(), 'manager')
-
-        const res = await GET(new Request('http://localhost/api/employees'))
-        expect(res.status).toBe(409)
-
-        const payload = (await res.json()) as { error: string }
-        expect(payload.error).toContain('soma dos percentuais dos setores ativos deve ser 100%')
-    })
-
     it('PATCH atualiza colaborador', async () => {
         const tenantId = new Types.ObjectId()
         const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
@@ -146,6 +133,35 @@ describe('API employees routes', () => {
         expect(res.status).toBe(200)
         const dbEmployee = await Employee.findById(employee._id).lean()
         expect(dbEmployee?.name).toBe('Atualizado')
+    })
+
+    it('PATCH com dismissalDate null remove data de demissao', async () => {
+        const tenantId = new Types.ObjectId()
+        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
+        const employee = await Employee.create({
+            tenantId,
+            name: 'Com Demissao',
+            sectorId: sector._id,
+            admissionDate: new Date('2024-01-01'),
+            dismissalDate: new Date('2024-02-10'),
+            active: false,
+        })
+
+        setSession(tenantId.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request(`http://localhost/api/employees/${employee._id.toString()}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: true, dismissalDate: null }),
+            }),
+            { params: Promise.resolve({ id: employee._id.toString() }) },
+        )
+
+        expect(res.status).toBe(200)
+        const dbEmployee = await Employee.findById(employee._id).lean()
+        expect(dbEmployee?.dismissalDate).toBeUndefined()
+        expect(dbEmployee?.active).toBe(true)
     })
 
     it('DELETE inativa colaborador (soft delete)', async () => {

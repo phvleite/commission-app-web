@@ -57,8 +57,7 @@ describe('signup action', () => {
         )
 
         expect(result.success).toBeDefined()
-        expect(result.tenantSlug).toBe('empresa-alpha')
-        expect(result.loginUrl).toBe('/login?tenant=empresa-alpha')
+        expect(result.loginUrl).toBe('/login')
 
         const tenant = await Tenant.findOne({ slug: 'empresa-alpha' })
         const user = await User.findOne({ email: 'admin@alpha.com' })

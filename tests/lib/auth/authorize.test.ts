@@ -9,7 +9,7 @@ afterAll(async () => disconnectTestDB())
 afterEach(async () => clearTestDB())
 
 describe('authorizeCredentials', () => {
-    it('retorna o usuário autenticado com tenantSlug + email + password válidos', async () => {
+    it('retorna o usuário autenticado com email + password válidos', async () => {
         const tenant = await Tenant.create({
             name: 'Empresa ABC',
             legalName: 'Empresa ABC Ltda',
@@ -26,7 +26,6 @@ describe('authorizeCredentials', () => {
         })
 
         const user = await authorizeCredentials({
-            tenantSlug: 'empresa-abc',
             email: 'paulo@empresa.com',
             password: 'Senha@123',
         })
@@ -39,9 +38,8 @@ describe('authorizeCredentials', () => {
         expect(user?.tenantId).toBe(tenant._id.toString())
     })
 
-    it('retorna null quando o tenant não existe', async () => {
+    it('retorna null quando o email nao existe', async () => {
         const user = await authorizeCredentials({
-            tenantSlug: 'inexistente',
             email: 'paulo@empresa.com',
             password: 'Senha@123',
         })
@@ -66,7 +64,6 @@ describe('authorizeCredentials', () => {
         })
 
         const user = await authorizeCredentials({
-            tenantSlug: 'empresa-abc',
             email: 'paulo@empresa.com',
             password: 'Errada@123',
         })
@@ -92,7 +89,6 @@ describe('authorizeCredentials', () => {
         })
 
         const user = await authorizeCredentials({
-            tenantSlug: 'empresa-abc',
             email: 'paulo@empresa.com',
             password: 'Senha@123',
         })
@@ -104,7 +100,7 @@ describe('authorizeCredentials', () => {
         await expect(authorizeCredentials({ email: 'paulo@empresa.com' })).resolves.toBeNull()
     })
 
-    it('respeita o tenant no login quando há emails iguais em tenants diferentes', async () => {
+    it('retorna null quando ha ambiguidade de email entre tenants', async () => {
         const tenantA = await Tenant.create({
             name: 'Empresa A',
             legalName: 'Empresa A Ltda',
@@ -135,15 +131,10 @@ describe('authorizeCredentials', () => {
         })
 
         const user = await authorizeCredentials({
-            tenantSlug: 'empresa-b',
             email: 'paulo@empresa.com',
             password: 'SenhaB@123',
         })
 
-        expect(user).toMatchObject({
-            name: 'Paulo B',
-            role: 'seller',
-            tenantId: tenantB._id.toString(),
-        })
+        expect(user).toBeNull()
     })
 })

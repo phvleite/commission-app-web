@@ -1,10 +1,6 @@
 import { Types } from 'mongoose'
 import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
-import {
-    sectorPercentageBlockedResponse,
-    validateActiveSectorsPercentage,
-} from '@/lib/api/business-rules'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 
@@ -19,11 +15,6 @@ export async function GET(request: Request) {
     const includeInactive = searchParams.get('includeInactive') === 'true'
 
     await connectDB()
-
-    const sectorsValidation = await validateActiveSectorsPercentage(user.tenantId)
-    if (!sectorsValidation.valid) {
-        return sectorPercentageBlockedResponse(sectorsValidation.total)
-    }
 
     const employees = await Employee.find({
         tenantId: user.tenantId,
@@ -83,15 +74,17 @@ export async function POST(request: Request) {
 
     await connectDB()
 
-    const sectorsValidation = await validateActiveSectorsPercentage(user.tenantId)
-    if (!sectorsValidation.valid) {
-        return sectorPercentageBlockedResponse(sectorsValidation.total)
-    }
-
     const sector = await Sector.findOne({ _id: sectorId, tenantId: user.tenantId }).lean()
 
     if (!sector) {
         return Response.json({ error: 'Setor nao encontrado para este tenant.' }, { status: 404 })
+    }
+
+    if (sector.isMeritocracia) {
+        return Response.json(
+            { error: 'Setor de meritocracia nao pode ser vinculado a colaborador.' },
+            { status: 400 },
+        )
     }
 
     const employee = await Employee.create({
@@ -100,7 +93,7 @@ export async function POST(request: Request) {
         sectorId,
         admissionDate: admissionDateParsed,
         dismissalDate: dismissalDateParsed,
-        active: body.active ?? true,
+        active: dismissalDateParsed ? false : true,
     })
 
     return Response.json({ data: employee }, { status: 201 })

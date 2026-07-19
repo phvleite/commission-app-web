@@ -11,12 +11,14 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const includeInactive = searchParams.get('includeInactive') === 'true'
+    const excludeMeritocracia = searchParams.get('excludeMeritocracia') === 'true'
 
     await connectDB()
 
     const sectors = await Sector.find({
         tenantId: user.tenantId,
         ...(includeInactive ? {} : { active: true }),
+        ...(excludeMeritocracia ? { isMeritocracia: { $ne: true } } : {}),
     })
         .sort({ name: 1 })
         .lean()
@@ -53,6 +55,22 @@ export async function POST(request: Request) {
     }
 
     await connectDB()
+
+    if (body.isMeritocracia) {
+        const existingMeritocracia = await Sector.findOne({
+            tenantId: user.tenantId,
+            isMeritocracia: true,
+        })
+            .select('_id')
+            .lean()
+
+        if (existingMeritocracia) {
+            return Response.json(
+                { error: 'Ja existe um setor marcado como meritocracia para esta empresa.' },
+                { status: 409 },
+            )
+        }
+    }
 
     try {
         const sector = await Sector.create({

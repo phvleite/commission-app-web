@@ -76,6 +76,11 @@ textarea {
     padding-left: 12px;
 }
 
+.danger-bar-title {
+    border-left: 4px solid var(--danger);
+    padding-left: 12px;
+}
+
 .primary-button {
     background: var(--primary);
     color: #ffffff;
@@ -90,4 +95,101 @@ textarea {
 
 .primary-button:active {
     transform: translateY(1px);
+}
+
+.cancel-button {
+    background: var(--danger);
+    color: #ffffff;
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.cancel-button:hover {
+    background: var(--primary-soft);
+}
+
+.cancel-button:active {
+    transform: translateY(1px);
+}
+
+.date-field {
+    min-width: 0;
+    padding-right: 2.4rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.date-field::-webkit-calendar-picker-indicator {
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--primary-strong);
+    color: #ffffff;
+    padding: 25px 20px;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.sidebar-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    border-left: 4px solid var(--accent);
+    padding-left: 12px;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sidebar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar li {
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 10px 0;
+    transition: 0.2s ease;
+    border-left: 3px solid transparent;
+    padding-left: 12px;
+    display: block;
+}
+
+.sidebar-link:hover {
+    color: var(--accent);
+    transform: translateX(4px);
+}
+
+.sidebar-link.active {
+    color: var(--primary-soft);
+    font-weight: 700;
+    border-left-color: var(--primary-soft);
+}
+
+.sidebar-disabled {
+    opacity: 0.4;
+    pointer-events: none;
 }

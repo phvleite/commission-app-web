@@ -1,10 +1,6 @@
 import { Types } from 'mongoose'
 import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
-import {
-    sectorPercentageBlockedResponse,
-    validateActiveSectorsPercentage,
-} from '@/lib/api/business-rules'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 
@@ -33,7 +29,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         name?: string
         sectorId?: string
         admissionDate?: string
-        dismissalDate?: string
+        dismissalDate?: string | null
         active?: boolean
     }
 
@@ -63,27 +59,20 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     if (body.dismissalDate !== undefined) {
-        if (body.dismissalDate === '') {
+        if (body.dismissalDate === '' || body.dismissalDate === null) {
             update.dismissalDate = undefined
+            update.active = true
         } else {
             const parsed = new Date(body.dismissalDate)
             if (Number.isNaN(parsed.getTime())) {
                 return Response.json({ error: 'dismissalDate invalida.' }, { status: 400 })
             }
             update.dismissalDate = parsed
+            update.active = false
         }
     }
 
-    if (body.active !== undefined) {
-        update.active = Boolean(body.active)
-    }
-
     await connectDB()
-
-    const sectorsValidation = await validateActiveSectorsPercentage(user.tenantId)
-    if (!sectorsValidation.valid) {
-        return sectorPercentageBlockedResponse(sectorsValidation.total)
-    }
 
     if (update.sectorId) {
         const sector = await Sector.findOne({
@@ -95,6 +84,13 @@ export async function PATCH(request: Request, context: RouteContext) {
             return Response.json(
                 { error: 'Setor nao encontrado para este tenant.' },
                 { status: 404 },
+            )
+        }
+
+        if (sector.isMeritocracia) {
+            return Response.json(
+                { error: 'Setor de meritocracia nao pode ser vinculado a colaborador.' },
+                { status: 400 },
             )
         }
     }
@@ -129,11 +125,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
     }
 
     await connectDB()
-
-    const sectorsValidation = await validateActiveSectorsPercentage(user.tenantId)
-    if (!sectorsValidation.valid) {
-        return sectorPercentageBlockedResponse(sectorsValidation.total)
-    }
 
     const employee = await Employee.findOne({ _id: id, tenantId: user.tenantId })
 

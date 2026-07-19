@@ -64,11 +64,21 @@ export async function PATCH(request: Request, context: RouteContext) {
         return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
     }
 
-    if (sector.isMeritocracia && update.active === false) {
-        return Response.json(
-            { error: 'Setor de meritocracia nao pode ser inativado.' },
-            { status: 400 },
-        )
+    if (update.isMeritocracia === true) {
+        const existingMeritocracia = await Sector.findOne({
+            tenantId: user.tenantId,
+            isMeritocracia: true,
+            _id: { $ne: sector._id },
+        })
+            .select('_id')
+            .lean()
+
+        if (existingMeritocracia) {
+            return Response.json(
+                { error: 'Ja existe um setor marcado como meritocracia para esta empresa.' },
+                { status: 409 },
+            )
+        }
     }
 
     try {
@@ -115,13 +125,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
     if (!sector) {
         return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
-    }
-
-    if (sector.isMeritocracia) {
-        return Response.json(
-            { error: 'Setor de meritocracia nao pode ser inativado.' },
-            { status: 400 },
-        )
     }
 
     sector.active = false
