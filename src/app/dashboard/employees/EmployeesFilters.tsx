@@ -13,6 +13,8 @@ interface Props {
     setOrderBy: (value: 'name' | 'sector') => void
     setSearch: (value: string) => void
     clearFilters: () => void
+
+    filteredEmployeesCount: number
 }
 
 export function EmployeesFilters({
@@ -27,9 +29,12 @@ export function EmployeesFilters({
     setOrderBy,
     setSearch,
     clearFilters,
+
+    filteredEmployeesCount,
 }: Props) {
     return (
         <div className="mt-6 grid gap-4 rounded-xl border border-(--color-border) bg-white p-4 sm:grid-cols-4">
+            
             {/* Filtro por status */}
             <div className="flex flex-col">
                 <label className="text-xs font-semibold text-(--color-muted)">Status</label>
@@ -88,6 +93,7 @@ export function EmployeesFilters({
                 />
             </div>
 
+            {/* Botão Limpar filtros */}
             <div className="sm:col-span-4 flex justify-end">
                 <button
                     type="button"
@@ -96,6 +102,14 @@ export function EmployeesFilters({
                 >
                     Limpar filtros
                 </button>
+            </div>
+
+            {/* Contador */}
+            <div className="sm:col-span-4 flex justify-left pr-1">
+                <span className="text-xs font-medium text-(--color-muted)">
+                    Exibindo <strong>{filteredEmployeesCount}</strong> colaborador
+                    {filteredEmployeesCount !== 1 ? 'es' : ''}
+                </span>
             </div>
         </div>
     )

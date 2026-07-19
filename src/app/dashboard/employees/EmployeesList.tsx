@@ -57,9 +57,7 @@ export function EmployeesList({
     setEditDismissalDate,
 }: Props) {
     function formatDateBr(value: string | null): string {
-        if (!value) {
-            return ''
-        }
+        if (!value) return ''
 
         const normalized = value.slice(0, 10)
         const parts = normalized.split('-')
@@ -72,9 +70,7 @@ export function EmployeesList({
         }
 
         const parsed = new Date(value)
-        if (Number.isNaN(parsed.getTime())) {
-            return value
-        }
+        if (Number.isNaN(parsed.getTime())) return value
 
         return new Intl.DateTimeFormat('pt-BR').format(parsed)
     }
@@ -85,25 +81,21 @@ export function EmployeesList({
     const filteredEmployees = useMemo(() => {
         let list = [...employees]
 
-        // Filtro por status
         if (filterStatus === 'active') {
             list = list.filter((e) => e.active)
         } else if (filterStatus === 'inactive') {
             list = list.filter((e) => !e.active)
         }
 
-        // Filtro por setor
         if (filterSector !== 'all') {
             list = list.filter((e) => e.sectorId === filterSector)
         }
 
-        // Busca por nome
         if (search.trim()) {
             const term = search.trim().toLowerCase()
             list = list.filter((e) => e.name.toLowerCase().includes(term))
         }
 
-        // Ordenação
         if (orderBy === 'name') {
             list.sort((a, b) => a.name.localeCompare(b.name))
         } else {
@@ -128,7 +120,7 @@ export function EmployeesList({
                 return (
                     <div
                         key={employee._id}
-                        className="rounded-xl border border-(--color-border) bg-white px-4 py-3"
+                        className={`${employee.active ? 'gold-bar-title' : 'danger-bar-title'} rounded-xl border border-(--color-border) bg-white px-4 py-3`}
                     >
                         {/* ===========================
                             LINHA NORMAL (SEM EDIÇÃO)
@@ -176,14 +168,12 @@ export function EmployeesList({
                         {isEditing ? (
                             <div className="mt-3 space-y-2">
                                 <div className="grid gap-2 sm:grid-cols-[1fr_190px_190px_190px]">
-                                    {/* Nome */}
                                     <input
                                         className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
                                     />
 
-                                    {/* Setor */}
                                     <select
                                         className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
                                         value={editSectorId}
@@ -196,7 +186,6 @@ export function EmployeesList({
                                         ))}
                                     </select>
 
-                                    {/* Admissão */}
                                     <input
                                         type="date"
                                         className="date-field h-10 rounded-lg border border-(--color-border) bg-white px-3 text-xs"
@@ -204,7 +193,6 @@ export function EmployeesList({
                                         onChange={(e) => setEditAdmissionDate(e.target.value)}
                                     />
 
-                                    {/* Demissão */}
                                     <input
                                         type="date"
                                         className="date-field h-10 rounded-lg border border-(--color-border) bg-white px-3 text-xs"
@@ -214,7 +202,6 @@ export function EmployeesList({
                                 </div>
 
                                 <div className="flex justify-end gap-2">
-                                    {/* Salvar */}
                                     <button
                                         type="button"
                                         className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
@@ -223,7 +210,6 @@ export function EmployeesList({
                                         Salvar
                                     </button>
 
-                                    {/* Cancelar */}
                                     <button
                                         type="button"
                                         className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"

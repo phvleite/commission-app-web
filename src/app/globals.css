@@ -76,6 +76,11 @@ textarea {
     padding-left: 12px;
 }
 
+.danger-bar-title {
+    border-left: 4px solid var(--danger);
+    padding-left: 12px;
+}
+
 .primary-button {
     background: var(--primary);
     color: #ffffff;
@@ -123,7 +128,7 @@ textarea {
     position: fixed;
     top: 0;
     left: 0;
-    width: 240px;
+    width: 260px;
     height: 100vh;
     background: var(--primary-strong);
     color: #ffffff;

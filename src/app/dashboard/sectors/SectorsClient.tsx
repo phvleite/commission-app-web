@@ -167,9 +167,6 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
 
     return (
         <section className="panel mx-auto w-full max-w-5xl p-6 sm:p-8">
-            <p className="text-xs tracking-widest text-(--color-primary) uppercase">
-                Configuracoes de comissao
-            </p>
             <h1 className="gold-bar-title mt-2 text-3xl font-semibold text-(--color-primary-strong)">
                 Setores
             </h1>
