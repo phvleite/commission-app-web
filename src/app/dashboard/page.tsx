@@ -17,7 +17,7 @@ export default async function DashboardPage() {
                 Bem-vindo, {session.user.name}
             </h1>
             <p className="mt-3 text-sm leading-7 text-(--color-muted)">
-                Tenant: {session.user.tenantId} | Perfil: {session.user.role}
+                Empresa: {session.user.tenantName} • Perfil: {session.user.role}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">

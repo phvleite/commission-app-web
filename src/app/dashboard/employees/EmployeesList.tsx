@@ -166,45 +166,73 @@ export function EmployeesList({
                             LINHA DE EDIÇÃO INLINE
                         ============================ */}
                         {isEditing ? (
-                            <div className="mt-3 space-y-2">
-                                <div className="grid gap-2 sm:grid-cols-[1fr_190px_190px_190px]">
-                                    <input
-                                        className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
-                                        value={editName}
-                                        onChange={(e) => setEditName(e.target.value)}
-                                    />
+                            <div className="mt-3 space-y-3">
 
-                                    <select
-                                        className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
-                                        value={editSectorId}
-                                        onChange={(e) => setEditSectorId(e.target.value)}
-                                    >
-                                        {sectors.map((sector) => (
-                                            <option key={sector._id} value={sector._id}>
-                                                {sector.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                {/* GRID RESPONSIVO COM LABELS */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
-                                    <input
-                                        type="date"
-                                        className="date-field h-10 rounded-lg border border-(--color-border) bg-white px-3 text-xs"
-                                        value={editAdmissionDate}
-                                        onChange={(e) => setEditAdmissionDate(e.target.value)}
-                                    />
+                                    {/* Nome */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-semibold text-(--color-muted)">
+                                            Nome
+                                        </label>
+                                        <input
+                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                                            value={editName}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                        />
+                                    </div>
 
-                                    <input
-                                        type="date"
-                                        className="date-field h-10 rounded-lg border border-(--color-border) bg-white px-3 text-xs"
-                                        value={editDismissalDate || ''}
-                                        onChange={(e) => setEditDismissalDate(e.target.value)}
-                                    />
+                                    {/* Setor */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-semibold text-(--color-muted)">
+                                            Setor
+                                        </label>
+                                        <select
+                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                                            value={editSectorId}
+                                            onChange={(e) => setEditSectorId(e.target.value)}
+                                        >
+                                            {sectors.map((sector) => (
+                                                <option key={sector._id} value={sector._id}>
+                                                    {sector.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Admissão */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-semibold text-(--color-muted)">
+                                            Admissão
+                                        </label>
+                                        <input
+                                            type="date"
+                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                                            value={editAdmissionDate}
+                                            onChange={(e) => setEditAdmissionDate(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Demissão */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-semibold text-(--color-muted)">
+                                            Demissão
+                                        </label>
+                                        <input
+                                            type="date"
+                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                                            value={editDismissalDate || ''}
+                                            onChange={(e) => setEditDismissalDate(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="flex justify-end gap-2">
+                                {/* BOTÕES */}
+                                <div className="flex flex-col sm:flex-row justify-end gap-2">
                                     <button
                                         type="button"
-                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                         onClick={() => handleSaveEdition(employee._id)}
                                     >
                                         Salvar
@@ -212,7 +240,7 @@ export function EmployeesList({
 
                                     <button
                                         type="button"
-                                        className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                         onClick={cancelEdit}
                                     >
                                         Cancelar
