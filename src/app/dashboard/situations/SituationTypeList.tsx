@@ -49,7 +49,7 @@ export default function SituationTypeList({
                 return (
                     <div
                         key={t._id}
-                        className="rounded-xl border border-(--color-border) bg-white px-4 py-3"
+                        className="gold-bar-title rounded-xl border border-(--color-border) bg-white px-4 py-3"
                     >
                         {/* ===========================
                             MODO NORMAL
