@@ -62,18 +62,18 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
     }
 
     return (
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
             {/* ===========================
                 LINHA 1 — Datas
             ============================ */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                     <label className="text-xs font-semibold text-(--color-muted)">
                         Data inicial
                     </label>
                     <input
                         type="date"
-                        className="date-field mt-1 h-11 rounded-xl border border-(--color-border) bg-white px-3 text-xs text-(--color-primary-strong)"
+                        className="date-field mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-xs text-(--color-primary-strong)"
                         value={dataInicial}
                         onChange={(e) => handleDataInicialChange(e.target.value)}
                         required
@@ -86,7 +86,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                     </label>
                     <input
                         type="date"
-                        className="date-field mt-1 h-11 rounded-xl border border-(--color-border) bg-white px-3 text-xs text-(--color-primary-strong)"
+                        className="date-field mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-xs text-(--color-primary-strong)"
                         value={dataFinal}
                         onChange={(e) => setDataFinal(e.target.value)}
                         required
@@ -97,14 +97,14 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
             {/* ===========================
                 LINHA 2 — Colaborador + Tipo + Botão
             ============================ */}
-            <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-4">
                 {/* Colaborador */}
                 <div className="flex flex-col">
                     <label className="text-xs font-semibold text-(--color-muted)">
                         Colaborador
                     </label>
                     <select
-                        className="mt-1 h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
                         value={colaboradorId}
                         onChange={(e) => setColaboradorId(e.target.value)}
                         required
@@ -124,7 +124,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                         Tipo de situação
                     </label>
                     <select
-                        className="mt-1 h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
                         value={tipoId}
                         onChange={(e) => setTipoId(e.target.value)}
                         required
@@ -142,7 +142,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                 <div className="flex items-end">
                     <button
                         type="submit"
-                        className="primary-button rounded-xl px-5 py-3 text-sm font-semibold w-full sm:w-auto"
+                        className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold"
                     >
                         Cadastrar
                     </button>

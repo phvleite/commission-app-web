@@ -65,44 +65,41 @@ export default function SituationClientJSX({
     } = client
 
     return (
-        <section className="panel mx-auto w-full max-w-5xl p-6 sm:p-8 space-y-8">
+        <section className="panel mx-auto w-full max-w-5xl p-4 sm:p-8 space-y-8">
             {/* Título */}
-            <h1 className="gold-bar-title mt-2 text-3xl font-semibold text-(--color-primary-strong)">
+            <h1 className="gold-bar-title mt-2 text-2xl sm:text-3xl font-semibold text-(--color-primary-strong)">
                 Situações
             </h1>
 
-            <p className="mt-3 text-sm leading-7 text-(--color-muted)">
+            <p className="mt-2 text-sm leading-6 sm:leading-7 text-(--color-muted)">
                 Gerencie as situações dos colaboradores. Cadastre tipos, crie situações, filtre e edite conforme necessário.
             </p>
 
             {/* Botões principais */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
                 <button
-                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
+                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold"
                     onClick={() => setShowTypes(!showTypes)}
                 >
                     Tipos de Situação
                 </button>
 
                 <button
-                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
+                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold"
                     onClick={() => setShowCreate(!showCreate)}
                 >
                     Cadastro de Situação
                 </button>
             </div>
 
-            {/* ============================================================
-                TIPOS DE SITUAÇÃO
-            ============================================================ */}
+            {/* TIPOS DE SITUAÇÃO */}
             {showTypes && (
-                <section className="rounded-xl border border-(--color-border) bg-white p-6 space-y-6">
+                <section className="rounded-xl border border-(--color-border) bg-white p-4 sm:p-6 space-y-4 sm:space-y-6">
                     <h2 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
                         Tipos de Situação
                     </h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Formulário */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div className="rounded-xl border border-(--color-border) bg-white p-4 space-y-4">
                             <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
                                 Novo Tipo de Situação
@@ -111,7 +108,6 @@ export default function SituationClientJSX({
                             <SituationTypeForm onSubmit={createType} />
                         </div>
 
-                        {/* Lista */}
                         <div className="rounded-xl border border-(--color-border) bg-white p-4 space-y-4">
                             <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
                                 Tipos de Situação
@@ -128,11 +124,9 @@ export default function SituationClientJSX({
                 </section>
             )}
 
-            {/* ============================================================
-                CADASTRO DE SITUAÇÃO
-            ============================================================ */}
+            {/* CADASTRO DE SITUAÇÃO */}
             {showCreate && (
-                <section className="rounded-xl border border-(--color-border) bg-white p-6 space-y-6">
+                <section className="rounded-xl border border-(--color-border) bg-white p-4 sm:p-6 space-y-4 sm:space-y-6">
                     <h2 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
                         Cadastro de Situação
                     </h2>
@@ -153,9 +147,7 @@ export default function SituationClientJSX({
                 </section>
             )}
 
-            {/* ============================================================
-                FILTROS
-            ============================================================ */}
+            {/* FILTROS */}
             <SituationFilters
                 colaboradores={employees}
                 tipos={types}
@@ -174,9 +166,7 @@ export default function SituationClientJSX({
                 limparFiltros={clearFilters}
             />
 
-            {/* ============================================================
-                LISTA DE SITUAÇÕES
-            ============================================================ */}
+            {/* LISTA */}
             <SituationList
                 situacoes={situations}
                 colaboradores={employees}
