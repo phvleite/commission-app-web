@@ -1,6 +1,7 @@
 import { connectDB } from '@/lib/db'
 import { verifyPassword } from '@/lib/password'
 import { User, type UserRole } from '@/models/User'
+import { Tenant } from '@/models/Tenant'
 
 export interface AuthorizeCredentialsInput {
     email?: string
@@ -13,6 +14,7 @@ export interface AuthorizedUser {
     name: string
     email: string
     role: UserRole
+    tenantName: string
 }
 
 export async function authorizeCredentials({
@@ -49,11 +51,18 @@ export async function authorizeCredentials({
         return null
     }
 
+    // Buscar o nome da empresa (Tenant)
+    const tenant = await Tenant.findById(user.tenantId).select('name').lean()
+    if (!tenant) {
+        return null
+    }
+
     return {
         id: user._id.toString(),
         tenantId: user.tenantId.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
+        tenantName: tenant.name,
     }
 }

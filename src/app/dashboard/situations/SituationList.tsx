@@ -85,7 +85,7 @@ export default function SituationList({
     }
 
     return (
-        <div className="mt-6 space-y-2">
+        <div className="mt-6 space-y-3">
             {situacoes.map((s) => {
                 const isEditing = editId === s._id
                 const isGold = s.typeDescription === 'Folga' || s.typeDescription === 'Férias'
@@ -93,130 +93,152 @@ export default function SituationList({
                 return (
                     <div
                         key={s._id}
-                        className={`${isGold ? 'gold-bar-title' : 'danger-bar-title'} rounded-xl border border-(--color-border) bg-white px-4 py-3`}
+                        className={`${isGold ? 'gold-bar-title' : 'danger-bar-title'} rounded-xl border border-(--color-border) bg-white p-4 space-y-3`}
                     >
-                        <div className="flex items-center gap-3">
+                        {/* ===========================
+                            MODO NORMAL
+                        ============================ */}
+                        {!isEditing && (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-(--color-primary-strong)">
+                                        {s.employeeName || '-'}
+                                    </p>
 
-                            <div className="flex-1">
-                                {/* ===========================
-                                    MODO NORMAL
-                                ============================ */}
-                                {!isEditing ? (
-                                    <div className="flex items-center justify-between gap-4">
-                                        <div>
-                                            <p className="text-sm font-semibold text-(--color-primary-strong)">
-                                                {s.employeeName || '-'}
-                                            </p>
+                                    <p className="text-xs text-(--color-muted)">
+                                        Tipo: {s.typeDescription || '-'}
+                                    </p>
 
-                                            <p className="text-xs text-(--color-muted)">
-                                                Tipo: {s.typeDescription || '-'}
-                                            </p>
+                                    <p className="text-[11px] text-(--color-muted)">
+                                        {formatarData(s.startDate)} até {formatarData(s.endDate)}
+                                    </p>
 
-                                            <p className="text-[11px] text-(--color-muted)">
-                                                {formatarData(s.startDate)} até {formatarData(s.endDate)}
-                                            </p>
+                                    <p className="text-xs text-(--color-muted)">
+                                        Status: {s.active ? 'Ativo' : 'Inativo'}
+                                    </p>
+                                </div>
 
-                                            <p className="text-xs text-(--color-muted)">
-                                                Status: {s.active ? 'Ativo' : 'Inativo'}
-                                            </p>
-                                        </div>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <button
+                                        type="button"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                        onClick={() => iniciarEdicao(s)}
+                                    >
+                                        Editar
+                                    </button>
 
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
-                                                onClick={() => iniciarEdicao(s)}
-                                            >
-                                                Editar
-                                            </button>
-
-                                            {s.active ? (
-                                                <button
-                                                    type="button"
-                                                    className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"
-                                                    onClick={() => onInativar(s._id)}
-                                                >
-                                                    Inativar
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"
-                                                    onClick={() => onAtivar(s._id)}
-                                                >
-                                                    Ativar
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : null}
-
-                                {/* ===========================
-                                    MODO EDIÇÃO INLINE
-                                ============================ */}
-                                {isEditing ? (
-                                    <div className="mt-3 space-y-2">
-                                        <div className="grid gap-2 sm:grid-cols-[1fr_190px_190px_190px]">
-                                            <input
-                                                type="date"
-                                                className="date-field h-10 rounded-lg border border-(--color-border) bg-white px-3 text-xs"
-                                                value={editDataInicial}
-                                                onChange={(e) => setEditDataInicial(e.target.value)}
-                                            />
-
-                                            <input
-                                                type="date"
-                                                className="date-field h-10 rounded-lg border border-(--color-border) bg-white px-3 text-xs"
-                                                value={editDataFinal}
-                                                onChange={(e) => setEditDataFinal(e.target.value)}
-                                            />
-
-                                            <select
-                                                className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
-                                                value={editColaborador}
-                                                onChange={(e) => setEditColaborador(e.target.value)}
-                                            >
-                                                {colaboradores.map((c) => (
-                                                    <option key={c._id} value={c._id}>
-                                                        {c.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-
-                                            <select
-                                                className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
-                                                value={editTipo}
-                                                onChange={(e) => setEditTipo(e.target.value)}
-                                            >
-                                                {tipos.map((t) => (
-                                                    <option key={t._id} value={t._id}>
-                                                        {t.description}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="flex justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
-                                                onClick={salvar}
-                                            >
-                                                Salvar
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"
-                                                onClick={() => setEditId(null)}
-                                            >
-                                                Cancelar
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : null}
+                                    {s.active ? (
+                                        <button
+                                            type="button"
+                                            className="cancel-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                            onClick={() => onInativar(s._id)}
+                                        >
+                                            Inativar
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="cancel-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                            onClick={() => onAtivar(s._id)}
+                                        >
+                                            Ativar
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* ===========================
+                            MODO EDIÇÃO INLINE
+                        ============================ */}
+                        {isEditing && (
+                            <div className="space-y-3">
+                                {/* Inputs com labels */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+
+                                    {/* Data inicial */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-semibold text-(--color-muted)">
+                                            Data inicial
+                                        </label>
+                                        <input
+                                            type="date"
+                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                                            value={editDataInicial}
+                                            onChange={(e) => setEditDataInicial(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Data final */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-semibold text-(--color-muted)">
+                                            Data final
+                                        </label>
+                                        <input
+                                            type="date"
+                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                                            value={editDataFinal}
+                                            onChange={(e) => setEditDataFinal(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Colaborador */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-semibold text-(--color-muted)">
+                                            Colaborador
+                                        </label>
+                                        <select
+                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                                            value={editColaborador}
+                                            onChange={(e) => setEditColaborador(e.target.value)}
+                                        >
+                                            {colaboradores.map((c) => (
+                                                <option key={c._id} value={c._id}>
+                                                    {c.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Tipo */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-semibold text-(--color-muted)">
+                                            Tipo
+                                        </label>
+                                        <select
+                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                                            value={editTipo}
+                                            onChange={(e) => setEditTipo(e.target.value)}
+                                        >
+                                            {tipos.map((t) => (
+                                                <option key={t._id} value={t._id}>
+                                                    {t.description}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Botões */}
+                                <div className="flex flex-col sm:flex-row justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                        onClick={salvar}
+                                    >
+                                        Salvar
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="cancel-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                        onClick={() => setEditId(null)}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )
             })}

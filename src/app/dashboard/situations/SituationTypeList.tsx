@@ -42,39 +42,37 @@ export default function SituationTypeList({
     }
 
     return (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-3">
             {tipos.map((t) => {
                 const isEditing = editId === t._id
 
                 return (
                     <div
                         key={t._id}
-                        className="gold-bar-title rounded-xl border border-(--color-border) bg-white px-4 py-3"
+                        className="gold-bar-title rounded-xl border border-(--color-border) bg-white p-4 space-y-3"
                     >
                         {/* ===========================
                             MODO NORMAL
                         ============================ */}
-                        {!isEditing ? (
-                            <div className="flex items-center justify-between gap-4">
+                        {!isEditing && (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <p className="text-sm font-semibold text-(--color-primary-strong)">
                                     {t.description}
                                 </p>
 
-                                <div className="flex items-center gap-2">
-                                    {/* Botão Editar — altura corrigida */}
+                                <div className="flex flex-col sm:flex-row gap-2">
                                     <button
                                         type="button"
-                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                         onClick={() => iniciarEdicao(t._id, t.description)}
                                     >
                                         Editar
                                     </button>
 
-                                    {/* Botão Inativar / Ativar — altura igual ao Editar */}
                                     {t.active ? (
                                         <button
                                             type="button"
-                                            className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                            className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                             onClick={() => {
                                                 onInativar(t._id)
                                                 toast.success('Tipo de situação inativado!')
@@ -85,7 +83,7 @@ export default function SituationTypeList({
                                     ) : (
                                         <button
                                             type="button"
-                                            className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                            className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                             onClick={() => {
                                                 onAtivar(t._id)
                                                 toast.success('Tipo de situação ativado!')
@@ -96,23 +94,31 @@ export default function SituationTypeList({
                                     )}
                                 </div>
                             </div>
-                        ) : null}
+                        )}
 
                         {/* ===========================
                             MODO EDIÇÃO INLINE
                         ============================ */}
-                        {isEditing ? (
-                            <div className="mt-3 space-y-2">
-                                <input
-                                    className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm w-full"
-                                    value={editDescricao}
-                                    onChange={(e) => setEditDescricao(e.target.value)}
-                                />
+                        {isEditing && (
+                            <div className="space-y-3">
+                                {/* Label + Input */}
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-semibold text-(--color-muted)">
+                                        Descrição
+                                    </label>
 
-                                <div className="flex justify-end gap-2">
+                                    <input
+                                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm"
+                                        value={editDescricao}
+                                        onChange={(e) => setEditDescricao(e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Botões */}
+                                <div className="flex flex-col sm:flex-row justify-end gap-2">
                                     <button
                                         type="button"
-                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                         onClick={salvar}
                                     >
                                         Salvar
@@ -120,14 +126,14 @@ export default function SituationTypeList({
 
                                     <button
                                         type="button"
-                                        className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                         onClick={() => setEditId(null)}
                                     >
                                         Cancelar
                                     </button>
                                 </div>
                             </div>
-                        ) : null}
+                        )}
                     </div>
                 )
             })}
