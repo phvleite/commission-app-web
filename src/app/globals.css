@@ -124,12 +124,8 @@ textarea {
     cursor: pointer;
 }
 
+/* Sidebar padrão (mobile) — fica oculta pelo hidden */
 .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 260px;
-    height: 100vh;
     background: var(--primary-strong);
     color: #ffffff;
     padding: 25px 20px;
@@ -137,6 +133,17 @@ textarea {
     display: flex;
     flex-direction: column;
     z-index: 1000;
+}
+
+/* Sidebar fixa SOMENTE no desktop */
+@media (min-width: 1024px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 260px;
+        height: 100vh;
+    }
 }
 
 .sidebar-title {
