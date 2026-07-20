@@ -1,34 +1,70 @@
 import { auth } from '@/auth'
-import { NextResponse } from 'next/server'
+import { connectDB } from '@/lib/db'
 import { Sale } from '@/models/Sale'
 import { deleteCommissionsForDate } from '@/services/commissions/delete'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
+import { Types } from 'mongoose'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(
-    req: Request,
-    { params }: { params: { id: string } }
-) {
-    const session = await auth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const sale = await Sale.findOne({
-        _id: params.id,
-        tenantId: session.user.tenantId,
-    }).lean()
-
-    if (!sale) {
-        return NextResponse.json({ error: 'Venda não encontrada.' }, { status: 404 })
-    }
-
-    return NextResponse.json({ sale })
+interface RouteContext {
+    params: Promise<{ id: string }>
 }
 
-export async function PUT(
-    req: Request,
-    { params }: { params: { id: string } }
-) {
+function serializeSale(sale: {
+    _id: unknown
+    date: Date
+    value: number
+    totalCommissionValue: number
+}) {
+    return {
+        _id: String(sale._id),
+        date: sale.date.toISOString(),
+        value: sale.value,
+        totalCommissionValue: sale.totalCommissionValue,
+    }
+}
+
+export async function GET(_req: NextRequest, context: RouteContext) {
     const session = await auth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id } = await context.params
+
+    if (!Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ error: 'ID de venda inválido.' }, { status: 400 })
+    }
+
+    await connectDB()
+
+    try {
+        const sale = await Sale.findOne({
+            _id: id,
+            tenantId: session.user.tenantId,
+        }).lean()
+
+        if (!sale) {
+            return NextResponse.json({ error: 'Venda não encontrada' }, { status: 404 })
+        }
+
+        return NextResponse.json({ sale: serializeSale(sale) })
+    } catch {
+        return NextResponse.json({ error: 'Erro ao buscar venda' }, { status: 500 })
+    }
+}
+
+export async function PUT(req: Request, context: RouteContext) {
+    const session = await auth()
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id } = await context.params
+
+    if (!Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ error: 'ID de venda inválido.' }, { status: 400 })
+    }
 
     const { date, value } = await req.json()
 
@@ -36,8 +72,10 @@ export async function PUT(
     const newValueCentavos = Math.round(value * 100)
     const newCommissionCentavos = Math.round(newValueCentavos * 0.1)
 
+    await connectDB()
+
     const sale = await Sale.findOne({
-        _id: params.id,
+        _id: id,
         tenantId: session.user.tenantId,
     })
 
@@ -51,13 +89,13 @@ export async function PUT(
     const exists = await Sale.findOne({
         tenantId: session.user.tenantId,
         date: newDate,
-        _id: { $ne: params.id },
+        _id: { $ne: id },
     })
 
     if (exists) {
         return NextResponse.json(
             { error: 'Já existe uma venda registrada para esta data.' },
-            { status: 400 }
+            { status: 400 },
         )
     }
 
