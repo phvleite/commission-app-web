@@ -4,14 +4,14 @@ import { connectDB } from '@/lib/db'
 import { Situation } from '@/models/Situation'
 
 interface Params {
-    params: { id: string }
+    params: Promise<{ id: string }>
 }
 
 export async function PUT(req: Request, context: Params) {
     const session = await auth()
     const tenantId = session?.user?.tenantId
 
-    const { id } = await context.params   // ✔ CORRETO
+    const { id } = await context.params // ✔ CORRETO
 
     const { startDate, endDate, employeeId, typeId } = await req.json()
 
@@ -36,7 +36,7 @@ export async function PUT(req: Request, context: Params) {
             employeeId,
             typeId,
         },
-        { returnDocument: 'after' }        // ✔ substitui "new: true"
+        { returnDocument: 'after' }, // ✔ substitui "new: true"
     )
 
     return NextResponse.json(updated)
@@ -46,7 +46,7 @@ export async function PATCH(req: Request, context: Params) {
     const session = await auth()
     const tenantId = session?.user?.tenantId
 
-    const { id } = await context.params   // ✔ CORRETO
+    const { id } = await context.params // ✔ CORRETO
 
     const { active } = await req.json()
 
@@ -55,7 +55,7 @@ export async function PATCH(req: Request, context: Params) {
     const updated = await Situation.findOneAndUpdate(
         { _id: id, tenantId },
         { active: Boolean(active) },
-        { returnDocument: 'after' }        // ✔ substitui "new: true"
+        { returnDocument: 'after' }, // ✔ substitui "new: true"
     )
 
     return NextResponse.json(updated)

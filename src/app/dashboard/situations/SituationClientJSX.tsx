@@ -97,14 +97,14 @@ export default function SituationClientJSX({
             ============================================================ */}
             {showTypes && (
                 <section className="rounded-xl border border-(--color-border) bg-white p-6 space-y-6">
-                    <h2 className="text-xl font-semibold text-(--color-primary-strong)">
+                    <h2 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
                         Tipos de Situação
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Formulário */}
                         <div className="rounded-xl border border-(--color-border) bg-white p-4 space-y-4">
-                            <h3 className="text-lg font-semibold text-(--color-primary-strong)">
+                            <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
                                 Novo Tipo de Situação
                             </h3>
 
@@ -113,7 +113,7 @@ export default function SituationClientJSX({
 
                         {/* Lista */}
                         <div className="rounded-xl border border-(--color-border) bg-white p-4 space-y-4">
-                            <h3 className="text-lg font-semibold text-(--color-primary-strong)">
+                            <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
                                 Tipos de Situação
                             </h3>
 
@@ -133,7 +133,7 @@ export default function SituationClientJSX({
             ============================================================ */}
             {showCreate && (
                 <section className="rounded-xl border border-(--color-border) bg-white p-6 space-y-6">
-                    <h2 className="text-xl font-semibold text-(--color-primary-strong)">
+                    <h2 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
                         Cadastro de Situação
                     </h2>
 

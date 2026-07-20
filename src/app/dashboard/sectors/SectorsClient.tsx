@@ -254,7 +254,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                     return (
                         <div
                             key={sector._id}
-                            className="rounded-xl border border-(--color-border) bg-white px-4 py-3"
+                            className="gold-bar-title rounded-xl border border-(--color-border) bg-white px-4 py-3"
                         >
                             <div className="flex items-center justify-between gap-4">
                                 <div>

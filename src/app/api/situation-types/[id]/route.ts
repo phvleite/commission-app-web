@@ -13,7 +13,7 @@ function isMongoDuplicateKeyError(error: unknown): error is { code: number } {
 }
 
 interface Params {
-    params: { id: string }
+    params: Promise<{ id: string }>
 }
 
 export async function PUT(req: Request, context: Params) {
@@ -33,7 +33,7 @@ export async function PUT(req: Request, context: Params) {
         const updated = await SituationType.findOneAndUpdate(
             { _id: id, tenantId },
             { description: description.trim() },
-            { returnDocument: 'after' }
+            { returnDocument: 'after' },
         )
 
         return NextResponse.json(updated)
@@ -41,7 +41,7 @@ export async function PUT(req: Request, context: Params) {
         if (isMongoDuplicateKeyError(err)) {
             return NextResponse.json(
                 { error: 'Já existe um tipo com essa descrição.' },
-                { status: 400 }
+                { status: 400 },
             )
         }
 
@@ -61,7 +61,7 @@ export async function PATCH(req: Request, context: Params) {
     const updated = await SituationType.findOneAndUpdate(
         { _id: id, tenantId },
         { active: Boolean(active) },
-        { returnDocument: 'after' }
+        { returnDocument: 'after' },
     )
 
     return NextResponse.json(updated)
