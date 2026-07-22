@@ -1,98 +1,76 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { toast } from 'sonner'
+import { createElement } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { SalesClientContainer } from './SalesClientContainer'
 
-export interface ISaleClientProps {
-    initialSales: Array<{
-        _id: string
-        date: string
-        value: number
-        totalCommissionValue: number
-    }>
+interface SaleItem {
+    _id: string
+    date: string
+    value: number
+    totalCommissionValue: number
 }
 
-export function SalesClient({ initialSales }: ISaleClientProps) {
-    // ===========================
-    // ESTADOS PRINCIPAIS
-    // ===========================
+export interface ISaleClientProps {
+    initialSales: SaleItem[]
+}
+
+export default function SalesClient(props: ISaleClientProps) {
+    const { initialSales } = props
+    return createElement(SalesClientContainer, { initialSales })
+}
+
+export function useSalesClient(initialSales: SaleItem[]) {
     const [sales, setSales] = useState(initialSales)
     const [editId, setEditId] = useState<string | null>(null)
-
-    // ===========================
-    // FILTROS POR PERÍODO
-    // ===========================
-    const [startDate, setStartDate] = useState<string>('')
-    const [endDate, setEndDate] = useState<string>('')
-
-    // ===========================
-    // MODAL DE SETORES
-    // ===========================
+    const [startDate, setStartDate] = useState('')
+    const [endDate, setEndDate] = useState('')
     const [modalDate, setModalDate] = useState<string | null>(null)
 
-    // ===========================
-    // CARREGAR VENDAS
-    // ===========================
-    const loadSales = useCallback(async () => {
-        try {
-            const params = new URLSearchParams()
+    const fetchSales = useCallback(async () => {
+        const params = new URLSearchParams()
+        if (startDate) params.append('start', startDate)
+        if (endDate) params.append('end', endDate)
 
-            if (startDate) params.append('start', startDate)
-            if (endDate) params.append('end', endDate)
+        const res = await fetch(`/api/sales?${params.toString()}`)
+        const json = await res.json()
 
-            const res = await fetch(`/api/sales?${params.toString()}`)
-            const json = await res.json()
-
-            setSales(json.sales)
-        } catch {
-            toast.error('Erro ao carregar vendas.')
-        }
+        return json.sales as SaleItem[]
     }, [startDate, endDate])
 
-    // ===========================
-    // FILTRAR AUTOMATICAMENTE
-    // ===========================
     useEffect(() => {
-        loadSales()
-    }, [loadSales])
+        let isCancelled = false
 
-    // ===========================
-    // LIMPAR FILTROS
-    // ===========================
-    function clearFilters() {
-        setStartDate('')
-        setEndDate('')
-    }
+        async function syncSales() {
+            const nextSales = await fetchSales()
+            if (!isCancelled) {
+                setSales(nextSales)
+            }
+        }
 
-    // ===========================
-    // EDITAR VENDA
-    // ===========================
-    function beginEdit(id: string) {
-        setEditId(id)
-    }
+        void syncSales()
 
-    function cancelEdit() {
-        setEditId(null)
-    }
+        return () => {
+            isCancelled = true
+        }
+    }, [fetchSales])
 
-    // ===========================
-    // SALVAR VENDA
-    // ===========================
-    async function saveSale(data: string, value: number) {
-        try {
-            const body = JSON.stringify({ date: data, value })
-
+    return {
+        sales,
+        editId,
+        beginEdit: setEditId,
+        cancelEdit: () => setEditId(null),
+        saveSale: async (date: string, value: number) => {
+            const body = JSON.stringify({ date, value })
             let res
 
             if (!editId) {
-                // CRIAR
                 res = await fetch('/api/sales', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body,
                 })
             } else {
-                // EDITAR
                 res = await fetch(`/api/sales/${editId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -101,49 +79,23 @@ export function SalesClient({ initialSales }: ISaleClientProps) {
             }
 
             const json = await res.json()
-
-            if (!res.ok) {
-                toast.error(json.error ?? 'Erro ao salvar venda.')
-                return
-            }
-
-            toast.success(editId ? 'Venda alterada.' : 'Venda registrada.')
+            if (!res.ok) throw new Error(json.error)
             setEditId(null)
-            loadSales()
-        } catch {
-            toast.error('Erro ao salvar venda.')
-        }
-    }
-
-    // ===========================
-    // ABRIR MODAL DE SETORES
-    // ===========================
-    function openModal(date: string) {
-        setModalDate(date)
-    }
-
-    function closeModal() {
-        setModalDate(null)
-    }
-
-    // ===========================
-    // RETORNO PARA O JSX
-    // ===========================
-    return {
-        sales,
-        editId,
-        beginEdit,
-        cancelEdit,
-        saveSale,
+            const nextSales = await fetchSales()
+            setSales(nextSales)
+        },
 
         startDate,
         endDate,
         setStartDate,
         setEndDate,
-        clearFilters,
+        clearFilters: () => {
+            setStartDate('')
+            setEndDate('')
+        },
 
         modalDate,
-        openModal,
-        closeModal,
+        openModal: setModalDate,
+        closeModal: () => setModalDate(null),
     }
 }

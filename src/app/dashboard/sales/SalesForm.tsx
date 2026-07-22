@@ -20,9 +20,6 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
 
     const editMode = !!editId
 
-    // ===========================
-    // CARREGAR VENDA PARA EDIÇÃO
-    // ===========================
     useEffect(() => {
         async function loadSale() {
             if (!editMode) {
@@ -41,24 +38,18 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
 
             const sale = json.sale
 
-            setDate(sale.date.slice(0, 10)) // YYYY-MM-DD
+            setDate(sale.date.slice(0, 10))
             setValue(formatCurrencyFromDatabase(sale.value))
         }
 
         loadSale()
     }, [editId, editMode])
 
-    // ===========================
-    // FORMATAÇÃO DO VALOR
-    // ===========================
     function handleValueChange(e: React.ChangeEvent<HTMLInputElement>) {
         const formatted = formatCurrencyInput(e.target.value)
         setValue(formatted)
     }
 
-    // ===========================
-    // SALVAR
-    // ===========================
     async function handleSave() {
         if (!date || !value) {
             toast.error('Informe a data e o valor.')
@@ -76,9 +67,6 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
         setValue('')
     }
 
-    // ===========================
-    // CANCELAR
-    // ===========================
     function handleCancel() {
         setDate('')
         setValue('')
@@ -86,8 +74,8 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
     }
 
     return (
-        <div className="panel p-6 rounded-xl border border-(--color-border) bg-white">
-            <h3 className="text-xl font-semibold text-(--color-primary-strong)">
+        <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface mb-6">
+            <h3 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
                 {editMode ? 'Alterar Venda' : 'Lançar Venda'}
             </h3>
 
@@ -98,7 +86,7 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
                         type="date"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
-                        className="input"
+                        className="w-full border border-(--color-border) rounded-xl p-3 bg-surface-soft"
                     />
                 </div>
 
@@ -108,7 +96,7 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
                         type="text"
                         value={value}
                         onChange={handleValueChange}
-                        className="input"
+                        className="w-full border border-(--color-border) rounded-xl p-3 bg-surface-soft"
                     />
                 </div>
             </div>
@@ -118,7 +106,7 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
                     {editMode ? 'Salvar Alterações' : 'Salvar'}
                 </button>
 
-                <button className="secondary-button px-5 py-3 rounded-xl" onClick={handleCancel}>
+                <button className="cancel-button px-5 py-3 rounded-xl" onClick={handleCancel}>
                     Cancelar
                 </button>
             </div>
