@@ -14,7 +14,9 @@ interface EmployeeRef {
 }
 
 function splitCents(total: number, parts: number): number[] {
-    if (parts <= 0) return []
+    if (parts <= 0) {
+        return []
+    }
 
     const base = Math.floor(total / parts)
     const remainder = total % parts
@@ -25,24 +27,26 @@ function splitCents(total: number, parts: number): number[] {
 export async function generateCommissionsForDate(tenantId: string, date: Date): Promise<void> {
     await connectDB()
 
-    // Limpa comissões anteriores
     await deleteCommissionsForDate(tenantId, date)
 
-    // Busca venda do dia
     const sale = await Sale.findOne({ tenantId, date }).lean()
-    if (!sale) return
 
-    // Busca TODOS os setores, inclusive Meritocracia
+    if (!sale) {
+        return
+    }
+
     const sectors = await Sector.find({
         tenantId,
         active: true,
+        isMeritocracia: false,
     })
-        .select('_id percentage isMeritocracia')
+        .select('_id percentage')
         .lean()
 
-    if (!sectors.length) return
+    if (!sectors.length) {
+        return
+    }
 
-    // Busca colaboradores elegíveis (admissão/demissão)
     const allEmployees = (await Employee.find({
         tenantId,
         active: true,
@@ -56,8 +60,8 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
         .select('_id sectorId')
         .lean()) as EmployeeRef[]
 
-    // Agrupa colaboradores por setor
     const employeesBySector = new Map<string, EmployeeRef[]>()
+
     for (const employee of allEmployees) {
         const sectorId = employee.sectorId.toString()
         const current = employeesBySector.get(sectorId) ?? []
@@ -65,11 +69,10 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
         employeesBySector.set(sectorId, current)
     }
 
-    // Situações do dia
     const situations = await Situation.find({
         tenantId,
         active: true,
-        employeeId: { $in: allEmployees.map((e) => e._id) },
+        employeeId: { $in: allEmployees.map((employee) => employee._id) },
         startDate: { $lte: date },
         endDate: { $gte: date },
     })
@@ -88,6 +91,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
     )
 
     const employeeSituation = new Map<string, string>()
+
     for (const situation of situations) {
         const description = typeDescriptionById.get(situation.typeId.toString())
         if (description) {
@@ -95,51 +99,18 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
         }
     }
 
-    // PROCESSAMENTO DOS SETORES
     for (const sector of sectors) {
-        const sectorId = sector._id.toString()
-
-        // 🔥 REGRA ESPECIAL DA MERITOCRACIA (igual ao desktop)
-        if (sector.isMeritocracia) {
-            const sectorValue = Math.round(
-                (sale.totalCommissionValue * sector.percentage) / 100,
-            )
-
-            await SaleCommissionSector.create({
-                tenantId,
-                date,
-                sectorId: sector._id,
-                appliedPercentage: sector.percentage,
-                totalSectorValue: sectorValue,
-                totalEmployees: 0,
-                eligibleEmployees: 0,
-            })
-
-            // Não cria Commission para Meritocracia
-            continue
-        }
-
-        // Setores normais
-        const employees = employeesBySector.get(sectorId) ?? []
+        const employees = employeesBySector.get(sector._id.toString()) ?? []
         const totalEmployees = employees.length
-
-        if (totalEmployees === 0) {
-            // Setor sem colaboradores → ignora (igual ao desktop)
-            continue
-        }
 
         const eligibleEmployees = employees.filter(
             (employee) => !employeeSituation.has(employee._id.toString()),
         )
 
         const eligibleCount = eligibleEmployees.length
-        const sectorValue = Math.round(
-            (sale.totalCommissionValue * sector.percentage) / 100,
-        )
-
+        const sectorValue = Math.round((sale.totalCommissionValue * sector.percentage) / 100)
         const distributed = splitCents(sectorValue, eligibleCount)
 
-        // Salva setor
         await SaleCommissionSector.create({
             tenantId,
             date,
@@ -150,7 +121,6 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
             eligibleEmployees: eligibleCount,
         })
 
-        // Salva comissões individuais
         let eligibleIndex = 0
 
         for (const employee of employees) {
