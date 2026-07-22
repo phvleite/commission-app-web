@@ -1,11 +1,14 @@
 import { auth } from '@/auth'
 import { Sale } from '@/models/Sale'
-import SalesClient from './SalesClient'
+import { SalesClientContainer } from './SalesClientContainer'
 
 export default async function SalesPage() {
     const session = await auth()
     if (!session) return null
 
+    // ===========================
+    // CARREGAR VENDAS INICIAIS
+    // ===========================
     const sales = await Sale.find({
         tenantId: session.user.tenantId,
     })
@@ -19,5 +22,5 @@ export default async function SalesPage() {
         totalCommissionValue: sale.totalCommissionValue,
     }))
 
-    return <SalesClient initialSales={initialSales} />
+    return <SalesClientContainer initialSales={initialSales} />
 }
