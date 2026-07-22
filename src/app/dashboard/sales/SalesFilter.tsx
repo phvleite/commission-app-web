@@ -16,9 +16,9 @@ export function SalesFilters({
     clearFilters,
 }: SalesFiltersProps) {
     return (
-        <div className="panel p-6 rounded-xl border border-(--color-border) bg-white">
+        <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface mb-6">
 
-            <h3 className="text-lg font-semibold text-(--color-primary-strong)">
+            <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
                 Filtros por Período
             </h3>
 
@@ -35,7 +35,7 @@ export function SalesFilters({
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="input"
+                        className="w-full border border-(--color-border) rounded-xl p-3 bg-surface-soft"
                     />
                 </div>
 
@@ -50,7 +50,7 @@ export function SalesFilters({
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="input"
+                        className="w-full border border-(--color-border) rounded-xl p-3 bg-surface-soft"
                     />
                 </div>
 
@@ -60,7 +60,7 @@ export function SalesFilters({
                 <div className="flex items-end">
                     <button
                         onClick={clearFilters}
-                        className="secondary-button px-5 py-3 rounded-xl w-full"
+                        className="cancel-button px-5 py-3 rounded-xl w-full"
                     >
                         Limpar Filtros
                     </button>
