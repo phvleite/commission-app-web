@@ -4,24 +4,21 @@ import { SalesForm } from './SalesForm'
 import { SalesFilters } from './SalesFilter'
 import { SalesList } from './SalesList'
 import { SalesSectorsModal } from './SalesSectorModal'
+import type { useSalesClient } from './SalesClient'
 
-export function SalesClientJSX(client: ReturnType<typeof import('./SalesClient').SalesClient>) {
+interface SalesClientJSXProps {
+    client: ReturnType<typeof useSalesClient>
+}
+
+export function SalesClientJSX({ client }: SalesClientJSXProps) {
     return (
-        <section className="panel mx-auto w-full max-w-4xl p-6 sm:p-8">
-            {/* ===========================
-                FORMULÁRIO
-            ============================ */}
+        <section>
             <SalesForm
                 editId={client.editId}
                 onSave={client.saveSale}
                 onCancel={client.cancelEdit}
             />
 
-            <hr className="my-8" />
-
-            {/* ===========================
-                FILTROS POR PERÍODO
-            ============================ */}
             <SalesFilters
                 startDate={client.startDate}
                 endDate={client.endDate}
@@ -30,20 +27,12 @@ export function SalesClientJSX(client: ReturnType<typeof import('./SalesClient')
                 clearFilters={client.clearFilters}
             />
 
-            <hr className="my-8" />
-
-            {/* ===========================
-                LISTA DE VENDAS
-            ============================ */}
             <SalesList
                 sales={client.sales}
                 onEdit={client.beginEdit}
                 onOpenModal={client.openModal}
             />
 
-            {/* ===========================
-                MODAL DE SETORES
-            ============================ */}
             {client.modalDate && (
                 <SalesSectorsModal date={client.modalDate} onClose={client.closeModal} />
             )}

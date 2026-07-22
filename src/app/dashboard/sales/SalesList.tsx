@@ -12,54 +12,77 @@ interface SalesListProps {
     }>
     onEdit: (id: string) => void
     onOpenModal: (date: string) => void
+    onRecalc?: (date: string) => void
 }
 
-export function SalesList({ sales, onEdit, onOpenModal }: SalesListProps) {
+export function SalesList({ sales, onEdit, onOpenModal, onRecalc }: SalesListProps) {
     return (
-        <div className="panel p-6 rounded-xl border border-(--color-border) bg-white">
+        <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface">
 
-            <h3 className="text-lg font-semibold text-(--color-primary-strong)">
+            <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
                 Histórico de Vendas
             </h3>
 
-            {/* Cabeçalho */}
-            <div className="mt-6 grid grid-cols-4 gap-4 font-medium text-sm text-(--color-primary-strong)">
-                <span>Data</span>
-                <span>Valor da Venda</span>
-                <span>Comissão Total</span>
-                <span>Ações</span>
-            </div>
+            {/* WRAPPER RESPONSIVO */}
+            <div className="mt-6 overflow-x-auto">
+                <table className="w-full text-sm min-w-150">
+                    <thead>
+                        <tr className="border-b border-(--color-border) bg-surface-soft">
+                            <th className="py-3 px-2 text-center">Data</th>
+                            <th className="py-3 px-2 text-center">Valor da Venda</th>
+                            <th className="py-3 px-2 text-center">Comissão Total</th>
+                            <th className="py-3 px-2 text-center">Ações</th>
+                        </tr>
+                    </thead>
 
-            {/* Lista */}
-            <div className="mt-4 space-y-3">
-                {sales.map((sale) => (
-                    <div
-                        key={sale._id}
-                        className="grid grid-cols-4 gap-4 items-center p-4 rounded-lg border border-(--color-border) bg-(--color-bg-soft)"
-                    >
-                        <span>{formatDateFromDatabase(sale.date)}</span>
-
-                        <span>R$ {formatCurrencyFromDatabase(sale.value)}</span>
-
-                        <span>R$ {formatCurrencyFromDatabase(sale.totalCommissionValue)}</span>
-
-                        <div className="flex gap-3">
-                            <button
-                                className="primary-button px-4 py-2 rounded-xl"
-                                onClick={() => onOpenModal(sale.date)}
+                    <tbody>
+                        {sales.map((sale) => (
+                            <tr
+                                key={sale._id}
+                                className="border-b border-(--color-border) hover:bg-surface-soft transition-colors"
                             >
-                                Ver Setores
-                            </button>
+                                <td className="py-3 px-2 text-center">
+                                    {formatDateFromDatabase(sale.date)}
+                                </td>
 
-                            <button
-                                className="secondary-button px-4 py-2 rounded-xl"
-                                onClick={() => onEdit(sale._id)}
-                            >
-                                Alterar
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                                <td className="py-3 px-2 text-right">
+                                    R$ {formatCurrencyFromDatabase(sale.value)}
+                                </td>
+
+                                <td className="py-3 px-2 text-right">
+                                    R$ {formatCurrencyFromDatabase(sale.totalCommissionValue)}
+                                </td>
+
+                                <td className="py-3 px-2">
+                                    <div className="flex flex-wrap gap-3 justify-center">
+                                        <button
+                                            className="primary-button px-4 py-2 rounded-xl"
+                                            onClick={() => onOpenModal(sale.date)}
+                                        >
+                                            Ver Setores
+                                        </button>
+
+                                        <button
+                                            className="cancel-button px-4 py-2 rounded-xl"
+                                            onClick={() => onEdit(sale._id)}
+                                        >
+                                            Alterar
+                                        </button>
+
+                                        {onRecalc && (
+                                            <button
+                                                className="px-4 py-2 rounded-xl bg-green-600 text-white"
+                                                onClick={() => onRecalc(sale.date)}
+                                            >
+                                                Recalcular
+                                            </button>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     )
