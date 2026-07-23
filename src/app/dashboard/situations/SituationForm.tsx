@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 type Collaborator = {
     _id: string
     name: string
+    active: boolean
 }
 
 type SituationType = {
@@ -30,6 +31,17 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
     const [dataFinal, setDataFinal] = useState('')
     const [colaboradorId, setColaboradorId] = useState('')
     const [tipoId, setTipoId] = useState('')
+    const [buscaColaborador, setBuscaColaborador] = useState('')
+
+    const colaboradoresFiltrados = useMemo(() => {
+        const termo = buscaColaborador.trim().toLowerCase()
+
+        if (!termo) {
+            return colaboradores
+        }
+
+        return colaboradores.filter((colaborador) => colaborador.name.toLowerCase().includes(termo))
+    }, [colaboradores, buscaColaborador])
 
     function handleDataInicialChange(value: string) {
         setDataInicial(value)
@@ -57,6 +69,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
         setDataFinal('')
         setColaboradorId('')
         setTipoId('')
+        setBuscaColaborador('')
 
         toast.success('Situação cadastrada com sucesso!')
     }
@@ -81,9 +94,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-xs font-semibold text-(--color-muted)">
-                        Data final
-                    </label>
+                    <label className="text-xs font-semibold text-(--color-muted)">Data final</label>
                     <input
                         type="date"
                         className="date-field mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-xs text-(--color-primary-strong)"
@@ -101,6 +112,17 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                 {/* Colaborador */}
                 <div className="flex flex-col">
                     <label className="text-xs font-semibold text-(--color-muted)">
+                        Buscar colaborador
+                    </label>
+                    <input
+                        type="text"
+                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                        value={buscaColaborador}
+                        onChange={(e) => setBuscaColaborador(e.target.value)}
+                        placeholder="Digite as iniciais"
+                    />
+
+                    <label className="text-xs font-semibold text-(--color-muted)">
                         Colaborador
                     </label>
                     <select
@@ -110,9 +132,9 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                         required
                     >
                         <option value="">Selecione o colaborador</option>
-                        {colaboradores.map((c) => (
+                        {colaboradoresFiltrados.map((c) => (
                             <option key={c._id} value={c._id}>
-                                {c.name}
+                                {c.name} {c.active ? '' : '(Inativo)'}
                             </option>
                         ))}
                     </select>
