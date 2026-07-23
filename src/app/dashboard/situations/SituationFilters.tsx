@@ -1,8 +1,11 @@
 'use client'
 
+import { useMemo, useState } from 'react'
+
 interface Collaborator {
     _id: string
     name: string
+    active: boolean
 }
 
 interface SituationType {
@@ -52,28 +55,53 @@ export default function SituationFilters({
 
     limparFiltros,
 }: Props) {
+    const [buscaColaborador, setBuscaColaborador] = useState('')
+
     const anoAtual = new Date().getFullYear()
     const anos = []
     for (let ano = 2020; ano <= anoAtual + 5; ano++) anos.push(ano)
 
+    const colaboradoresFiltrados = useMemo(() => {
+        const termo = buscaColaborador.trim().toLowerCase()
+
+        if (!termo) {
+            return colaboradores
+        }
+
+        return colaboradores.filter((colaborador) => colaborador.name.toLowerCase().includes(termo))
+    }, [colaboradores, buscaColaborador])
+
     return (
         <div className="mt-6 rounded-xl border border-(--color-border) bg-white p-4 space-y-4">
-            
             {/* GRID RESPONSIVO */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
                 {/* Colaborador */}
                 <div className="flex flex-col">
-                    <label className="text-xs font-semibold text-(--color-muted)">Colaborador</label>
+                    <label className="text-xs font-semibold text-(--color-muted)">
+                        Buscar colaborador
+                    </label>
+                    <input
+                        type="text"
+                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                        value={buscaColaborador}
+                        onChange={(e) => setBuscaColaborador(e.target.value)}
+                        placeholder="Digite as iniciais"
+                    />
+                </div>
+
+                <div className="flex flex-col">
+                    <label className="text-xs font-semibold text-(--color-muted)">
+                        Colaborador
+                    </label>
                     <select
                         className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
                         value={filtroColaborador}
                         onChange={(e) => setFiltroColaborador(e.target.value)}
                     >
                         <option value="todos">Todos</option>
-                        {colaboradores.map((c) => (
+                        {colaboradoresFiltrados.map((c) => (
                             <option key={c._id} value={c._id}>
-                                {c.name}
+                                {c.name} {c.active ? '' : '(Inativo)'}
                             </option>
                         ))}
                     </select>
@@ -98,7 +126,9 @@ export default function SituationFilters({
 
                 {/* Data inicial */}
                 <div className="flex flex-col">
-                    <label className="text-xs font-semibold text-(--color-muted)">Data inicial</label>
+                    <label className="text-xs font-semibold text-(--color-muted)">
+                        Data inicial
+                    </label>
                     <input
                         type="date"
                         className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"

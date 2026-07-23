@@ -23,6 +23,7 @@ export interface SituationItem {
 export interface EmployeeItem {
     _id: string
     name: string
+    active: boolean
 }
 
 interface SituationClientProps {

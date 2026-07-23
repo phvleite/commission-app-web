@@ -45,7 +45,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
     // Busca colaboradores elegíveis (admissão/demissão)
     const allEmployees = (await Employee.find({
         tenantId,
-        active: true,
+        // Historico deve respeitar a data da venda, nao o status atual do colaborador.
         admissionDate: { $lte: date },
         $or: [
             { dismissalDate: { $exists: false } },
@@ -101,9 +101,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
 
         // 🔥 REGRA ESPECIAL DA MERITOCRACIA (igual ao desktop)
         if (sector.isMeritocracia) {
-            const sectorValue = Math.round(
-                (sale.totalCommissionValue * sector.percentage) / 100,
-            )
+            const sectorValue = Math.round((sale.totalCommissionValue * sector.percentage) / 100)
 
             await SaleCommissionSector.create({
                 tenantId,
@@ -133,9 +131,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
         )
 
         const eligibleCount = eligibleEmployees.length
-        const sectorValue = Math.round(
-            (sale.totalCommissionValue * sector.percentage) / 100,
-        )
+        const sectorValue = Math.round((sale.totalCommissionValue * sector.percentage) / 100)
 
         const distributed = splitCents(sectorValue, eligibleCount)
 
