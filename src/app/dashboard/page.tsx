@@ -13,7 +13,7 @@ export default async function DashboardPage() {
             <p className="text-xs tracking-widest text-(--color-primary) uppercase">
                 Area autenticada
             </p>
-            <h1 className="mt-3 text-3xl font-semibold text-(--color-primary-strong)">
+            <h1 className="gold-bar-title mt-3 text-3xl font-semibold text-(--color-primary-strong)">
                 Bem-vindo, {session.user.name}
             </h1>
             <p className="mt-3 text-sm leading-7 text-(--color-muted)">
