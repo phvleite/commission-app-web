@@ -19,7 +19,7 @@ export default async function Page() {
     // ============================================================
     // CARREGAR COLABORADORES
     // ============================================================
-    const employees = await Employee.find({ tenantId, active: true }).sort({ name: 1 }).lean()
+    const employees = await Employee.find({ tenantId }).sort({ name: 1 }).lean()
 
     // ============================================================
     // CARREGAR SITUAÇÕES
@@ -51,6 +51,7 @@ export default async function Page() {
     const normalizedEmployees = employees.map((e) => ({
         _id: String(e._id),
         name: e.name,
+        active: e.active,
     }))
 
     return (
