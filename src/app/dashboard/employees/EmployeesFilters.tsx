@@ -39,7 +39,7 @@ export function EmployeesFilters({
             <div className="flex flex-col">
                 <label className="text-xs font-semibold text-(--color-muted)">Status</label>
                 <select
-                    className="mt-1 h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                    className="mt-1 h-10 rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                     value={filterStatus}
                     onChange={(e) =>
                         setFilterStatus(e.target.value as 'active' | 'inactive' | 'all')
@@ -55,7 +55,7 @@ export function EmployeesFilters({
             <div className="flex flex-col">
                 <label className="text-xs font-semibold text-(--color-muted)">Setor</label>
                 <select
-                    className="mt-1 h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                    className="mt-1 h-10 rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                     value={filterSector}
                     onChange={(e) => setFilterSector(e.target.value)}
                 >
@@ -72,7 +72,7 @@ export function EmployeesFilters({
             <div className="flex flex-col">
                 <label className="text-xs font-semibold text-(--color-muted)">Ordenar por</label>
                 <select
-                    className="mt-1 h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                    className="mt-1 h-10 rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                     value={orderBy}
                     onChange={(e) => setOrderBy(e.target.value as 'name' | 'sector')}
                 >
@@ -87,7 +87,7 @@ export function EmployeesFilters({
                 <input
                     type="text"
                     placeholder="Nome do colaborador"
-                    className="mt-1 h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                    className="mt-1 h-10 rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
@@ -97,7 +97,7 @@ export function EmployeesFilters({
             <div className="sm:col-span-4 flex justify-end">
                 <button
                     type="button"
-                    className="cancel-button rounded-lg px-4 py-2 text-xs font-semibold"
+                    className="secondary-button rounded-lg px-4 py-2 text-xs font-semibold"
                     onClick={clearFilters}
                 >
                     Limpar filtros

@@ -7,34 +7,40 @@ import SituationTypeForm from './SituationTypeForm'
 import SituationTypeList from './SituationTypeList'
 
 import {
-    SituationClient,
+    useSituationClient,
     type EmployeeItem,
     type SituationItem,
     type SituationTypeItem,
+    type SectorItem,
 } from './SituationClient'
 
 export default function SituationClientJSX({
     initialTypes,
     initialSituations,
     initialEmployees,
+    initialSectors,
 }: {
     initialTypes: SituationTypeItem[]
     initialSituations: SituationItem[]
     initialEmployees: EmployeeItem[]
+    initialSectors: SectorItem[]
 }) {
-    const client = SituationClient({
+    const client = useSituationClient({
         initialTypes,
         initialSituations,
         initialEmployees,
+        initialSectors,
     })
 
     const {
         types,
         situations,
         employees,
+        sectors,
 
         filterEmployee,
         filterType,
+        filterSector,
         filterStart,
         filterEnd,
         filterMonth,
@@ -42,6 +48,7 @@ export default function SituationClientJSX({
 
         setFilterEmployee,
         setFilterType,
+        setFilterSector,
         setFilterStart,
         setFilterEnd,
         setFilterMonth,
@@ -72,7 +79,8 @@ export default function SituationClientJSX({
             </h1>
 
             <p className="mt-2 text-sm leading-6 sm:leading-7 text-(--color-muted)">
-                Gerencie as situações dos colaboradores. Cadastre tipos, crie situações, filtre e edite conforme necessário.
+                Gerencie as situações dos colaboradores. Cadastre tipos, crie situações, filtre e
+                edite conforme necessário.
             </p>
 
             {/* Botões principais */}
@@ -133,7 +141,8 @@ export default function SituationClientJSX({
 
                     {types.filter((t) => t.active).length === 0 ? (
                         <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-sm text-(--color-primary-strong)">
-                            ⚠ Não é possível cadastrar uma Situação porque não existe nenhum Tipo de Situação ativo.
+                            ⚠ Não é possível cadastrar uma Situação porque não existe nenhum Tipo de
+                            Situação ativo.
                             <br />
                             Cadastre um Tipo de Situação acima.
                         </div>
@@ -151,14 +160,17 @@ export default function SituationClientJSX({
             <SituationFilters
                 colaboradores={employees}
                 tipos={types}
+                setores={sectors}
                 filtroColaborador={filterEmployee}
                 filtroTipo={filterType}
+                filtroSetor={filterSector}
                 filtroDataInicial={filterStart}
                 filtroDataFinal={filterEnd}
                 filtroMes={filterMonth}
                 filtroAno={filterYear}
                 setFiltroColaborador={setFilterEmployee}
                 setFiltroTipo={setFilterType}
+                setFiltroSetor={setFilterSector}
                 setFiltroDataInicial={setFilterStart}
                 setFiltroDataFinal={setFilterEnd}
                 setFiltroMes={setFilterMonth}

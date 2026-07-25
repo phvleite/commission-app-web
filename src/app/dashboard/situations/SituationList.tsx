@@ -130,7 +130,7 @@ export default function SituationList({
                                     {s.active ? (
                                         <button
                                             type="button"
-                                            className="cancel-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                            className="secondary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
                                             onClick={() => onInativar(s._id)}
                                         >
                                             Inativar
@@ -138,7 +138,7 @@ export default function SituationList({
                                     ) : (
                                         <button
                                             type="button"
-                                            className="cancel-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                            className="secondary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
                                             onClick={() => onAtivar(s._id)}
                                         >
                                             Ativar
@@ -163,7 +163,7 @@ export default function SituationList({
                                         </label>
                                         <input
                                             type="date"
-                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-xs"
                                             value={editDataInicial}
                                             onChange={(e) => setEditDataInicial(e.target.value)}
                                         />
@@ -176,7 +176,7 @@ export default function SituationList({
                                         </label>
                                         <input
                                             type="date"
-                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-xs"
                                             value={editDataFinal}
                                             onChange={(e) => setEditDataFinal(e.target.value)}
                                         />
@@ -188,7 +188,7 @@ export default function SituationList({
                                             Colaborador
                                         </label>
                                         <select
-                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                                             value={editColaborador}
                                             onChange={(e) => setEditColaborador(e.target.value)}
                                         >
@@ -206,7 +206,7 @@ export default function SituationList({
                                             Tipo
                                         </label>
                                         <select
-                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                                             value={editTipo}
                                             onChange={(e) => setEditTipo(e.target.value)}
                                         >

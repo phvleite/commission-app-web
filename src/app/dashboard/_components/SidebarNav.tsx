@@ -14,10 +14,10 @@ const MENU_ITEMS = [
     { href: '/dashboard', label: 'Home' },
     { href: '/dashboard/sectors', label: 'Setores' },
     { href: '/dashboard/employees', label: 'Colaboradores', requiresSectorsOk: true },
-    { href: '/dashboard/situations', label: 'Situacoes', requiresSectorsOk: true },
+    { href: '/dashboard/situations', label: 'Situações', requiresSectorsOk: true },
     { href: '/dashboard/sales', label: 'Vendas', requiresSectorsOk: true },
-    { href: '/dashboard/commissions', label: 'Comissoes', requiresSectorsOk: true },
-    { href: '/dashboard/company-users', label: 'Empresa/Usuarios' },
+    { href: '/dashboard/commissions', label: 'Comissões', requiresSectorsOk: true },
+    { href: '/dashboard/company-users', label: 'Empresa/Usuários' },
 ]
 
 function ItemLink({

@@ -159,7 +159,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                 <button
                     type="button"
                     onClick={() => window.history.back()}
-                    className="inline-flex items-center gap-2 rounded-xl border border-(--color-border) bg-white px-4 py-2 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
+                    className="secondary-button inline-flex items-center gap-2 rounded-xl border border-(--color-border) bg-white px-4 py-2 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
                 >
                     <span aria-hidden="true">←</span>
                     Voltar
@@ -167,7 +167,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
 
                 <Link
                     href="/dashboard"
-                    className="inline-flex items-center rounded-xl border border-(--color-border) bg-white px-4 py-2 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
+                    className="primary-button inline-flex items-center rounded-xl border border-(--color-border) bg-white px-4 py-2 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
                 >
                     Ir para dashboard
                 </Link>
@@ -211,7 +211,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                 Nome fantasia
                             </label>
                             <input
-                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={companyForm.name}
                                 onChange={(event) =>
                                     setCompanyForm((prev) => ({
@@ -229,7 +229,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                 Razao social
                             </label>
                             <input
-                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={companyForm.legalName}
                                 onChange={(event) =>
                                     setCompanyForm((prev) => ({
@@ -245,7 +245,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                         <div className="grid gap-3 sm:grid-cols-2">
                             <input
                                 placeholder="Rua"
-                                className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={companyForm.address.street}
                                 onChange={(event) =>
                                     setCompanyForm((prev) => ({
@@ -260,7 +260,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                             />
                             <input
                                 placeholder="Numero"
-                                className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={companyForm.address.number}
                                 onChange={(event) =>
                                     setCompanyForm((prev) => ({
@@ -275,7 +275,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                             />
                             <input
                                 placeholder="Bairro"
-                                className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={companyForm.address.neighborhood}
                                 onChange={(event) =>
                                     setCompanyForm((prev) => ({
@@ -290,7 +290,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                             />
                             <input
                                 placeholder="Cidade"
-                                className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={companyForm.address.city}
                                 onChange={(event) =>
                                     setCompanyForm((prev) => ({
@@ -303,7 +303,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                             <input
                                 placeholder="UF"
                                 maxLength={2}
-                                className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={companyForm.address.state}
                                 onChange={(event) =>
                                     setCompanyForm((prev) => ({
@@ -315,7 +315,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                             />
                             <input
                                 placeholder="CEP"
-                                className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={companyForm.address.zipCode}
                                 onChange={(event) =>
                                     setCompanyForm((prev) => ({
@@ -363,7 +363,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                         <form className="mt-4 space-y-3" onSubmit={handleCreateUser}>
                             <input
                                 placeholder="Nome"
-                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={newUser.name}
                                 onChange={(event) =>
                                     setNewUser((prev) => ({ ...prev, name: event.target.value }))
@@ -374,7 +374,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                             <input
                                 type="email"
                                 placeholder="Email"
-                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={newUser.email}
                                 onChange={(event) =>
                                     setNewUser((prev) => ({ ...prev, email: event.target.value }))
@@ -385,7 +385,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                             <input
                                 type="password"
                                 placeholder="Senha temporaria"
-                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={newUser.password}
                                 onChange={(event) =>
                                     setNewUser((prev) => ({
@@ -397,7 +397,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                 disabled={!canManageUsers}
                             />
                             <select
-                                className="h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                 value={newUser.role}
                                 onChange={(event) =>
                                     setNewUser((prev) => ({

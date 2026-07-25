@@ -108,7 +108,7 @@ export default function SituationTypeList({
                                     </label>
 
                                     <input
-                                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm"
+                                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm"
                                         value={editDescricao}
                                         onChange={(e) => setEditDescricao(e.target.value)}
                                     />

@@ -28,14 +28,25 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
         )
     }
 
+    const processed = situations.map((s, index) => {
+        const formattedDate = formatDateFromDatabase(s.date)
+        const previousFormattedDate =
+            index > 0 ? formatDateFromDatabase(situations[index - 1].date) : ''
+        const showDate = formattedDate !== previousFormattedDate ? formattedDate : ''
+
+        return {
+            ...s,
+            formattedDate,
+            showDate,
+        }
+    })
+
     return (
         <div className="panel mt-10 rounded-xl border border-(--color-border) bg-surface p-6">
-            {/* TÍTULO */}
             <h3 className="gold-bar-title text-(--color-primary-strong) text-lg font-semibold">
                 Situações do Período
             </h3>
 
-            {/* TABELA */}
             <div className="mt-6 overflow-x-auto">
                 <table className="min-w-225 w-full text-sm">
                     <thead>
@@ -50,17 +61,16 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
                     </thead>
 
                     <tbody>
-                        {situations.map((s) => (
+                        {processed.map((s) => (
                             <tr
-                                key={`${String(s.date)}-${s.employeeName}-${s.sectorName}`}
+                                key={`${s.date}-${s.employeeName}-${s.sectorName}`}
                                 className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
                             >
-                                <td className="py-3 px-2 text-center">
-                                    {formatDateFromDatabase(s.date)}
+                                <td className="py-3 px-2 text-center font-semibold">
+                                    {s.showDate}
                                 </td>
 
                                 <td className="py-3 px-2">{s.employeeName}</td>
-
                                 <td className="py-3 px-2">{s.sectorName}</td>
 
                                 <td className="text-(--color-danger) py-3 px-2 text-center font-semibold">
@@ -68,7 +78,6 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
                                 </td>
 
                                 <td className="py-3 px-2 text-center">{s.totalCount}</td>
-
                                 <td className="py-3 px-2 text-center">{s.eligibleCount}</td>
                             </tr>
                         ))}

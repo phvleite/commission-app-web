@@ -86,7 +86,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                     </label>
                     <input
                         type="date"
-                        className="date-field mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-xs text-(--color-primary-strong)"
+                        className="date-field mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-xs text-(--color-primary-strong)"
                         value={dataInicial}
                         onChange={(e) => handleDataInicialChange(e.target.value)}
                         required
@@ -97,7 +97,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                     <label className="text-xs font-semibold text-(--color-muted)">Data final</label>
                     <input
                         type="date"
-                        className="date-field mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-xs text-(--color-primary-strong)"
+                        className="date-field mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-xs text-(--color-primary-strong)"
                         value={dataFinal}
                         onChange={(e) => setDataFinal(e.target.value)}
                         required
@@ -116,7 +116,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                     </label>
                     <input
                         type="text"
-                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
                         value={buscaColaborador}
                         onChange={(e) => setBuscaColaborador(e.target.value)}
                         placeholder="Digite as iniciais"
@@ -126,7 +126,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                         Colaborador
                     </label>
                     <select
-                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
                         value={colaboradorId}
                         onChange={(e) => setColaboradorId(e.target.value)}
                         required
@@ -146,7 +146,7 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                         Tipo de situação
                     </label>
                     <select
-                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                        className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
                         value={tipoId}
                         onChange={(e) => setTipoId(e.target.value)}
                         required
