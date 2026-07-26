@@ -28,15 +28,33 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
         )
     }
 
-    const processed = situations.map((s, index) => {
-        const formattedDate = formatDateFromDatabase(s.date)
-        const previousFormattedDate =
-            index > 0 ? formatDateFromDatabase(situations[index - 1].date) : ''
+    const sortedSituations = [...situations].sort((a, b) => {
+        const aDate = a.date.includes('T') ? a.date.split('T')[0] : a.date
+        const bDate = b.date.includes('T') ? b.date.split('T')[0] : b.date
+
+        if (aDate !== bDate) return aDate.localeCompare(bDate, 'pt-BR')
+
+        const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
+        if (sectorCompare !== 0) return sectorCompare
+
+        return a.employeeName.localeCompare(b.employeeName, 'pt-BR')
+    })
+
+    const processed = sortedSituations.map((s, index, array) => {
+        const formattedDate = formatDateFromDatabase(
+            s.date.includes('T') ? s.date.split('T')[0] : s.date,
+        )
+        const previous = array[index - 1]
+        const previousFormattedDate = previous
+            ? formatDateFromDatabase(
+                  previous.date.includes('T') ? previous.date.split('T')[0] : previous.date,
+              )
+            : ''
+
         const showDate = formattedDate !== previousFormattedDate ? formattedDate : ''
 
         return {
             ...s,
-            formattedDate,
             showDate,
         }
     })
