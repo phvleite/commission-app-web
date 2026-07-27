@@ -99,6 +99,7 @@ textarea {
 .secondary-button {
     background: var(--secondary);
     color: #ffffff;
+    font-weight: 500;
     transition:
         background-color 0.2s ease,
         transform 0.2s ease;
@@ -115,6 +116,7 @@ textarea {
 .secondary-button:hover {
     background: var(--secondary-soft);
     color: var(--secondary-strong);
+    font-weight: 500;
 }
 
 .secondary-button:active {

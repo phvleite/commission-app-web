@@ -2,16 +2,22 @@
 
 import { formatCurrencyFromDatabase } from '@/utils/formatCurrency'
 import { formatDateFromDatabase } from '@/utils/formatDate'
-import type { CommissionRow, SectorSummaryRow } from '../CommissionsClient'
+import type { CommissionsEmployeeResult } from '../CommissionsClient'
 import { useCommissions } from '../hooks/useCommissions'
 
 interface CommissionsReportEmployeeProps {
-    result: {
-        startDate: string
-        endDate: string
-        data: CommissionRow[]
-        sectorSummary: Array<SectorSummaryRow & { employeeValue: number }>
-    }
+    result: CommissionsEmployeeResult
+}
+
+function getFilenameTimestamp(date = new Date()): string {
+    const yyyy = date.getFullYear()
+    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const dd = String(date.getDate()).padStart(2, '0')
+    const hh = String(date.getHours()).padStart(2, '0')
+    const min = String(date.getMinutes()).padStart(2, '0')
+    const ss = String(date.getSeconds()).padStart(2, '0')
+
+    return `${yyyy}${mm}${dd}-${hh}${min}${ss}`
 }
 
 export default function CommissionsReportEmployee({ result }: CommissionsReportEmployeeProps) {
@@ -23,6 +29,45 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
     const title = getEmployeePeriodTitle(employeeName, result.startDate, result.endDate)
 
     const totalGeneral = result.data.reduce((acc, row) => acc + row.employeeValue, 0)
+
+    const sortedData = [...result.data].sort((a, b) => {
+        const dateA = a.date.includes('T') ? a.date.split('T')[0] : a.date
+        const dateB = b.date.includes('T') ? b.date.split('T')[0] : b.date
+
+        if (dateA !== dateB) return dateA.localeCompare(dateB, 'pt-BR')
+
+        const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
+        if (sectorCompare !== 0) return sectorCompare
+
+        return a.situation.localeCompare(b.situation, 'pt-BR')
+    })
+
+    async function handleGeneratePdf() {
+        const res = await fetch('/api/pdf/commissions/employee', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(result),
+        })
+
+        if (!res.ok) {
+            return
+        }
+
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+
+        window.open(url, '_blank', 'noopener,noreferrer')
+
+        const a = document.createElement('a')
+        a.href = url
+        const timestamp = getFilenameTimestamp()
+        a.download = `relatorio-${employeeName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.pdf`
+        a.click()
+
+        window.setTimeout(() => {
+            URL.revokeObjectURL(url)
+        }, 60_000)
+    }
 
     return (
         <div className="panel rounded-xl border border-(--color-border) bg-surface p-6">
@@ -80,7 +125,7 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
                     </thead>
 
                     <tbody>
-                        {result.data.map((d) => (
+                        {sortedData.map((d) => (
                             <tr
                                 key={`${String(d.date)}-${d.sectorName}`}
                                 className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
@@ -115,7 +160,9 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
 
             {/* BOTÃO PDF */}
             <div className="mt-6">
-                <button className="primary-button px-5 py-2 rounded-xl">Gerar PDF</button>
+                <button className="primary-button px-5 py-2 rounded-xl" onClick={handleGeneratePdf}>
+                    Gerar PDF
+                </button>
             </div>
         </div>
     )

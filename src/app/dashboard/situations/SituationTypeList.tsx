@@ -72,7 +72,7 @@ export default function SituationTypeList({
                                     {t.active ? (
                                         <button
                                             type="button"
-                                            className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                            className="secondary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                             onClick={() => {
                                                 onInativar(t._id)
                                                 toast.success('Tipo de situação inativado!')
@@ -83,7 +83,7 @@ export default function SituationTypeList({
                                     ) : (
                                         <button
                                             type="button"
-                                            className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                            className="secondary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                                             onClick={() => {
                                                 onAtivar(t._id)
                                                 toast.success('Tipo de situação ativado!')
