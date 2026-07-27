@@ -63,7 +63,7 @@ export function SalesList({ sales, onEdit, onOpenModal, onRecalc }: SalesListPro
                                         </button>
 
                                         <button
-                                            className="cancel-button px-4 py-2 rounded-xl"
+                                            className="secondary-button px-4 py-2 rounded-xl"
                                             onClick={() => onEdit(sale._id)}
                                         >
                                             Alterar

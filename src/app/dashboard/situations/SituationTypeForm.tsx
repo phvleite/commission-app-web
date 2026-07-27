@@ -34,7 +34,7 @@ export default function SituationTypeForm({ onSubmit }: Props) {
                 </label>
 
                 <input
-                    className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                    className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
                     value={descricao}
                     onChange={(e) => setDescricao(e.target.value)}
                     placeholder="Ex: Férias, Folga, Atestado..."

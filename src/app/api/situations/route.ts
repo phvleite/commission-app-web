@@ -2,14 +2,52 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { connectDB } from '@/lib/db'
 import { Situation } from '@/models/Situation'
+import { Employee } from '@/models/Employee'
 
-export async function GET() {
+export async function GET(req: Request) {
     const session = await auth()
     const tenantId = session?.user?.tenantId
 
+    const { searchParams } = new URL(req.url)
+
+    const employeeId = searchParams.get('employeeId')
+    const typeId = searchParams.get('typeId')
+    const sectorId = searchParams.get('sectorId')
+    const start = searchParams.get('start')
+    const end = searchParams.get('end')
+    const month = searchParams.get('month')
+    const year = searchParams.get('year')
+
     await connectDB()
 
-    const situations = await Situation.find({ tenantId })
+    const query: Record<string, unknown> = { tenantId }
+
+    if (employeeId && employeeId !== 'todos') query.employeeId = employeeId
+    if (typeId && typeId !== 'todos') query.typeId = typeId
+
+    // Se sectorId foi fornecido, buscar employees do setor
+    if (sectorId && sectorId !== 'todos') {
+        const employeesInSector = await Employee.find({ tenantId, sectorId }, '_id').lean()
+        const employeeIds = employeesInSector.map((e) => e._id)
+        query.employeeId = { $in: employeeIds }
+    }
+
+    if (start && end) {
+        const startDate = new Date(start)
+        const endDate = new Date(end)
+
+        query.$and = [{ startDate: { $lte: endDate } }, { endDate: { $gte: startDate } }]
+    } else if (month || year) {
+        const y = year ? parseInt(year) : new Date().getFullYear()
+        const m = month ? parseInt(month) - 1 : undefined
+
+        const firstDay = m !== undefined ? new Date(y, m, 1) : new Date(y, 0, 1)
+        const lastDay = m !== undefined ? new Date(y, m + 1, 0) : new Date(y, 11, 31)
+
+        query.$and = [{ startDate: { $lte: lastDay } }, { endDate: { $gte: firstDay } }]
+    }
+
+    const situations = await Situation.find(query)
         .populate('employeeId', 'name')
         .populate('typeId', 'description')
         .sort({ startDate: -1 })
@@ -18,10 +56,10 @@ export async function GET() {
     return NextResponse.json({
         situations: situations.map((s) => ({
             _id: String(s._id),
-            employeeId: String(s.employeeId._id),
-            employeeName: s.employeeId.name,
-            typeId: String(s.typeId._id),
-            typeDescription: s.typeId.description,
+            employeeId: String((s.employeeId as Record<string, unknown>)?._id ?? ''),
+            employeeName: (s.employeeId as Record<string, unknown>)?.name ?? '',
+            typeId: String((s.typeId as Record<string, unknown>)?._id ?? ''),
+            typeDescription: (s.typeId as Record<string, unknown>)?.description ?? '',
             startDate: s.startDate.toISOString().substring(0, 10),
             endDate: s.endDate.toISOString().substring(0, 10),
             active: s.active,
@@ -48,21 +86,14 @@ export async function POST(req: Request) {
 
     await connectDB()
 
-    try {
-        const created = await Situation.create({
-            tenantId,
-            employeeId,
-            typeId,
-            startDate: new Date(startDate),
-            endDate: new Date(endDate),
-            active: true,
-        })
+    const created = await Situation.create({
+        tenantId,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        employeeId,
+        typeId,
+        active: true,
+    })
 
-        return NextResponse.json({
-            _id: String(created._id),
-            ok: true,
-        })
-    } catch {
-        return NextResponse.json({ error: 'Erro ao criar situação.' }, { status: 500 })
-    }
+    return NextResponse.json({ _id: String(created._id) })
 }

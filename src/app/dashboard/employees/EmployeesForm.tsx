@@ -51,7 +51,7 @@ export function EmployeesForm({
                 <label className="text-xs font-semibold text-(--color-muted)">Nome</label>
                 <input
                     placeholder="Ex.: João Silva"
-                    className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                    className="h-11 rounded-xl border border-(--color-border)  bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -63,7 +63,7 @@ export function EmployeesForm({
             <div className="flex flex-col">
                 <label className="text-xs font-semibold text-(--color-muted)">Setor</label>
                 <select
-                    className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                    className="h-11 rounded-xl border border-(--color-border)  bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
                     value={sectorId}
                     onChange={(e) => setSectorId(e.target.value)}
                     required
@@ -86,7 +86,7 @@ export function EmployeesForm({
                     </label>
                     <input
                         type="date"
-                        className="date-field h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                        className="date-field h-11 rounded-xl border border-(--color-border)  bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
                         value={admissionDate}
                         onChange={(e) => setAdmissionDate(e.target.value)}
                         required
@@ -100,7 +100,7 @@ export function EmployeesForm({
                     </label>
                     <input
                         type="date"
-                        className="date-field h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong)"
+                        className="date-field h-11 rounded-xl border border-(--color-border)  bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
                         value={dismissalDate}
                         onChange={(e) => setDismissalDate(e.target.value)}
                         disabled={!canWrite}

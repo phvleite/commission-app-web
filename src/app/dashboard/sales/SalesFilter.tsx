@@ -60,7 +60,7 @@ export function SalesFilters({
                 <div className="flex items-end">
                     <button
                         onClick={clearFilters}
-                        className="cancel-button px-5 py-3 rounded-xl w-full"
+                        className="secondary-button px-5 py-3 rounded-xl w-full"
                     >
                         Limpar Filtros
                     </button>

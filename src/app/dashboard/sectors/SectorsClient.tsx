@@ -199,7 +199,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
             >
                 <input
                     placeholder="Nome do setor"
-                    className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                    className="h-11 rounded-xl border border-(--color-border)  bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     required
@@ -211,7 +211,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                     max={100}
                     step={1}
                     placeholder="Percentual"
-                    className="h-11 rounded-xl border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                    className="h-11 rounded-xl border border-(--color-border)  bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                     value={percentage}
                     onChange={(event) => setPercentage(event.target.value)}
                     required
@@ -289,7 +289,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
 
                                         <button
                                             type="button"
-                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold"
+                                            className="secondary-button rounded-lg px-3 py-1 text-xs font-semibold"
                                             onClick={() => handleToggleActive(sector)}
                                         >
                                             {sector.active ? 'Inativar' : 'Ativar'}
@@ -307,7 +307,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                                     }`}
                                 >
                                     <input
-                                        className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none"
+                                        className="h-10 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none"
                                         value={editName}
                                         onChange={(event) => setEditName(event.target.value)}
                                     />
@@ -315,7 +315,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                                         type="number"
                                         min={0}
                                         max={100}
-                                        className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none"
+                                        className="h-10 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none"
                                         value={editPercentage}
                                         onChange={(event) => setEditPercentage(event.target.value)}
                                     />

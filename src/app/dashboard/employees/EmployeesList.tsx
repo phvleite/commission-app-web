@@ -177,7 +177,7 @@ export function EmployeesList({
                                             Nome
                                         </label>
                                         <input
-                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
                                         />
@@ -189,7 +189,7 @@ export function EmployeesList({
                                             Setor
                                         </label>
                                         <select
-                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                                            className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                                             value={editSectorId}
                                             onChange={(e) => setEditSectorId(e.target.value)}
                                         >
@@ -208,7 +208,7 @@ export function EmployeesList({
                                         </label>
                                         <input
                                             type="date"
-                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-xs"
                                             value={editAdmissionDate}
                                             onChange={(e) => setEditAdmissionDate(e.target.value)}
                                         />
@@ -221,7 +221,7 @@ export function EmployeesList({
                                         </label>
                                         <input
                                             type="date"
-                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                                            className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-xs"
                                             value={editDismissalDate || ''}
                                             onChange={(e) => setEditDismissalDate(e.target.value)}
                                         />

@@ -28,14 +28,43 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
         )
     }
 
+    const sortedSituations = [...situations].sort((a, b) => {
+        const aDate = a.date.includes('T') ? a.date.split('T')[0] : a.date
+        const bDate = b.date.includes('T') ? b.date.split('T')[0] : b.date
+
+        if (aDate !== bDate) return aDate.localeCompare(bDate, 'pt-BR')
+
+        const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
+        if (sectorCompare !== 0) return sectorCompare
+
+        return a.employeeName.localeCompare(b.employeeName, 'pt-BR')
+    })
+
+    const processed = sortedSituations.map((s, index, array) => {
+        const formattedDate = formatDateFromDatabase(
+            s.date.includes('T') ? s.date.split('T')[0] : s.date,
+        )
+        const previous = array[index - 1]
+        const previousFormattedDate = previous
+            ? formatDateFromDatabase(
+                  previous.date.includes('T') ? previous.date.split('T')[0] : previous.date,
+              )
+            : ''
+
+        const showDate = formattedDate !== previousFormattedDate ? formattedDate : ''
+
+        return {
+            ...s,
+            showDate,
+        }
+    })
+
     return (
         <div className="panel mt-10 rounded-xl border border-(--color-border) bg-surface p-6">
-            {/* TÍTULO */}
             <h3 className="gold-bar-title text-(--color-primary-strong) text-lg font-semibold">
                 Situações do Período
             </h3>
 
-            {/* TABELA */}
             <div className="mt-6 overflow-x-auto">
                 <table className="min-w-225 w-full text-sm">
                     <thead>
@@ -50,17 +79,16 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
                     </thead>
 
                     <tbody>
-                        {situations.map((s) => (
+                        {processed.map((s) => (
                             <tr
-                                key={`${String(s.date)}-${s.employeeName}-${s.sectorName}`}
+                                key={`${s.date}-${s.employeeName}-${s.sectorName}`}
                                 className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
                             >
-                                <td className="py-3 px-2 text-center">
-                                    {formatDateFromDatabase(s.date)}
+                                <td className="py-3 px-2 text-center font-semibold">
+                                    {s.showDate}
                                 </td>
 
                                 <td className="py-3 px-2">{s.employeeName}</td>
-
                                 <td className="py-3 px-2">{s.sectorName}</td>
 
                                 <td className="text-(--color-danger) py-3 px-2 text-center font-semibold">
@@ -68,7 +96,6 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
                                 </td>
 
                                 <td className="py-3 px-2 text-center">{s.totalCount}</td>
-
                                 <td className="py-3 px-2 text-center">{s.eligibleCount}</td>
                             </tr>
                         ))}
