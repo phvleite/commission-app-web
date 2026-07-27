@@ -1,23 +1,22 @@
 'use client'
 
 import { formatCurrencyFromDatabase } from '@/utils/formatCurrency'
-import type {
-    CommissionRow,
-    SalesSummaryRow,
-    SectorSummaryRow,
-    SituationRow,
-} from '../CommissionsClient'
+import type { CommissionsAllResult } from '../CommissionsClient'
 import { useCommissions } from '../hooks/useCommissions'
 
 interface CommissionsReportAllProps {
-    result: {
-        startDate: string
-        endDate: string
-        data: CommissionRow[]
-        sectorSummary: SectorSummaryRow[]
-        salesSummary: SalesSummaryRow[]
-        situations?: SituationRow[]
-    }
+    result: CommissionsAllResult
+}
+
+function getFilenameTimestamp(date = new Date()): string {
+    const yyyy = date.getFullYear()
+    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const dd = String(date.getDate()).padStart(2, '0')
+    const hh = String(date.getHours()).padStart(2, '0')
+    const min = String(date.getMinutes()).padStart(2, '0')
+    const ss = String(date.getSeconds()).padStart(2, '0')
+
+    return `${yyyy}${mm}${dd}-${hh}${min}${ss}`
 }
 
 export default function CommissionsReportAll({ result }: CommissionsReportAllProps) {
@@ -39,6 +38,33 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
     const totalSectorsWithoutMerit = result.sectorSummary
         .filter((s) => s.sectorName.toUpperCase() !== 'MERITOCRACIA')
         .reduce((acc, s) => acc + s.sectorValue, 0)
+
+    async function handleGeneratePdf() {
+        const res = await fetch('/api/pdf/commissions/all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(result),
+        })
+
+        if (!res.ok) {
+            return
+        }
+
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+
+        window.open(url, '_blank', 'noopener,noreferrer')
+
+        const a = document.createElement('a')
+        a.href = url
+        const timestamp = getFilenameTimestamp()
+        a.download = `relatorio-geral-${timestamp}.pdf`
+        a.click()
+
+        window.setTimeout(() => {
+            URL.revokeObjectURL(url)
+        }, 60_000)
+    }
 
     return (
         <div className="panel rounded-xl border border-(--color-border) bg-surface p-6">
@@ -145,7 +171,9 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
 
             {/* BOTÃO PDF */}
             <div className="mt-6">
-                <button className="primary-button px-5 py-2 rounded-xl">Gerar PDF</button>
+                <button className="primary-button px-5 py-2 rounded-xl" onClick={handleGeneratePdf}>
+                    Gerar PDF
+                </button>
             </div>
         </div>
     )

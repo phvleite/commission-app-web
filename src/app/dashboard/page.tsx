@@ -22,7 +22,7 @@ export default async function DashboardPage() {
 
             <div className="mt-8 flex flex-wrap gap-3">
                 <a
-                    className="rounded-xl border border-(--color-border) bg-white px-5 py-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
+                    className="primary-button rounded-xl border border-(--color-border) bg-white px-5 py-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
                     href="/dashboard/company-users"
                 >
                     Empresa e usuarios
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
                     }}
                 >
                     <button
-                        className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
+                        className="cancel-button rounded-xl px-5 py-3 text-sm font-semibold"
                         type="submit"
                     >
                         Sair

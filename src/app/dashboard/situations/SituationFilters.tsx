@@ -1,7 +1,5 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-
 interface Collaborator {
     _id: string
     name: string
@@ -14,12 +12,20 @@ interface SituationType {
     active: boolean
 }
 
+interface Sector {
+    _id: string
+    name: string
+    active: boolean
+}
+
 interface Props {
     colaboradores: Collaborator[]
     tipos: SituationType[]
+    setores: Sector[]
 
     filtroColaborador: string
     filtroTipo: string
+    filtroSetor: string
     filtroDataInicial: string
     filtroDataFinal: string
     filtroMes: string
@@ -27,6 +33,7 @@ interface Props {
 
     setFiltroColaborador: (v: string) => void
     setFiltroTipo: (v: string) => void
+    setFiltroSetor: (v: string) => void
     setFiltroDataInicial: (v: string) => void
     setFiltroDataFinal: (v: string) => void
     setFiltroMes: (v: string) => void
@@ -38,9 +45,11 @@ interface Props {
 export default function SituationFilters({
     colaboradores,
     tipos,
+    setores,
 
     filtroColaborador,
     filtroTipo,
+    filtroSetor,
     filtroDataInicial,
     filtroDataFinal,
     filtroMes,
@@ -48,6 +57,7 @@ export default function SituationFilters({
 
     setFiltroColaborador,
     setFiltroTipo,
+    setFiltroSetor,
     setFiltroDataInicial,
     setFiltroDataFinal,
     setFiltroMes,
@@ -55,53 +65,44 @@ export default function SituationFilters({
 
     limparFiltros,
 }: Props) {
-    const [buscaColaborador, setBuscaColaborador] = useState('')
-
     const anoAtual = new Date().getFullYear()
     const anos = []
     for (let ano = 2020; ano <= anoAtual + 5; ano++) anos.push(ano)
 
-    const colaboradoresFiltrados = useMemo(() => {
-        const termo = buscaColaborador.trim().toLowerCase()
-
-        if (!termo) {
-            return colaboradores
-        }
-
-        return colaboradores.filter((colaborador) => colaborador.name.toLowerCase().includes(termo))
-    }, [colaboradores, buscaColaborador])
-
     return (
         <div className="mt-6 rounded-xl border border-(--color-border) bg-white p-4 space-y-4">
-            {/* GRID RESPONSIVO */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Colaborador */}
-                <div className="flex flex-col">
-                    <label className="text-xs font-semibold text-(--color-muted)">
-                        Buscar colaborador
-                    </label>
-                    <input
-                        type="text"
-                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
-                        value={buscaColaborador}
-                        onChange={(e) => setBuscaColaborador(e.target.value)}
-                        placeholder="Digite as iniciais"
-                    />
-                </div>
-
                 <div className="flex flex-col">
                     <label className="text-xs font-semibold text-(--color-muted)">
                         Colaborador
                     </label>
                     <select
-                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                         value={filtroColaborador}
                         onChange={(e) => setFiltroColaborador(e.target.value)}
                     >
                         <option value="todos">Todos</option>
-                        {colaboradoresFiltrados.map((c) => (
+                        {colaboradores.map((c) => (
                             <option key={c._id} value={c._id}>
                                 {c.name} {c.active ? '' : '(Inativo)'}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Setor */}
+                <div className="flex flex-col">
+                    <label className="text-xs font-semibold text-(--color-muted)">Setor</label>
+                    <select
+                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
+                        value={filtroSetor}
+                        onChange={(e) => setFiltroSetor(e.target.value)}
+                    >
+                        <option value="todos">Todos</option>
+                        {setores.map((s) => (
+                            <option key={s._id} value={s._id}>
+                                {s.name}
                             </option>
                         ))}
                     </select>
@@ -111,7 +112,7 @@ export default function SituationFilters({
                 <div className="flex flex-col">
                     <label className="text-xs font-semibold text-(--color-muted)">Tipo</label>
                     <select
-                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                         value={filtroTipo}
                         onChange={(e) => setFiltroTipo(e.target.value)}
                     >
@@ -131,7 +132,7 @@ export default function SituationFilters({
                     </label>
                     <input
                         type="date"
-                        className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-xs"
                         value={filtroDataInicial}
                         onChange={(e) => setFiltroDataInicial(e.target.value)}
                     />
@@ -142,7 +143,7 @@ export default function SituationFilters({
                     <label className="text-xs font-semibold text-(--color-muted)">Data final</label>
                     <input
                         type="date"
-                        className="date-field mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-xs"
+                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-xs"
                         value={filtroDataFinal}
                         onChange={(e) => setFiltroDataFinal(e.target.value)}
                     />
@@ -152,7 +153,7 @@ export default function SituationFilters({
                 <div className="flex flex-col">
                     <label className="text-xs font-semibold text-(--color-muted)">Mês</label>
                     <select
-                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                         value={filtroMes}
                         onChange={(e) => setFiltroMes(e.target.value)}
                     >
@@ -176,7 +177,7 @@ export default function SituationFilters({
                 <div className="flex flex-col">
                     <label className="text-xs font-semibold text-(--color-muted)">Ano</label>
                     <select
-                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border) bg-white px-3 text-sm"
+                        className="mt-1 h-10 w-full rounded-lg border border-(--color-border)  bg-surface-soft px-3 text-sm"
                         value={filtroAno}
                         onChange={(e) => setFiltroAno(e.target.value)}
                     >
@@ -190,11 +191,10 @@ export default function SituationFilters({
                 </div>
             </div>
 
-            {/* BOTÃO LIMPAR FILTROS */}
             <div className="flex justify-end">
                 <button
                     type="button"
-                    className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                    className="secondary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
                     onClick={limparFiltros}
                 >
                     Limpar filtros

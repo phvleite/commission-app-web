@@ -2,6 +2,7 @@ import SituationClientJSX from './SituationClientJSX'
 import { SituationType } from '@/models/SituationType'
 import { Situation } from '@/models/Situation'
 import { Employee } from '@/models/Employee'
+import { Sector } from '@/models/Sector'
 import { connectDB } from '@/lib/db'
 import { auth } from '@/auth'
 
@@ -20,6 +21,11 @@ export default async function Page() {
     // CARREGAR COLABORADORES
     // ============================================================
     const employees = await Employee.find({ tenantId }).sort({ name: 1 }).lean()
+
+    // ============================================================
+    // CARREGAR SETORES
+    // ============================================================
+    const sectors = await Sector.find({ tenantId }).sort({ name: 1 }).lean()
 
     // ============================================================
     // CARREGAR SITUAÇÕES
@@ -54,11 +60,18 @@ export default async function Page() {
         active: e.active,
     }))
 
+    const normalizedSectors = sectors.map((s) => ({
+        _id: String(s._id),
+        name: s.name,
+        active: s.active,
+    }))
+
     return (
         <SituationClientJSX
             initialTypes={normalizedTypes}
             initialSituations={normalizedSituations}
             initialEmployees={normalizedEmployees}
+            initialSectors={normalizedSectors}
         />
     )
 }

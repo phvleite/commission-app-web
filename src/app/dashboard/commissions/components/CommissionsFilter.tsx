@@ -157,7 +157,7 @@ export default function CommissionsFilter({
                     <span className="font-medium">Data inicial</span>
                     <input
                         type="date"
-                        className="rounded-lg border border-(--color-border) bg-white px-3 py-2"
+                        className="rounded-lg border border-(--color-border) bg-surface-soft px-3 py-2"
                         value={startDate}
                         onChange={(event) => setStartDate(event.target.value)}
                     />
@@ -167,7 +167,7 @@ export default function CommissionsFilter({
                     <span className="font-medium">Data final</span>
                     <input
                         type="date"
-                        className="rounded-lg border border-(--color-border) bg-white px-3 py-2"
+                        className="rounded-lg border border-(--color-border) bg-surface-soft px-3 py-2"
                         value={endDate}
                         onChange={(event) => setEndDate(event.target.value)}
                     />
@@ -177,7 +177,7 @@ export default function CommissionsFilter({
             <label className="flex flex-col gap-1 text-sm">
                 <span className="font-medium">Colaborador</span>
                 <select
-                    className="rounded-lg border border-(--color-border) bg-white px-3 py-2"
+                    className="rounded-lg border border-(--color-border) bg-surface-soft px-3 py-2"
                     value={employeeId}
                     onChange={(event) => handleSelectEmployee(event.target.value)}
                     disabled={employeesLoading}
@@ -213,15 +213,17 @@ export default function CommissionsFilter({
 
                 <button
                     type="button"
-                    className="rounded-lg border border-(--color-border) bg-white px-4 py-2 text-sm font-semibold"
+                    className="primary-button rounded-lg border border-(--color-border) px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleEmployee}
+                    disabled={!employeeId || employeesLoading}
+                    title={!employeeId ? 'Selecione um colaborador para gerar o relatório.' : ''}
                 >
                     Gerar por colaborador
                 </button>
 
                 <button
                     type="button"
-                    className="rounded-lg border border-(--color-border) bg-white px-4 py-2 text-sm"
+                    className="secondary-button rounded-lg border border-(--color-border) px-4 py-2 text-sm"
                     onClick={handleClear}
                 >
                     Limpar
