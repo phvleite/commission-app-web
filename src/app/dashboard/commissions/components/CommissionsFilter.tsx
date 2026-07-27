@@ -213,8 +213,10 @@ export default function CommissionsFilter({
 
                 <button
                     type="button"
-                    className="primary-button rounded-lg border border-(--color-border) px-4 py-2 text-sm font-semibold"
+                    className="primary-button rounded-lg border border-(--color-border) px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleEmployee}
+                    disabled={!employeeId || employeesLoading}
+                    title={!employeeId ? 'Selecione um colaborador para gerar o relatório.' : ''}
                 >
                     Gerar por colaborador
                 </button>

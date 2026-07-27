@@ -159,7 +159,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                 <button
                     type="button"
                     onClick={() => window.history.back()}
-                    className="secondary-button inline-flex items-center gap-2 rounded-xl border border-(--color-border) bg-white px-4 py-2 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
+                    className="secondary-button inline-flex items-center gap-2 rounded-xl border border-(--color-border) px-4 py-2 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
                 >
                     <span aria-hidden="true">←</span>
                     Voltar

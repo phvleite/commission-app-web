@@ -8,6 +8,10 @@ function isPublicPath(pathname: string): boolean {
         return true
     }
 
+    if (pathname.startsWith('/pdf-templates')) {
+        return true
+    }
+
     if (pathname.startsWith('/api/auth')) {
         return true
     }

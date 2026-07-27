@@ -148,7 +148,11 @@ export function useCommissions() {
             map.set(key, current)
         })
 
-        return Array.from(map.values())
+        return Array.from(map.values()).sort(
+            (a, b) =>
+                a.employeeName.localeCompare(b.employeeName, 'pt-BR') ||
+                a.sectorName.localeCompare(b.sectorName, 'pt-BR'),
+        )
     }
 
     function calculateTotal(data: CommissionRow[]): number {

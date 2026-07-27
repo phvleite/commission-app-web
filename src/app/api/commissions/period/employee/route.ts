@@ -36,8 +36,20 @@ export async function GET(req: Request) {
                 employeeName: employee?.name ?? 'Colaborador',
                 sectorName: sector?.name ?? 'Setor',
             }
-        })
+        }),
     )
+
+    enriched.sort((a, b) => {
+        const timeA = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime()
+        const timeB = b.date instanceof Date ? b.date.getTime() : new Date(b.date).getTime()
+
+        if (timeA !== timeB) return timeA - timeB
+
+        const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
+        if (sectorCompare !== 0) return sectorCompare
+
+        return a.situation.localeCompare(b.situation, 'pt-BR')
+    })
 
     // Resumo por setor
     const sectorSummaryMap = new Map()
