@@ -112,6 +112,14 @@ export function EmployeesList({
     // ===========================
     // RENDERIZAÇÃO
     // ===========================
+    if (filteredEmployees.length === 0) {
+        return (
+            <div className="mt-6 rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                Nenhum colaborador encontrado para os filtros aplicados.
+            </div>
+        )
+    }
+
     return (
         <div className="mt-6 space-y-2">
             {filteredEmployees.map((employee) => {
@@ -167,10 +175,8 @@ export function EmployeesList({
                         ============================ */}
                         {isEditing ? (
                             <div className="mt-3 space-y-3">
-
                                 {/* GRID RESPONSIVO COM LABELS */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-
                                     {/* Nome */}
                                     <div className="flex flex-col">
                                         <label className="text-sm font-semibold text-(--color-muted)">

@@ -13,6 +13,7 @@ export function EmployeesClientJSX(
         error,
         success,
         canWrite,
+        isSubmitting,
 
         filterStatus,
         filterSector,
@@ -68,14 +69,14 @@ export function EmployeesClientJSX(
                 inativar colaboradores conforme necessário.
             </p>
 
-
             {/* Botão Novo Colaborador */}
             {canWrite ? (
                 <div className="mt-6 flex justify-start">
                     <button
                         type="button"
                         onClick={() => setShowForm(!showForm)}
-                        className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
+                        className="primary-button rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-70"
+                        disabled={isSubmitting}
                     >
                         {showForm ? 'Fechar' : 'Novo colaborador'}
                     </button>
@@ -96,6 +97,7 @@ export function EmployeesClientJSX(
                         dismissalDate={dismissalDate}
                         sectors={sectors}
                         canWrite={canWrite}
+                        isSubmitting={isSubmitting}
                         setName={setName}
                         setSectorId={setSectorId}
                         setAdmissionDate={setAdmissionDate}
@@ -103,7 +105,7 @@ export function EmployeesClientJSX(
                         handleCreateEmployee={handleCreateEmployee}
                         onCancel={() => setShowForm(false)}
                     />
-               </div>
+                </div>
             ) : null}
 
             {/* Mensagens */}

@@ -35,6 +35,7 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
 
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const canWrite = userRole === 'admin' || userRole === 'manager'
 
@@ -122,7 +123,6 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
         return true
     }).length
 
-
     // ===========================
     // FUNÇÃO: CRIAR COLABORADOR
     // ===========================
@@ -131,24 +131,29 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
 
         setError(null)
         setSuccess(null)
+        setIsSubmitting(true)
 
         if (!name.trim()) {
             setError('Informe o nome.')
+            setIsSubmitting(false)
             return
         }
 
         if (!sectorId) {
             setError('Selecione um setor.')
+            setIsSubmitting(false)
             return
         }
 
         if (!admissionDate) {
             setError('Informe a data de admissão.')
+            setIsSubmitting(false)
             return
         }
 
         if (dismissalDate && dismissalDate < admissionDate) {
             setError('A data de demissão não pode ser menor que a admissão.')
+            setIsSubmitting(false)
             return
         }
 
@@ -185,6 +190,8 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
             router.refresh()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro ao criar colaborador.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -222,24 +229,29 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
 
         setError(null)
         setSuccess(null)
+        setIsSubmitting(true)
 
         if (!editName.trim()) {
             setError('Informe o nome.')
+            setIsSubmitting(false)
             return
         }
 
         if (!editSectorId) {
             setError('Selecione um setor.')
+            setIsSubmitting(false)
             return
         }
 
         if (!editAdmissionDate) {
             setError('Informe a data de admissão.')
+            setIsSubmitting(false)
             return
         }
 
         if (editDismissalDate && editDismissalDate < editAdmissionDate) {
             setError('A data de demissão não pode ser menor que a admissão.')
+            setIsSubmitting(false)
             return
         }
 
@@ -274,6 +286,8 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
             router.refresh()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro ao editar colaborador.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -286,6 +300,7 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
         error,
         success,
         canWrite,
+        isSubmitting,
 
         filterStatus,
         filterSector,

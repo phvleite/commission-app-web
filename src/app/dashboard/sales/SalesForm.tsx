@@ -12,11 +12,20 @@ interface SalesFormProps {
     editId: string | null
     onSave: (date: string, value: number) => Promise<void>
     onCancel: () => void
+    isSaving?: boolean
 }
 
-export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
+export function SalesForm({
+    editId,
+    onSave,
+    onCancel,
+    isSaving: externalIsSaving,
+}: SalesFormProps) {
     const [date, setDate] = useState('')
     const [value, setValue] = useState('')
+    const [localIsSaving, setLocalIsSaving] = useState(false)
+
+    const isSaving = externalIsSaving ?? localIsSaving
 
     const editMode = !!editId
 
@@ -63,8 +72,18 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
             return
         }
 
-        await onSave(date, numericValue)
-        setValue('')
+        setLocalIsSaving(true)
+
+        try {
+            await onSave(date, numericValue)
+            setValue('')
+            toast.success(editMode ? 'Venda atualizada com sucesso!' : 'Venda lançada com sucesso!')
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Erro ao salvar venda.'
+            toast.error(message)
+        } finally {
+            setLocalIsSaving(false)
+        }
     }
 
     function handleCancel() {
@@ -102,8 +121,12 @@ export function SalesForm({ editId, onSave, onCancel }: SalesFormProps) {
             </div>
 
             <div className="mt-6 flex gap-3">
-                <button className="primary-button px-5 py-3 rounded-xl" onClick={handleSave}>
-                    {editMode ? 'Salvar Alterações' : 'Salvar'}
+                <button
+                    className="primary-button px-5 py-3 rounded-xl disabled:opacity-70"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                >
+                    {isSaving ? 'Processando...' : editMode ? 'Salvar Alterações' : 'Salvar'}
                 </button>
 
                 <button className="cancel-button px-5 py-3 rounded-xl" onClick={handleCancel}>

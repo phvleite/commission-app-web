@@ -56,6 +56,8 @@ export function useSituationClient({
     const [filterEnd, setFilterEnd] = useState('')
     const [filterMonth, setFilterMonth] = useState('')
     const [filterYear, setFilterYear] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
 
     function clearFilters() {
         setFilterEmployee('todos')
@@ -68,12 +70,17 @@ export function useSituationClient({
     }
 
     const loadTypes = useCallback(async () => {
-        const res = await fetch('/api/situation-types')
-        const json = await res.json()
-        setTypes(json.types)
+        try {
+            const res = await fetch('/api/situation-types')
+            const json = await res.json()
+            setTypes(json.types)
+        } catch {
+            setTypes([])
+        }
     }, [])
 
     const loadSituations = useCallback(async () => {
+        setIsLoading(true)
         const params = new URLSearchParams()
 
         if (filterEmployee !== 'todos') params.set('employeeId', filterEmployee)
@@ -88,20 +95,32 @@ export function useSituationClient({
         if (filterMonth) params.set('month', filterMonth)
         if (filterYear) params.set('year', filterYear)
 
-        const res = await fetch(`/api/situations?${params.toString()}`)
-        const json = await res.json()
-
-        setSituations(json.situations)
+        try {
+            const res = await fetch(`/api/situations?${params.toString()}`)
+            const json = await res.json()
+            setSituations(json.situations)
+        } catch {
+            setSituations([])
+        } finally {
+            setIsLoading(false)
+        }
     }, [filterEmployee, filterType, filterSector, filterStart, filterEnd, filterMonth, filterYear])
 
     useEffect(() => {
-        loadTypes()
+        const timeoutId = window.setTimeout(() => {
+            void loadTypes()
+            void loadSituations()
+        }, 0)
 
-        loadSituations()
+        return () => window.clearTimeout(timeoutId)
     }, [loadTypes, loadSituations])
 
     useEffect(() => {
-        loadSituations()
+        const timeoutId = window.setTimeout(() => {
+            void loadSituations()
+        }, 0)
+
+        return () => window.clearTimeout(timeoutId)
     }, [loadSituations])
 
     // ===========================
@@ -114,39 +133,59 @@ export function useSituationClient({
     // CRUD: TIPOS DE SITUAÇÃO
     // ===========================
     async function createType(descricao: string) {
-        const res = await fetch('/api/situation-types', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: descricao }),
-        })
-        if (res.ok) await loadTypes()
+        setIsSubmitting(true)
+        try {
+            const res = await fetch('/api/situation-types', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: descricao }),
+            })
+            if (res.ok) await loadTypes()
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function editType(id: string, descricao: string) {
-        const res = await fetch(`/api/situation-types/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: descricao }),
-        })
-        if (res.ok) await loadTypes()
+        setIsSubmitting(true)
+        try {
+            const res = await fetch(`/api/situation-types/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: descricao }),
+            })
+            if (res.ok) await loadTypes()
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function activateType(id: string) {
-        const res = await fetch(`/api/situation-types/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: true }),
-        })
-        if (res.ok) await loadTypes()
+        setIsSubmitting(true)
+        try {
+            const res = await fetch(`/api/situation-types/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: true }),
+            })
+            if (res.ok) await loadTypes()
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function deactivateType(id: string) {
-        const res = await fetch(`/api/situation-types/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: false }),
-        })
-        if (res.ok) await loadTypes()
+        setIsSubmitting(true)
+        try {
+            const res = await fetch(`/api/situation-types/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: false }),
+            })
+            if (res.ok) await loadTypes()
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     // ===========================
@@ -158,17 +197,22 @@ export function useSituationClient({
         colaboradorId: string,
         tipoId: string,
     ) {
-        const res = await fetch('/api/situations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                startDate: dataInicial,
-                endDate: dataFinal,
-                employeeId: colaboradorId,
-                typeId: tipoId,
-            }),
-        })
-        if (res.ok) await loadSituations()
+        setIsSubmitting(true)
+        try {
+            const res = await fetch('/api/situations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    startDate: dataInicial,
+                    endDate: dataFinal,
+                    employeeId: colaboradorId,
+                    typeId: tipoId,
+                }),
+            })
+            if (res.ok) await loadSituations()
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function editSituation(
@@ -178,35 +222,50 @@ export function useSituationClient({
         colaboradorId: string,
         tipoId: string,
     ) {
-        const res = await fetch(`/api/situations/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                startDate: dataInicial,
-                endDate: dataFinal,
-                employeeId: colaboradorId,
-                typeId: tipoId,
-            }),
-        })
-        if (res.ok) await loadSituations()
+        setIsSubmitting(true)
+        try {
+            const res = await fetch(`/api/situations/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    startDate: dataInicial,
+                    endDate: dataFinal,
+                    employeeId: colaboradorId,
+                    typeId: tipoId,
+                }),
+            })
+            if (res.ok) await loadSituations()
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function activateSituation(id: string) {
-        const res = await fetch(`/api/situations/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: true }),
-        })
-        if (res.ok) await loadSituations()
+        setIsSubmitting(true)
+        try {
+            const res = await fetch(`/api/situations/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: true }),
+            })
+            if (res.ok) await loadSituations()
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function deactivateSituation(id: string) {
-        const res = await fetch(`/api/situations/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: false }),
-        })
-        if (res.ok) await loadSituations()
+        setIsSubmitting(true)
+        try {
+            const res = await fetch(`/api/situations/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: false }),
+            })
+            if (res.ok) await loadSituations()
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     return {
@@ -246,5 +305,7 @@ export function useSituationClient({
         setShowTypes,
         showCreate,
         setShowCreate,
+        isSubmitting,
+        isLoading,
     }
 }

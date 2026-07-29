@@ -41,6 +41,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
     const [users, setUsers] = useState<CompanyUser[]>(initialUsers)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const [companyForm, setCompanyForm] = useState({
         name: initialCompany?.name ?? '',
@@ -90,6 +91,8 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
             setSuccess('Dados da empresa atualizados com sucesso.')
         } catch (saveError) {
             setError(saveError instanceof Error ? saveError.message : 'Erro ao salvar empresa.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -120,6 +123,8 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
             setSuccess('Usuario criado com sucesso.')
         } catch (createError) {
             setError(createError instanceof Error ? createError.message : 'Erro ao criar usuario.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -150,6 +155,8 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
             setError(
                 updateError instanceof Error ? updateError.message : 'Erro ao atualizar usuario.',
             )
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -332,10 +339,10 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
 
                         <button
                             type="submit"
-                            className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
-                            disabled={!canEditCompany}
+                            className="primary-button rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-70"
+                            disabled={!canEditCompany || isSubmitting}
                         >
-                            Salvar empresa
+                            {isSubmitting ? 'Processando...' : 'Salvar empresa'}
                         </button>
                     </form>
                 </div>
@@ -414,46 +421,54 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
 
                             <button
                                 type="submit"
-                                className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
-                                disabled={!canManageUsers}
+                                className="primary-button rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-70"
+                                disabled={!canManageUsers || isSubmitting}
                             >
-                                Incluir usuario
+                                {isSubmitting ? 'Processando...' : 'Incluir usuario'}
                             </button>
                         </form>
                     ) : null}
 
                     <div className="mt-5 space-y-2">
-                        {users.map((user) => (
-                            <div
-                                key={user._id}
-                                className="rounded-xl border border-(--color-border) bg-white px-3 py-3"
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <p className="text-sm font-semibold text-(--color-primary-strong)">
-                                            {user.name}
-                                        </p>
-                                        <p className="text-xs text-(--color-muted)">{user.email}</p>
-                                        <p className="mt-1 text-xs text-(--color-muted)">
-                                            Perfil: {user.role} | Status:{' '}
-                                            {user.active ? 'Ativo' : 'Inativo'}
-                                        </p>
-                                    </div>
-
-                                    {canManageUsers ? (
-                                        <button
-                                            type="button"
-                                            className="primary-button rounded-lg px-2 py-1 text-xs font-semibold"
-                                            onClick={() =>
-                                                handleToggleUserActive(user._id, !user.active)
-                                            }
-                                        >
-                                            {user.active ? 'Inativar' : 'Reativar'}
-                                        </button>
-                                    ) : null}
-                                </div>
+                        {users.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-(--color-border) bg-surface-soft px-3 py-4 text-center text-sm text-(--color-primary-weak)">
+                                Nenhum usuário cadastrado ainda.
                             </div>
-                        ))}
+                        ) : (
+                            users.map((user) => (
+                                <div
+                                    key={user._id}
+                                    className="rounded-xl border border-(--color-border) bg-white px-3 py-3"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm font-semibold text-(--color-primary-strong)">
+                                                {user.name}
+                                            </p>
+                                            <p className="text-xs text-(--color-muted)">
+                                                {user.email}
+                                            </p>
+                                            <p className="mt-1 text-xs text-(--color-muted)">
+                                                Perfil: {user.role} | Status:{' '}
+                                                {user.active ? 'Ativo' : 'Inativo'}
+                                            </p>
+                                        </div>
+
+                                        {canManageUsers ? (
+                                            <button
+                                                type="button"
+                                                className="primary-button rounded-lg px-2 py-1 text-xs font-semibold"
+                                                onClick={() =>
+                                                    handleToggleUserActive(user._id, !user.active)
+                                                }
+                                            >
+                                                {user.active ? 'Inativar' : 'Reativar'}
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

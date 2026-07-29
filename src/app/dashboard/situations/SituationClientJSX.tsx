@@ -69,6 +69,8 @@ export default function SituationClientJSX({
         setShowTypes,
         showCreate,
         setShowCreate,
+        isSubmitting,
+        isLoading,
     } = client
 
     return (
@@ -86,15 +88,17 @@ export default function SituationClientJSX({
             {/* Botões principais */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <button
-                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold"
+                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-70"
                     onClick={() => setShowTypes(!showTypes)}
+                    disabled={isSubmitting}
                 >
                     Tipos de Situação
                 </button>
 
                 <button
-                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold"
+                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-70"
                     onClick={() => setShowCreate(!showCreate)}
+                    disabled={isSubmitting}
                 >
                     Cadastro de Situação
                 </button>
@@ -113,7 +117,7 @@ export default function SituationClientJSX({
                                 Novo Tipo de Situação
                             </h3>
 
-                            <SituationTypeForm onSubmit={createType} />
+                            <SituationTypeForm onSubmit={createType} isSubmitting={isSubmitting} />
                         </div>
 
                         <div className="rounded-xl border border-(--color-border) bg-white p-4 space-y-4">
@@ -126,6 +130,7 @@ export default function SituationClientJSX({
                                 onEditar={editType}
                                 onAtivar={activateType}
                                 onInativar={deactivateType}
+                                isSubmitting={isSubmitting}
                             />
                         </div>
                     </div>
@@ -151,6 +156,7 @@ export default function SituationClientJSX({
                             colaboradores={employees}
                             tipos={types.filter((t) => t.active)}
                             onSubmit={createSituation}
+                            isSubmitting={isSubmitting}
                         />
                     )}
                 </section>
@@ -179,14 +185,25 @@ export default function SituationClientJSX({
             />
 
             {/* LISTA */}
-            <SituationList
-                situacoes={situations}
-                colaboradores={employees}
-                tipos={types}
-                onEditar={editSituation}
-                onAtivar={activateSituation}
-                onInativar={deactivateSituation}
-            />
+            {isLoading ? (
+                <div className="rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                    Carregando situações...
+                </div>
+            ) : situations.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                    Nenhuma situação encontrada para os filtros aplicados.
+                </div>
+            ) : (
+                <SituationList
+                    situacoes={situations}
+                    colaboradores={employees}
+                    tipos={types}
+                    onEditar={editSituation}
+                    onAtivar={activateSituation}
+                    onInativar={deactivateSituation}
+                    isSubmitting={isSubmitting}
+                />
+            )}
         </section>
     )
 }

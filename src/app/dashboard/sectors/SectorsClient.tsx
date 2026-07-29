@@ -23,6 +23,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
     const [sectors, setSectors] = useState<SectorItem[]>(initialSectors)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [name, setName] = useState('')
     const [percentage, setPercentage] = useState('')
     const [isMeritocracia, setIsMeritocracia] = useState(false)
@@ -85,6 +86,8 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
             router.refresh()
         } catch (createError) {
             setError(createError instanceof Error ? createError.message : 'Erro ao criar setor.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -120,6 +123,8 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                     ? toggleError.message
                     : 'Erro ao atualizar status do setor.',
             )
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -162,6 +167,8 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
             router.refresh()
         } catch (saveError) {
             setError(saveError instanceof Error ? saveError.message : 'Erro ao editar setor.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -219,10 +226,10 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                 />
                 <button
                     type="submit"
-                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
-                    disabled={!canWrite}
+                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-70"
+                    disabled={!canWrite || isSubmitting}
                 >
-                    Adicionar setor
+                    {isSubmitting ? 'Processando...' : 'Adicionar setor'}
                 </button>
             </form>
 
@@ -276,7 +283,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
-                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold"
+                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => {
                                                 setEditingSectorId(sector._id)
                                                 setEditName(sector.name)
@@ -289,8 +296,9 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
 
                                         <button
                                             type="button"
-                                            className="secondary-button rounded-lg px-3 py-1 text-xs font-semibold"
+                                            className="secondary-button rounded-lg px-3 py-1 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => handleToggleActive(sector)}
+                                            disabled={isSubmitting}
                                         >
                                             {sector.active ? 'Inativar' : 'Ativar'}
                                         </button>

@@ -10,6 +10,7 @@ interface Props {
 
     sectors: SectorItem[]
     canWrite: boolean
+    isSubmitting?: boolean
 
     setName: (value: string) => void
     setSectorId: (value: string) => void
@@ -29,6 +30,7 @@ export function EmployeesForm({
 
     sectors,
     canWrite,
+    isSubmitting = false,
 
     setName,
     setSectorId,
@@ -112,10 +114,10 @@ export function EmployeesForm({
             <div className="flex justify-end gap-3">
                 <button
                     type="submit"
-                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
-                    disabled={!canWrite}
+                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-70"
+                    disabled={!canWrite || isSubmitting}
                 >
-                    Cadastrar
+                    {isSubmitting ? 'Processando...' : 'Cadastrar'}
                 </button>
 
                 <button

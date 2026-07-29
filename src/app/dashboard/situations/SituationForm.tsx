@@ -18,6 +18,7 @@ type SituationType = {
 interface SituationFormProps {
     colaboradores: Collaborator[]
     tipos: SituationType[]
+    isSubmitting?: boolean
     onSubmit: (
         dataInicial: string,
         dataFinal: string,
@@ -26,7 +27,12 @@ interface SituationFormProps {
     ) => void
 }
 
-export default function SituationForm({ colaboradores, tipos, onSubmit }: SituationFormProps) {
+export default function SituationForm({
+    colaboradores,
+    tipos,
+    onSubmit,
+    isSubmitting = false,
+}: SituationFormProps) {
     const [dataInicial, setDataInicial] = useState('')
     const [dataFinal, setDataFinal] = useState('')
     const [colaboradorId, setColaboradorId] = useState('')
@@ -164,9 +170,10 @@ export default function SituationForm({ colaboradores, tipos, onSubmit }: Situat
                 <div className="flex items-end">
                     <button
                         type="submit"
-                        className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold"
+                        className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-70"
+                        disabled={isSubmitting}
                     >
-                        Cadastrar
+                        {isSubmitting ? 'Processando...' : 'Cadastrar'}
                     </button>
                 </div>
             </div>

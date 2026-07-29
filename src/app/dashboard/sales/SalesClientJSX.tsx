@@ -17,6 +17,7 @@ export function SalesClientJSX({ client }: SalesClientJSXProps) {
                 editId={client.editId}
                 onSave={client.saveSale}
                 onCancel={client.cancelEdit}
+                isSaving={client.isSaving}
             />
 
             <SalesFilters
@@ -31,6 +32,7 @@ export function SalesClientJSX({ client }: SalesClientJSXProps) {
                 sales={client.sales}
                 onEdit={client.beginEdit}
                 onOpenModal={client.openModal}
+                isLoading={client.isLoading}
             />
 
             {client.modalDate && (
