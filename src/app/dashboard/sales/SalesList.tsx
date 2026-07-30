@@ -13,12 +13,46 @@ interface SalesListProps {
     onEdit: (id: string) => void
     onOpenModal: (date: string) => void
     onRecalc?: (date: string) => void
+    isLoading?: boolean
 }
 
-export function SalesList({ sales, onEdit, onOpenModal, onRecalc }: SalesListProps) {
+export function SalesList({
+    sales,
+    onEdit,
+    onOpenModal,
+    onRecalc,
+    isLoading = false,
+}: SalesListProps) {
+    if (isLoading) {
+        return (
+            <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface">
+                <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
+                    Histórico de Vendas
+                </h3>
+
+                <div className="mt-6 rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                    Carregando vendas...
+                </div>
+            </div>
+        )
+    }
+
+    if (sales.length === 0) {
+        return (
+            <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface">
+                <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
+                    Histórico de Vendas
+                </h3>
+
+                <div className="mt-6 rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                    Nenhuma venda encontrada para o período selecionado.
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface">
-
             <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
                 Histórico de Vendas
             </h3>

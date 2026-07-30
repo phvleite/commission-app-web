@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type Dispatch, type SetStateAction } from 'react'
+import { toast } from 'sonner'
 import type { CommissionsResult, EmployeeOption } from '../CommissionsClient'
 
 interface CommissionsFilterProps {
@@ -10,6 +11,8 @@ interface CommissionsFilterProps {
     employees: EmployeeOption[]
     employeesLoading: boolean
     showSituations: boolean
+    loading: boolean
+    apiError: string | null
     setStartDate: Dispatch<SetStateAction<string>>
     setEndDate: Dispatch<SetStateAction<string>>
     setEmployeeId: Dispatch<SetStateAction<string>>
@@ -81,6 +84,8 @@ export default function CommissionsFilter({
     employees,
     employeesLoading,
     showSituations,
+    loading,
+    apiError,
     setStartDate,
     setEndDate,
     setEmployeeId,
@@ -92,6 +97,8 @@ export default function CommissionsFilter({
     listSituations,
 }: CommissionsFilterProps) {
     const [error, setError] = useState('')
+    const [generatingAction, setGeneratingAction] = useState<'all' | 'employee' | null>(null)
+    const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
     async function handleAll() {
         if (!startDate || !endDate) {
@@ -100,23 +107,41 @@ export default function CommissionsFilter({
         }
 
         setError('')
-        const periodResult = await listByPeriod(startDate, endDate)
+        setGeneratingAction('all')
+        setStatusMessage('Gerando relatório geral...')
+        try {
+            const periodResult = await listByPeriod(startDate, endDate)
 
-        if (!periodResult) {
-            return
+            if (!periodResult) {
+                return
+            }
+
+            if (periodResult.data.length === 0) {
+                const message = 'Não existem registros de comissões para o período informado.'
+                setError(message)
+                onResult(null)
+                toast.warning(message)
+                return
+            }
+
+            const situations = showSituations
+                ? ((await listSituations(startDate, endDate)) ?? [])
+                : []
+
+            onResult({
+                type: 'all',
+                startDate,
+                endDate,
+                data: periodResult.data,
+                sectorSummary: periodResult.sectorSummary,
+                salesSummary: periodResult.salesSummary,
+                situations,
+            })
+            toast.success('Relatório geral gerado.')
+        } finally {
+            setGeneratingAction(null)
+            setStatusMessage(null)
         }
-
-        const situations = showSituations ? ((await listSituations(startDate, endDate)) ?? []) : []
-
-        onResult({
-            type: 'all',
-            startDate,
-            endDate,
-            data: periodResult.data,
-            sectorSummary: periodResult.sectorSummary,
-            salesSummary: periodResult.salesSummary,
-            situations,
-        })
     }
 
     async function handleEmployee() {
@@ -126,19 +151,36 @@ export default function CommissionsFilter({
         }
 
         setError('')
-        const employeeResult = await listByPeriodEmployee(startDate, endDate, employeeId)
+        setGeneratingAction('employee')
+        setStatusMessage('Gerando relatório por colaborador...')
+        try {
+            const employeeResult = await listByPeriodEmployee(startDate, endDate, employeeId)
 
-        if (!employeeResult) {
-            return
+            if (!employeeResult) {
+                return
+            }
+
+            if (employeeResult.data.length === 0) {
+                const message =
+                    'Não existem registros de comissões para o colaborador no período informado.'
+                setError(message)
+                onResult(null)
+                toast.warning(message)
+                return
+            }
+
+            onResult({
+                type: 'employee',
+                startDate,
+                endDate,
+                data: employeeResult.data,
+                sectorSummary: employeeResult.sectorSummary,
+            })
+            toast.success('Relatório por colaborador gerado.')
+        } finally {
+            setGeneratingAction(null)
+            setStatusMessage(null)
         }
-
-        onResult({
-            type: 'employee',
-            startDate,
-            endDate,
-            data: employeeResult.data,
-            sectorSummary: employeeResult.sectorSummary,
-        })
     }
 
     function handleClear() {
@@ -200,25 +242,44 @@ export default function CommissionsFilter({
                 Mostrar situações no relatório geral
             </label>
 
-            {error && <p className="text-sm text-(--color-danger)">{error}</p>}
+            {statusMessage ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+                    {statusMessage}
+                </p>
+            ) : null}
+
+            {apiError ? (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-(--color-danger)">
+                    {apiError}
+                </p>
+            ) : null}
+
+            {error ? (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-(--color-danger)">
+                    {error}
+                </p>
+            ) : null}
 
             <div className="flex flex-wrap gap-2">
                 <button
                     type="button"
-                    className="primary-button rounded-lg px-4 py-2"
+                    className="primary-button rounded-lg px-4 py-2 disabled:opacity-70"
                     onClick={handleAll}
+                    disabled={generatingAction !== null || loading}
                 >
-                    Gerar relatório geral
+                    {generatingAction === 'all' ? 'Processando...' : 'Gerar relatório geral'}
                 </button>
 
                 <button
                     type="button"
                     className="primary-button rounded-lg border border-(--color-border) px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleEmployee}
-                    disabled={!employeeId || employeesLoading}
+                    disabled={
+                        !employeeId || employeesLoading || generatingAction !== null || loading
+                    }
                     title={!employeeId ? 'Selecione um colaborador para gerar o relatório.' : ''}
                 >
-                    Gerar por colaborador
+                    {generatingAction === 'employee' ? 'Processando...' : 'Gerar por colaborador'}
                 </button>
 
                 <button

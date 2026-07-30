@@ -23,6 +23,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
     const [sectors, setSectors] = useState<SectorItem[]>(initialSectors)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [name, setName] = useState('')
     const [percentage, setPercentage] = useState('')
     const [isMeritocracia, setIsMeritocracia] = useState(false)
@@ -58,6 +59,7 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
         event.preventDefault()
         setError(null)
         setSuccess(null)
+        setIsSubmitting(true)
 
         try {
             const res = await fetch('/api/sectors', {
@@ -85,12 +87,15 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
             router.refresh()
         } catch (createError) {
             setError(createError instanceof Error ? createError.message : 'Erro ao criar setor.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
     async function handleToggleActive(sector: SectorItem) {
         setError(null)
         setSuccess(null)
+        setIsSubmitting(true)
 
         try {
             const res = await fetch(`/api/sectors/${sector._id}`, {
@@ -120,12 +125,15 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                     ? toggleError.message
                     : 'Erro ao atualizar status do setor.',
             )
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
     async function handleSaveEdition(sectorId: string) {
         setError(null)
         setSuccess(null)
+        setIsSubmitting(true)
 
         try {
             const res = await fetch(`/api/sectors/${sectorId}`, {
@@ -162,6 +170,8 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
             router.refresh()
         } catch (saveError) {
             setError(saveError instanceof Error ? saveError.message : 'Erro ao editar setor.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -219,10 +229,10 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                 />
                 <button
                     type="submit"
-                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold"
-                    disabled={!canWrite}
+                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-70"
+                    disabled={!canWrite || isSubmitting}
                 >
-                    Adicionar setor
+                    {isSubmitting ? 'Processando...' : 'Adicionar setor'}
                 </button>
             </form>
 
@@ -276,21 +286,23 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
-                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold"
+                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => {
                                                 setEditingSectorId(sector._id)
                                                 setEditName(sector.name)
                                                 setEditPercentage(String(sector.percentage))
                                                 setEditIsMeritocracia(sector.isMeritocracia)
                                             }}
+                                            disabled={isSubmitting}
                                         >
                                             Editar
                                         </button>
 
                                         <button
                                             type="button"
-                                            className="secondary-button rounded-lg px-3 py-1 text-xs font-semibold"
+                                            className="secondary-button rounded-lg px-3 py-1 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => handleToggleActive(sector)}
+                                            disabled={isSubmitting}
                                         >
                                             {sector.active ? 'Inativar' : 'Ativar'}
                                         </button>
@@ -334,20 +346,22 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                                     ) : null}
                                     <button
                                         type="button"
-                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={() => handleSaveEdition(sector._id)}
+                                        disabled={isSubmitting}
                                     >
-                                        Salvar
+                                        {isSubmitting ? 'Processando...' : 'Salvar'}
                                     </button>
                                     <button
                                         type="button"
-                                        className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={() => {
                                             setEditingSectorId(null)
                                             setEditIsMeritocracia(false)
                                             setEditName('')
                                             setEditPercentage('')
                                         }}
+                                        disabled={isSubmitting}
                                     >
                                         Cancelar
                                     </button>

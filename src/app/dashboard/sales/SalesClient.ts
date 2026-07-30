@@ -1,7 +1,9 @@
 'use client'
 
+import { readJsonResponse } from '@/lib/api/fetchJson'
 import { createElement } from 'react'
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { SalesClientContainer } from './SalesClientContainer'
 
 interface SaleItem {
@@ -26,25 +28,42 @@ export function useSalesClient(initialSales: SaleItem[]) {
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
     const [modalDate, setModalDate] = useState<string | null>(null)
+    const [isSaving, setIsSaving] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
 
     const fetchSales = useCallback(async () => {
         const params = new URLSearchParams()
         if (startDate) params.append('start', startDate)
         if (endDate) params.append('end', endDate)
 
-        const res = await fetch(`/api/sales?${params.toString()}`)
-        const json = await res.json()
+        try {
+            const res = await fetch(`/api/sales?${params.toString()}`)
+            const json = await readJsonResponse<{ sales?: SaleItem[]; error?: string }>(
+                res,
+                'Erro ao carregar vendas.',
+            )
 
-        return json.sales as SaleItem[]
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao carregar vendas.')
+            }
+
+            return json.sales as SaleItem[]
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Erro ao carregar vendas.'
+            toast.error(message)
+            return []
+        }
     }, [startDate, endDate])
 
     useEffect(() => {
         let isCancelled = false
 
         async function syncSales() {
+            setIsLoading(true)
             const nextSales = await fetchSales()
             if (!isCancelled) {
                 setSales(nextSales)
+                setIsLoading(false)
             }
         }
 
@@ -61,28 +80,36 @@ export function useSalesClient(initialSales: SaleItem[]) {
         beginEdit: setEditId,
         cancelEdit: () => setEditId(null),
         saveSale: async (date: string, value: number) => {
+            setIsSaving(true)
             const body = JSON.stringify({ date, value })
             let res
 
-            if (!editId) {
-                res = await fetch('/api/sales', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body,
-                })
-            } else {
-                res = await fetch(`/api/sales/${editId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body,
-                })
-            }
+            try {
+                if (!editId) {
+                    res = await fetch('/api/sales', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body,
+                    })
+                } else {
+                    res = await fetch(`/api/sales/${editId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body,
+                    })
+                }
 
-            const json = await res.json()
-            if (!res.ok) throw new Error(json.error)
-            setEditId(null)
-            const nextSales = await fetchSales()
-            setSales(nextSales)
+                const json = await readJsonResponse<{ error?: string }>(
+                    res,
+                    'Erro ao salvar venda.',
+                )
+                if (!res.ok) throw new Error(json.error)
+                setEditId(null)
+                const nextSales = await fetchSales()
+                setSales(nextSales)
+            } finally {
+                setIsSaving(false)
+            }
         },
 
         startDate,
@@ -97,5 +124,7 @@ export function useSalesClient(initialSales: SaleItem[]) {
         modalDate,
         openModal: setModalDate,
         closeModal: () => setModalDate(null),
+        isSaving,
+        isLoading,
     }
 }

@@ -5,9 +5,10 @@ import { toast } from 'sonner'
 
 interface Props {
     onSubmit: (descricao: string) => void
+    isSubmitting?: boolean
 }
 
-export default function SituationTypeForm({ onSubmit }: Props) {
+export default function SituationTypeForm({ onSubmit, isSubmitting = false }: Props) {
     const [descricao, setDescricao] = useState('')
 
     function handleSubmit(e: React.FormEvent) {
@@ -26,12 +27,9 @@ export default function SituationTypeForm({ onSubmit }: Props) {
 
     return (
         <form className="space-y-4" onSubmit={handleSubmit}>
-            
             {/* Label + Input */}
             <div className="flex flex-col">
-                <label className="text-sm font-semibold text-(--color-muted)">
-                    Descrição
-                </label>
+                <label className="text-sm font-semibold text-(--color-muted)">Descrição</label>
 
                 <input
                     className="mt-1 h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong)"
@@ -45,9 +43,10 @@ export default function SituationTypeForm({ onSubmit }: Props) {
             {/* Botão */}
             <button
                 type="submit"
-                className="primary-button w-full rounded-xl px-4 py-3 text-sm font-semibold"
+                className="primary-button w-full rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-70"
+                disabled={isSubmitting}
             >
-                Cadastrar
+                {isSubmitting ? 'Processando...' : 'Cadastrar'}
             </button>
         </form>
     )

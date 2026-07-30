@@ -1,5 +1,6 @@
 'use client'
 
+import { readJsonResponse } from '@/lib/api/fetchJson'
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { useCommissions } from './hooks/useCommissions'
 
@@ -72,6 +73,8 @@ export interface CommissionsClientState {
     setEmployeeId: Dispatch<SetStateAction<string>>
     setShowSituations: Dispatch<SetStateAction<boolean>>
     result: CommissionsResult
+    loading: boolean
+    error: string | null
     setResult: Dispatch<SetStateAction<CommissionsResult>>
     listByPeriod: (
         start: string,
@@ -99,11 +102,11 @@ export function useCommissionsClient(): CommissionsClientState {
     const [employeeId, setEmployeeId] = useState('')
     const [employees, setEmployees] = useState<EmployeeOption[]>([])
     const [employeesLoading, setEmployeesLoading] = useState(true)
-    const [showSituations, setShowSituations] = useState(false)
+    const [showSituations, setShowSituations] = useState(true)
 
     const [result, setResult] = useState<CommissionsResult>(null)
 
-    const { listByPeriod, listByPeriodEmployee, listSituations } = useCommissions()
+    const { listByPeriod, listByPeriodEmployee, listSituations, loading, error } = useCommissions()
 
     useEffect(() => {
         let active = true
@@ -111,13 +114,13 @@ export function useCommissionsClient(): CommissionsClientState {
         async function loadEmployees() {
             try {
                 const response = await fetch('/api/employees?includeInactive=true')
-                const json = (await response.json()) as {
+                const json = await readJsonResponse<{
                     data?: Array<{
                         _id: string
                         name: string
                         active?: boolean
                     }>
-                }
+                }>(response, 'Erro ao carregar colaboradores.')
 
                 if (!active) {
                     return
@@ -154,7 +157,7 @@ export function useCommissionsClient(): CommissionsClientState {
         setStartDate('')
         setEndDate('')
         setEmployeeId('')
-        setShowSituations(false)
+        setShowSituations(true)
         setResult(null)
     }
 
@@ -172,6 +175,8 @@ export function useCommissionsClient(): CommissionsClientState {
         setShowSituations,
 
         result,
+        loading,
+        error,
         setResult,
 
         listByPeriod,
