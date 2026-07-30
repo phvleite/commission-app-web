@@ -42,6 +42,25 @@ interface GroupedEmployeeRow {
     totalCommission: number
 }
 
+function toDateSortKey(value: string): number {
+    if (!value) return Number.POSITIVE_INFINITY
+
+    const base = value.includes('T') ? value.split('T')[0] : value
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(base)) {
+        const [year, month, day] = base.split('-').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(base)) {
+        const [day, month, year] = base.split('/').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
+}
+
 export function useCommissions() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -101,8 +120,18 @@ export function useCommissions() {
                 return null
             }
 
+            const sortedData = [...(json.data ?? [])].sort((a, b) => {
+                const dateCompare = toDateSortKey(a.date) - toDateSortKey(b.date)
+                if (dateCompare !== 0) return dateCompare
+
+                const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
+                if (sectorCompare !== 0) return sectorCompare
+
+                return a.situation.localeCompare(b.situation, 'pt-BR')
+            })
+
             return {
-                data: (json.data ?? []) as CommissionRow[],
+                data: sortedData as CommissionRow[],
                 sectorSummary: (json.sectorSummary ?? []) as Array<
                     SectorSummaryRow & { employeeValue: number }
                 >,

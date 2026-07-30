@@ -9,6 +9,25 @@ interface CommissionsReportEmployeeProps {
     result: CommissionsEmployeeResult
 }
 
+function toDateSortKey(value: string): number {
+    if (!value) return Number.POSITIVE_INFINITY
+
+    const base = value.includes('T') ? value.split('T')[0] : value
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(base)) {
+        const [year, month, day] = base.split('-').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(base)) {
+        const [day, month, year] = base.split('/').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
+}
+
 function getFilenameTimestamp(date = new Date()): string {
     const yyyy = date.getFullYear()
     const mm = String(date.getMonth() + 1).padStart(2, '0')
@@ -31,10 +50,8 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
     const totalGeneral = result.data.reduce((acc, row) => acc + row.employeeValue, 0)
 
     const sortedData = [...result.data].sort((a, b) => {
-        const dateA = a.date.includes('T') ? a.date.split('T')[0] : a.date
-        const dateB = b.date.includes('T') ? b.date.split('T')[0] : b.date
-
-        if (dateA !== dateB) return dateA.localeCompare(dateB, 'pt-BR')
+        const dateCompare = toDateSortKey(a.date) - toDateSortKey(b.date)
+        if (dateCompare !== 0) return dateCompare
 
         const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
         if (sectorCompare !== 0) return sectorCompare

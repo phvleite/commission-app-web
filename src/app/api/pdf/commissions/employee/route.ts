@@ -56,8 +56,23 @@ function normalizeDateForReport(value: string): string {
     return formatDateFromDatabase(baseDate)
 }
 
-function getDateSortKey(value: string): string {
-    return value.includes('T') ? value.split('T')[0] : value
+function toDateSortKey(value: string): number {
+    if (!value) return Number.POSITIVE_INFINITY
+
+    const base = value.includes('T') ? value.split('T')[0] : value
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(base)) {
+        const [year, month, day] = base.split('-').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(base)) {
+        const [day, month, year] = base.split('/').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
 }
 
 function renderReportEmployeeHtml(params: {
@@ -78,10 +93,8 @@ function renderReportEmployeeHtml(params: {
         .join('')
 
     const sortedData = [...params.data].sort((a, b) => {
-        const dateA = getDateSortKey(a.date)
-        const dateB = getDateSortKey(b.date)
-
-        if (dateA !== dateB) return dateA.localeCompare(dateB, 'pt-BR')
+        const dateCompare = toDateSortKey(a.date) - toDateSortKey(b.date)
+        if (dateCompare !== 0) return dateCompare
 
         const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
         if (sectorCompare !== 0) return sectorCompare
