@@ -14,7 +14,7 @@ describe('generateCommissionsForDate', () => {
     afterAll(async () => disconnectTestDB())
     afterEach(async () => clearTestDB())
 
-    it('generates commissions with meritocracia and ineligible employee correctly', async () => {
+    it('generates commissions with meritocracia and ineligible collaborator correctly', async () => {
         const tenantId = new Types.ObjectId().toString()
         const date = new Date('2026-07-10T00:00:00.000Z')
 
@@ -52,7 +52,7 @@ describe('generateCommissionsForDate', () => {
 
         const tipoFerias = await SituationType.create({
             tenantId,
-            description: 'Ferias',
+            description: 'Férias',
             active: true,
         })
 
@@ -115,7 +115,7 @@ describe('generateCommissionsForDate', () => {
         })
 
         expect(feriasCommission).toMatchObject({
-            situation: 'Ferias',
+            situation: 'Férias',
             employeeValue: 0,
             eligibleCount: 1,
             totalCount: 2,

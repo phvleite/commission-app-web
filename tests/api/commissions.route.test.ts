@@ -107,7 +107,7 @@ describe('API commissions routes', () => {
             date: dateA,
             employeeId: employeeB._id,
             sectorId: sectorA._id,
-            situation: 'Ferias',
+            situation: 'Férias',
             sectorValue: 700,
             employeeValue: 0,
             eligibleCount: 1,
@@ -238,7 +238,7 @@ describe('API commissions routes', () => {
         expect(json.situations[0]).toMatchObject({
             employeeName: 'Bruno',
             sectorName: 'Setor A',
-            situation: 'Ferias',
+            situation: 'Férias',
         })
     })
 
