@@ -1,5 +1,6 @@
 'use client'
 
+import { readJsonResponse } from '@/lib/api/fetchJson'
 import { useState } from 'react'
 import { generatePeriodTitle } from '../utils/generatePeriodTitle'
 import { generateEmployeePeriodTitle } from '../utils/generateEmployeePeriodTitle'
@@ -55,7 +56,12 @@ export function useCommissions() {
 
         try {
             const res = await fetch(`/api/commissions/period?start=${start}&end=${end}`)
-            const json = await res.json()
+            const json = await readJsonResponse<{
+                data?: CommissionRow[]
+                sectorSummary?: SectorSummaryRow[]
+                salesSummary?: SalesSummaryRow[]
+                error?: string
+            }>(res, 'Erro ao buscar comissões por período.')
 
             if (!res.ok) {
                 setError(json.error || 'Erro ao buscar comissões por período.')
@@ -84,7 +90,11 @@ export function useCommissions() {
             const res = await fetch(
                 `/api/commissions/period/employee?start=${start}&end=${end}&id=${employeeId}`,
             )
-            const json = await res.json()
+            const json = await readJsonResponse<{
+                data?: CommissionRow[]
+                sectorSummary?: Array<SectorSummaryRow & { employeeValue: number }>
+                error?: string
+            }>(res, 'Erro ao buscar comissões do colaborador.')
 
             if (!res.ok) {
                 setError(json.error || 'Erro ao buscar comissões do colaborador.')
@@ -112,7 +122,10 @@ export function useCommissions() {
 
         try {
             const res = await fetch(`/api/commissions/situations?start=${start}&end=${end}`)
-            const json = await res.json()
+            const json = await readJsonResponse<{
+                situations?: SituationRow[]
+                error?: string
+            }>(res, 'Erro ao buscar situações do período.')
 
             if (!res.ok) {
                 setError(json.error || 'Erro ao buscar situações do período.')

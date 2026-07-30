@@ -11,6 +11,7 @@ interface SituationType {
 
 interface Props {
     tipos: SituationType[]
+    isSubmitting?: boolean
     onEditar: (id: string, descricao: string) => void
     onAtivar: (id: string) => void
     onInativar: (id: string) => void
@@ -21,6 +22,7 @@ export default function SituationTypeList({
     onEditar,
     onAtivar,
     onInativar,
+    isSubmitting = false,
 }: Props) {
     const [editId, setEditId] = useState<string | null>(null)
     const [editDescricao, setEditDescricao] = useState('')
@@ -63,8 +65,9 @@ export default function SituationTypeList({
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <button
                                         type="button"
-                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={() => iniciarEdicao(t._id, t.description)}
+                                        disabled={isSubmitting}
                                     >
                                         Editar
                                     </button>
@@ -72,22 +75,24 @@ export default function SituationTypeList({
                                     {t.active ? (
                                         <button
                                             type="button"
-                                            className="secondary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                            className="secondary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => {
                                                 onInativar(t._id)
                                                 toast.success('Tipo de situação inativado!')
                                             }}
+                                            disabled={isSubmitting}
                                         >
                                             Inativar
                                         </button>
                                     ) : (
                                         <button
                                             type="button"
-                                            className="secondary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                            className="secondary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => {
                                                 onAtivar(t._id)
                                                 toast.success('Tipo de situação ativado!')
                                             }}
+                                            disabled={isSubmitting}
                                         >
                                             Ativar
                                         </button>
@@ -118,16 +123,18 @@ export default function SituationTypeList({
                                 <div className="flex flex-col sm:flex-row justify-end gap-2">
                                     <button
                                         type="button"
-                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={salvar}
+                                        disabled={isSubmitting}
                                     >
-                                        Salvar
+                                        {isSubmitting ? 'Processando...' : 'Salvar'}
                                     </button>
 
                                     <button
                                         type="button"
-                                        className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                        className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={() => setEditId(null)}
+                                        disabled={isSubmitting}
                                     >
                                         Cancelar
                                     </button>

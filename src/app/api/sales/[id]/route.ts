@@ -10,6 +10,29 @@ interface RouteContext {
     params: Promise<{ id: string }>
 }
 
+function getUtcDayRange(input: string): { start: Date; end: Date } | null {
+    const parsed = new Date(input)
+
+    if (Number.isNaN(parsed.getTime())) {
+        return null
+    }
+
+    const year = parsed.getUTCFullYear()
+    const month = parsed.getUTCMonth() + 1
+    const day = parsed.getUTCDate()
+
+    const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
+    const end = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999))
+
+    return { start, end }
+}
+
+function getUtcDayStartFromDate(date: Date): Date {
+    return new Date(
+        Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0),
+    )
+}
+
 function serializeSale(sale: {
     _id: unknown
     date: Date
@@ -68,7 +91,16 @@ export async function PUT(req: Request, context: RouteContext) {
 
     const { date, value } = await req.json()
 
-    const newDate = new Date(date)
+    if (typeof date !== 'string') {
+        return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
+    }
+
+    const dayRange = getUtcDayRange(date)
+    if (!dayRange) {
+        return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
+    }
+
+    const newDate = dayRange.start
     const newValueCentavos = Math.round(value * 100)
     const newCommissionCentavos = Math.round(newValueCentavos * 0.1)
 
@@ -88,7 +120,10 @@ export async function PUT(req: Request, context: RouteContext) {
     // Verificar duplicidade
     const exists = await Sale.findOne({
         tenantId: session.user.tenantId,
-        date: newDate,
+        date: {
+            $gte: dayRange.start,
+            $lte: dayRange.end,
+        },
         _id: { $ne: id },
     })
 
@@ -100,7 +135,8 @@ export async function PUT(req: Request, context: RouteContext) {
     }
 
     // Se a data mudou, apagar comissões antigas
-    if (oldDate.getTime() !== newDate.getTime()) {
+    const oldDateStart = getUtcDayStartFromDate(oldDate)
+    if (oldDateStart.getTime() !== newDate.getTime()) {
         await deleteCommissionsForDate(session.user.tenantId, oldDate)
     }
 

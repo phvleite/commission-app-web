@@ -29,6 +29,7 @@ interface Props {
     situacoes: Situation[]
     colaboradores: Collaborator[]
     tipos: SituationType[]
+    isSubmitting?: boolean
     onEditar: (
         id: string,
         dataInicial: string,
@@ -47,6 +48,7 @@ export default function SituationList({
     onEditar,
     onAtivar,
     onInativar,
+    isSubmitting = false,
 }: Props) {
     const [editId, setEditId] = useState<string | null>(null)
     const [editDataInicial, setEditDataInicial] = useState('')
@@ -121,8 +123,9 @@ export default function SituationList({
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <button
                                         type="button"
-                                        className="primary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={() => iniciarEdicao(s)}
+                                        disabled={isSubmitting}
                                     >
                                         Editar
                                     </button>
@@ -130,16 +133,18 @@ export default function SituationList({
                                     {s.active ? (
                                         <button
                                             type="button"
-                                            className="secondary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                            className="secondary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => onInativar(s._id)}
+                                            disabled={isSubmitting}
                                         >
                                             Inativar
                                         </button>
                                     ) : (
                                         <button
                                             type="button"
-                                            className="secondary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                            className="secondary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => onAtivar(s._id)}
+                                            disabled={isSubmitting}
                                         >
                                             Ativar
                                         </button>
@@ -155,7 +160,6 @@ export default function SituationList({
                             <div className="space-y-3">
                                 {/* Inputs com labels */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-
                                     {/* Data inicial */}
                                     <div className="flex flex-col">
                                         <label className="text-sm font-semibold text-(--color-muted)">
@@ -223,16 +227,18 @@ export default function SituationList({
                                 <div className="flex flex-col sm:flex-row justify-end gap-2">
                                     <button
                                         type="button"
-                                        className="primary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={salvar}
+                                        disabled={isSubmitting}
                                     >
-                                        Salvar
+                                        {isSubmitting ? 'Processando...' : 'Salvar'}
                                     </button>
 
                                     <button
                                         type="button"
-                                        className="cancel-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold"
+                                        className="cancel-button w-full sm:w-auto rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={() => setEditId(null)}
+                                        disabled={isSubmitting}
                                     >
                                         Cancelar
                                     </button>

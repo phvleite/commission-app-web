@@ -20,6 +20,8 @@ export default function CommissionsClientJSX({ client }: CommissionsClientJSXPro
                 employees={client.employees}
                 employeesLoading={client.employeesLoading}
                 showSituations={client.showSituations}
+                loading={client.loading}
+                apiError={client.error}
 
                 setStartDate={client.setStartDate}
                 setEndDate={client.setEndDate}

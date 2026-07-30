@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import SituationClientJSX from './SituationClientJSX'
 import { SituationType } from '@/models/SituationType'
 import { Situation } from '@/models/Situation'
@@ -8,7 +9,11 @@ import { auth } from '@/auth'
 
 export default async function Page() {
     const session = await auth()
-    const tenantId = session?.user?.tenantId
+    if (!session?.user) {
+        redirect('/login')
+    }
+
+    const tenantId = session.user.tenantId
 
     await connectDB()
 
