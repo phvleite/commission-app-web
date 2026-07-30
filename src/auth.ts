@@ -33,6 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.tenantId = user.tenantId
                 token.role = user.role
                 token.tenantName = user.tenantName
+                token.tenantTimeZone = user.tenantTimeZone
             }
             return token
         },
@@ -42,6 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 session.user.tenantId = token.tenantId as string
                 session.user.role = token.role as 'admin' | 'manager' | 'seller'
                 session.user.tenantName = token.tenantName as string
+                session.user.tenantTimeZone = token.tenantTimeZone as string | undefined
             }
             return session
         },

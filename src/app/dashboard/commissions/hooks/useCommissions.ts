@@ -1,6 +1,7 @@
 'use client'
 
 import { readJsonResponse } from '@/lib/api/fetchJson'
+import { withTimeZoneHeader } from '@/lib/api/time-zone-header'
 import { useState } from 'react'
 import { generatePeriodTitle } from '../utils/generatePeriodTitle'
 import { generateEmployeePeriodTitle } from '../utils/generateEmployeePeriodTitle'
@@ -74,7 +75,10 @@ export function useCommissions() {
         setError(null)
 
         try {
-            const res = await fetch(`/api/commissions/period?start=${start}&end=${end}`)
+            const res = await fetch(
+                `/api/commissions/period?start=${start}&end=${end}`,
+                withTimeZoneHeader(),
+            )
             const json = await readJsonResponse<{
                 data?: CommissionRow[]
                 sectorSummary?: SectorSummaryRow[]
@@ -108,6 +112,7 @@ export function useCommissions() {
         try {
             const res = await fetch(
                 `/api/commissions/period/employee?start=${start}&end=${end}&id=${employeeId}`,
+                withTimeZoneHeader(),
             )
             const json = await readJsonResponse<{
                 data?: CommissionRow[]
@@ -150,7 +155,10 @@ export function useCommissions() {
         setError(null)
 
         try {
-            const res = await fetch(`/api/commissions/situations?start=${start}&end=${end}`)
+            const res = await fetch(
+                `/api/commissions/situations?start=${start}&end=${end}`,
+                withTimeZoneHeader(),
+            )
             const json = await readJsonResponse<{
                 situations?: SituationRow[]
                 error?: string

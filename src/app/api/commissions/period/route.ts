@@ -6,6 +6,7 @@ import { Employee } from '@/models/Employee'
 import { Sale } from '@/models/Sale'
 import { SaleCommissionSector } from '@/models/SaleCommissionSector'
 import { Sector } from '@/models/Sector'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export async function GET(req: Request) {
     const session = await auth()
@@ -19,8 +20,16 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
     }
 
-    const startDate = new Date(start)
-    const endDate = new Date(end)
+    const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+    const startRange = getUtcRangeForCalendarDay(start, timeZone)
+    const endRange = getUtcRangeForCalendarDay(end, timeZone)
+
+    if (!startRange || !endRange) {
+        return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+    }
+
+    const startDate = startRange.start
+    const endDate = endRange.end
 
     await connectDB()
 

@@ -5,26 +5,10 @@ import { deleteCommissionsForDate } from '@/services/commissions/delete'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
 import { Types } from 'mongoose'
 import { NextRequest, NextResponse } from 'next/server'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 interface RouteContext {
     params: Promise<{ id: string }>
-}
-
-function getUtcDayRange(input: string): { start: Date; end: Date } | null {
-    const parsed = new Date(input)
-
-    if (Number.isNaN(parsed.getTime())) {
-        return null
-    }
-
-    const year = parsed.getUTCFullYear()
-    const month = parsed.getUTCMonth() + 1
-    const day = parsed.getUTCDate()
-
-    const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
-    const end = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999))
-
-    return { start, end }
 }
 
 function getUtcDayStartFromDate(date: Date): Date {
@@ -95,7 +79,8 @@ export async function PUT(req: Request, context: RouteContext) {
         return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
     }
 
-    const dayRange = getUtcDayRange(date)
+    const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+    const dayRange = getUtcRangeForCalendarDay(date, timeZone)
     if (!dayRange) {
         return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
     }

@@ -2,6 +2,7 @@ import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 import { SaleCommissionSector } from '@/models/SaleCommissionSector'
 import { Sector } from '@/models/Sector'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export async function GET(req: Request) {
     const session = await auth()
@@ -14,11 +15,19 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Data não informada.' }, { status: 400 })
     }
 
-    const dateObj = new Date(date)
+    const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+    const dayRange = getUtcRangeForCalendarDay(date, timeZone)
+
+    if (!dayRange) {
+        return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
+    }
 
     const sectors = await SaleCommissionSector.find({
         tenantId: session.user.tenantId,
-        date: dateObj,
+        date: {
+            $gte: dayRange.start,
+            $lte: dayRange.end,
+        },
     }).lean()
 
     const enriched = await Promise.all(
@@ -28,7 +37,7 @@ export async function GET(req: Request) {
                 ...s,
                 sectorName: sector?.name ?? 'Setor',
             }
-        })
+        }),
     )
 
     return NextResponse.json({ sectors: enriched })

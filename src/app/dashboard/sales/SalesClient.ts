@@ -1,6 +1,7 @@
 'use client'
 
 import { readJsonResponse } from '@/lib/api/fetchJson'
+import { withTimeZoneHeader } from '@/lib/api/time-zone-header'
 import { createElement } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -37,7 +38,7 @@ export function useSalesClient(initialSales: SaleItem[]) {
         if (endDate) params.append('end', endDate)
 
         try {
-            const res = await fetch(`/api/sales?${params.toString()}`)
+            const res = await fetch(`/api/sales?${params.toString()}`, withTimeZoneHeader())
             const json = await readJsonResponse<{ sales?: SaleItem[]; error?: string }>(
                 res,
                 'Erro ao carregar vendas.',
@@ -86,17 +87,23 @@ export function useSalesClient(initialSales: SaleItem[]) {
 
             try {
                 if (!editId) {
-                    res = await fetch('/api/sales', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body,
-                    })
+                    res = await fetch(
+                        '/api/sales',
+                        withTimeZoneHeader({
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body,
+                        }),
+                    )
                 } else {
-                    res = await fetch(`/api/sales/${editId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body,
-                    })
+                    res = await fetch(
+                        `/api/sales/${editId}`,
+                        withTimeZoneHeader({
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body,
+                        }),
+                    )
                 }
 
                 const json = await readJsonResponse<{ error?: string }>(

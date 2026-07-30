@@ -7,6 +7,7 @@ import {
     currencyToNumber,
     formatCurrencyFromDatabase,
 } from '@/utils/formatCurrency'
+import { withTimeZoneHeader } from '@/lib/api/time-zone-header'
 
 interface SalesFormProps {
     editId: string | null
@@ -41,7 +42,7 @@ export function SalesForm({
                 return
             }
 
-            const res = await fetch(`/api/sales/${editId}`)
+            const res = await fetch(`/api/sales/${editId}`, withTimeZoneHeader())
             const json = await res.json()
 
             if (!res.ok) {

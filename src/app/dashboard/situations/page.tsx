@@ -6,6 +6,7 @@ import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 import { connectDB } from '@/lib/db'
 import { auth } from '@/auth'
+import { formatDateToYmdInTimeZone, normalizeTimeZone } from '@/lib/date-timezone'
 
 export default async function Page() {
     const session = await auth()
@@ -14,6 +15,7 @@ export default async function Page() {
     }
 
     const tenantId = session.user.tenantId
+    const timeZone = normalizeTimeZone(session.user.tenantTimeZone)
 
     await connectDB()
 
@@ -48,8 +50,8 @@ export default async function Page() {
         employeeName: s.employeeId.name,
         typeId: String(s.typeId._id),
         typeDescription: s.typeId.description,
-        startDate: s.startDate.toISOString().substring(0, 10),
-        endDate: s.endDate.toISOString().substring(0, 10),
+        startDate: formatDateToYmdInTimeZone(s.startDate, timeZone),
+        endDate: formatDateToYmdInTimeZone(s.endDate, timeZone),
         active: s.active,
     }))
 
