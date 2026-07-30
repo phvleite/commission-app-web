@@ -72,7 +72,6 @@ export async function POST(req: Request) {
     const commissionCentavos = Math.round(valueCentavos * 0.1)
 
     try {
-        // Verificar duplicidade
         const exists = await Sale.findOne({
             tenantId: session.user.tenantId,
             date: {
