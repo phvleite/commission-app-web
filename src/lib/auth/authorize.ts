@@ -15,6 +15,7 @@ export interface AuthorizedUser {
     email: string
     role: UserRole
     tenantName: string
+    tenantTimeZone?: string
 }
 
 export async function authorizeCredentials({
@@ -52,7 +53,7 @@ export async function authorizeCredentials({
     }
 
     // Buscar o nome da empresa (Tenant)
-    const tenant = await Tenant.findById(user.tenantId).select('name').lean()
+    const tenant = await Tenant.findById(user.tenantId).select('name timeZone').lean()
     if (!tenant) {
         return null
     }
@@ -64,5 +65,6 @@ export async function authorizeCredentials({
         email: user.email,
         role: user.role,
         tenantName: tenant.name,
+        tenantTimeZone: typeof tenant.timeZone === 'string' ? tenant.timeZone : undefined,
     }
 }

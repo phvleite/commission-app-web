@@ -7,6 +7,7 @@ declare module 'next-auth' {
             tenantId: string
             role: 'admin' | 'manager' | 'seller'
             tenantName: string
+            tenantTimeZone?: string
         }
     }
 
@@ -15,6 +16,7 @@ declare module 'next-auth' {
         tenantId: string
         role: 'admin' | 'manager' | 'seller'
         tenantName: string
+        tenantTimeZone?: string
     }
 }
 
@@ -23,6 +25,7 @@ declare module 'next-auth/jwt' {
         tenantId?: string
         role?: 'admin' | 'manager' | 'seller'
         tenantName?: string
+        tenantTimeZone?: string
     }
 }
 

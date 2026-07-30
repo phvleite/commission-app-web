@@ -15,6 +15,7 @@ export interface ITenant extends WithTimestamps {
     name: string
     legalName: string
     slug: string
+    timeZone?: string
     address?: IAddress
     active: boolean
 }
@@ -38,6 +39,7 @@ const tenantSchema = new Schema<TenantDocument>(
         name: { type: String, required: true, trim: true },
         legalName: { type: String, required: true, trim: true },
         slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+        timeZone: { type: String, default: 'America/Sao_Paulo', trim: true },
         address: { type: addressSchema },
         active: { type: Boolean, default: true },
     },

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { Commission } from '@/models/Commission'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export async function GET(req: Request) {
     const session = await auth()
@@ -17,8 +18,16 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Parâmetros inválidos.' }, { status: 400 })
     }
 
-    const startDate = new Date(start)
-    const endDate = new Date(end)
+    const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+    const startRange = getUtcRangeForCalendarDay(start, timeZone)
+    const endRange = getUtcRangeForCalendarDay(end, timeZone)
+
+    if (!startRange || !endRange) {
+        return NextResponse.json({ error: 'Parâmetros inválidos.' }, { status: 400 })
+    }
+
+    const startDate = startRange.start
+    const endDate = endRange.end
 
     const commissions = await Commission.find({
         tenantId: session.user.tenantId,

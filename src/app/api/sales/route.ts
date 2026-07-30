@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { Sale } from '@/models/Sale'
 import { deleteCommissionsForDate } from '@/services/commissions/delete'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 interface SalesQuery {
     tenantId: string
@@ -10,23 +11,6 @@ interface SalesQuery {
         $gte?: Date
         $lte?: Date
     }
-}
-
-function getUtcDayRange(input: string): { start: Date; end: Date } | null {
-    const parsed = new Date(input)
-
-    if (Number.isNaN(parsed.getTime())) {
-        return null
-    }
-
-    const year = parsed.getUTCFullYear()
-    const month = parsed.getUTCMonth() + 1
-    const day = parsed.getUTCDate()
-
-    const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
-    const end = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999))
-
-    return { start, end }
 }
 
 export async function GET(req: Request) {
@@ -37,11 +21,25 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url)
         const start = searchParams.get('start')
         const end = searchParams.get('end')
+        const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
 
         const query: SalesQuery = { tenantId: session.user.tenantId }
 
-        if (start) query.date = { ...query.date, $gte: new Date(start) }
-        if (end) query.date = { ...query.date, $lte: new Date(end) }
+        if (start) {
+            const startRange = getUtcRangeForCalendarDay(start, timeZone)
+            if (!startRange) {
+                return NextResponse.json({ error: 'Data inicial inválida.' }, { status: 400 })
+            }
+            query.date = { ...query.date, $gte: startRange.start }
+        }
+
+        if (end) {
+            const endRange = getUtcRangeForCalendarDay(end, timeZone)
+            if (!endRange) {
+                return NextResponse.json({ error: 'Data final inválida.' }, { status: 400 })
+            }
+            query.date = { ...query.date, $lte: endRange.end }
+        }
 
         const sales = await Sale.find(query).sort({ date: -1 }).lean()
 
@@ -62,7 +60,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
     }
 
-    const dayRange = getUtcDayRange(date)
+    const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+    const dayRange = getUtcRangeForCalendarDay(date, timeZone)
     if (!dayRange) {
         return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
     }

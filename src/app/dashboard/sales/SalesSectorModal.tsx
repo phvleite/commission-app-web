@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { formatCurrencyFromDatabase } from '@/utils/formatCurrency'
 import { formatDateFromDatabase } from '@/utils/formatDate'
+import { withTimeZoneHeader } from '@/lib/api/time-zone-header'
 
 interface SalesSectorsModalProps {
     date: string
@@ -26,7 +27,10 @@ export function SalesSectorsModal({ date, onClose }: SalesSectorsModalProps) {
     useEffect(() => {
         async function loadSectors() {
             try {
-                const res = await fetch(`/api/commissions/sectors?date=${date}`)
+                const res = await fetch(
+                    `/api/commissions/sectors?date=${date}`,
+                    withTimeZoneHeader(),
+                )
                 const json = await res.json()
 
                 if (!res.ok) {
@@ -46,7 +50,6 @@ export function SalesSectorsModal({ date, onClose }: SalesSectorsModalProps) {
     return (
         <div className="gold-bar-title fixed inset-0 bg-black/40 flex items-center justify-center z-9950 p-4">
             <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-
                 <h3 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
                     Comissões por Setor — {formatDateFromDatabase(date)}
                 </h3>
@@ -82,10 +85,7 @@ export function SalesSectorsModal({ date, onClose }: SalesSectorsModalProps) {
                 </div>
 
                 <div className="mt-6 flex justify-end gap-3">
-                     <button
-                        className="cancel-button px-5 py-3 rounded-xl"
-                        onClick={onClose}
-                    >
+                    <button className="cancel-button px-5 py-3 rounded-xl" onClick={onClose}>
                         Fechar
                     </button>
                 </div>

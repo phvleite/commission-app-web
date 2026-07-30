@@ -1,6 +1,7 @@
 import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 import { Sale } from '@/models/Sale'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export async function GET(req: Request) {
     const session = await auth()
@@ -13,9 +14,19 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Data não informada.' }, { status: 400 })
     }
 
+    const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+    const range = getUtcRangeForCalendarDay(date, timeZone)
+
+    if (!range) {
+        return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
+    }
+
     const exists = await Sale.findOne({
         tenantId: session.user.tenantId,
-        date: new Date(date),
+        date: {
+            $gte: range.start,
+            $lte: range.end,
+        },
     }).lean()
 
     return NextResponse.json({ exists: !!exists })

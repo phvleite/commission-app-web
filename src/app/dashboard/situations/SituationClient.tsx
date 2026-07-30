@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { withTimeZoneHeader } from '@/lib/api/time-zone-header'
 
 export interface SituationTypeItem {
     _id: string
@@ -100,7 +101,7 @@ export function useSituationClient({
         if (filterYear) params.set('year', filterYear)
 
         try {
-            const res = await fetch(`/api/situations?${params.toString()}`)
+            const res = await fetch(`/api/situations?${params.toString()}`, withTimeZoneHeader())
             const json = await res.json()
             setSituations(json.situations)
         } catch {
@@ -252,16 +253,19 @@ export function useSituationClient({
         setIsSubmitting(true)
         setFeedback({ type: 'info', message: 'Salvando nova situação...' })
         try {
-            const res = await fetch('/api/situations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    startDate: dataInicial,
-                    endDate: dataFinal,
-                    employeeId: colaboradorId,
-                    typeId: tipoId,
+            const res = await fetch(
+                '/api/situations',
+                withTimeZoneHeader({
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startDate: dataInicial,
+                        endDate: dataFinal,
+                        employeeId: colaboradorId,
+                        typeId: tipoId,
+                    }),
                 }),
-            })
+            )
             const json = await res.json()
             if (!res.ok) {
                 throw new Error(json.error ?? 'Erro ao cadastrar situação.')
@@ -288,16 +292,19 @@ export function useSituationClient({
         setIsSubmitting(true)
         setFeedback({ type: 'info', message: 'Salvando alterações da situação...' })
         try {
-            const res = await fetch(`/api/situations/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    startDate: dataInicial,
-                    endDate: dataFinal,
-                    employeeId: colaboradorId,
-                    typeId: tipoId,
+            const res = await fetch(
+                `/api/situations/${id}`,
+                withTimeZoneHeader({
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startDate: dataInicial,
+                        endDate: dataFinal,
+                        employeeId: colaboradorId,
+                        typeId: tipoId,
+                    }),
                 }),
-            })
+            )
             const json = await res.json()
             if (!res.ok) {
                 throw new Error(json.error ?? 'Erro ao editar situação.')
@@ -318,11 +325,14 @@ export function useSituationClient({
         setIsSubmitting(true)
         setFeedback({ type: 'info', message: 'Atualizando status da situação...' })
         try {
-            const res = await fetch(`/api/situations/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ active: true }),
-            })
+            const res = await fetch(
+                `/api/situations/${id}`,
+                withTimeZoneHeader({
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active: true }),
+                }),
+            )
             const json = await res.json()
             if (!res.ok) {
                 throw new Error(json.error ?? 'Erro ao ativar situação.')
@@ -343,11 +353,14 @@ export function useSituationClient({
         setIsSubmitting(true)
         setFeedback({ type: 'info', message: 'Atualizando status da situação...' })
         try {
-            const res = await fetch(`/api/situations/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ active: false }),
-            })
+            const res = await fetch(
+                `/api/situations/${id}`,
+                withTimeZoneHeader({
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active: false }),
+                }),
+            )
             const json = await res.json()
             if (!res.ok) {
                 throw new Error(json.error ?? 'Erro ao inativar situação.')
