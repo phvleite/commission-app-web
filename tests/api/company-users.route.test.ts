@@ -82,6 +82,7 @@ describe('API company users routes', () => {
                 body: JSON.stringify({
                     name: 'Novo Usuario',
                     email: 'novo@company.com',
+                    cpf: '529.982.247-25',
                     password: 'Senha@123',
                     role: 'seller',
                 }),
@@ -91,6 +92,30 @@ describe('API company users routes', () => {
         expect(res.status).toBe(201)
         const user = await User.findOne({ email: 'novo@company.com' }).lean()
         expect(user).not.toBeNull()
+        expect(user?.cpf).toBe('52998224725')
+    })
+
+    it('POST rejeita CPF invalido', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId, 'admin')
+
+        const res = await POST(
+            new Request('http://localhost/api/company-users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Novo Usuario',
+                    email: 'novo@company.com',
+                    cpf: '111.111.111-11',
+                    password: 'Senha@123',
+                    role: 'seller',
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(400)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe('Informe um CPF valido.')
     })
 
     it('POST bloqueia manager para criar usuario', async () => {

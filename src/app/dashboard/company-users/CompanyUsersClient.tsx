@@ -19,6 +19,17 @@ interface CompanyData {
     name: string
     legalName: string
     slug: string
+    cnpj?: string
+    phone?: string
+    email?: string
+    maxUsers: number
+    responsible?: {
+        _id: string
+        name: string
+        email: string
+        cpf?: string
+        phone?: string
+    } | null
     address?: Address
 }
 
@@ -26,6 +37,8 @@ interface CompanyUser {
     _id: string
     name: string
     email: string
+    cpf?: string
+    phone?: string
     role: UserRole
     active: boolean
 }
@@ -46,6 +59,17 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
     const [companyForm, setCompanyForm] = useState({
         name: initialCompany?.name ?? '',
         legalName: initialCompany?.legalName ?? '',
+        cnpj: initialCompany?.cnpj ?? '',
+        phone: initialCompany?.phone ?? '',
+        email: initialCompany?.email ?? '',
+        maxUsers: initialCompany?.maxUsers ?? 3,
+        responsible: {
+            name: initialCompany?.responsible?.name ?? '',
+            email: initialCompany?.responsible?.email ?? '',
+            cpf: initialCompany?.responsible?.cpf ?? '',
+            phone: initialCompany?.responsible?.phone ?? '',
+            password: '',
+        },
         address: {
             street: initialCompany?.address?.street ?? '',
             number: initialCompany?.address?.number ?? '',
@@ -59,6 +83,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
     const [newUser, setNewUser] = useState({
         name: '',
         email: '',
+        cpf: '',
         password: '',
         role: 'seller' as UserRole,
     })
@@ -67,7 +92,9 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
     const canManageUsers = userRole === 'admin'
     const canEditCompany = userRole === 'admin' || userRole === 'manager'
 
-    const totalActiveUsers = useMemo(() => users.filter((user) => user.active).length, [users])
+    const totalUsers = useMemo(() => users.length, [users])
+    const companyUserLimit = company?.maxUsers ?? 3
+    const isUserLimitReached = totalUsers >= companyUserLimit
 
     async function handleSaveCompany(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -89,6 +116,22 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
             }
 
             setCompany(payload.data ?? null)
+            if (payload.data) {
+                setCompanyForm((prev) => ({
+                    ...prev,
+                    cnpj: payload.data?.cnpj ?? '',
+                    phone: payload.data?.phone ?? '',
+                    email: payload.data?.email ?? '',
+                    maxUsers: payload.data?.maxUsers ?? 3,
+                    responsible: {
+                        name: payload.data?.responsible?.name ?? '',
+                        email: payload.data?.responsible?.email ?? '',
+                        cpf: payload.data?.responsible?.cpf ?? '',
+                        phone: payload.data?.responsible?.phone ?? '',
+                        password: '',
+                    },
+                }))
+            }
             setSuccess('Dados da empresa atualizados com sucesso.')
         } catch (saveError) {
             setError(saveError instanceof Error ? saveError.message : 'Erro ao salvar empresa.')
@@ -103,6 +146,12 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
         setSuccess(null)
         setIsSubmitting(true)
 
+        if (isUserLimitReached) {
+            setError(`Limite de ${companyUserLimit} usuarios atingido para esta empresa.`)
+            setIsSubmitting(false)
+            return
+        }
+
         try {
             const res = await fetch('/api/company-users', {
                 method: 'POST',
@@ -116,7 +165,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                 throw new Error(payload.error ?? 'Falha ao criar usuario.')
             }
 
-            setNewUser({ name: '', email: '', password: '', role: 'seller' })
+            setNewUser({ name: '', email: '', cpf: '', password: '', role: 'seller' })
             setUsers((prev) => {
                 const merged = [...prev, payload.data as CompanyUser]
                 return merged.sort((a, b) => a.name.localeCompare(b.name))
@@ -252,6 +301,172 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                             />
                         </div>
 
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-(--color-primary-strong)">
+                                CNPJ
+                            </label>
+                            <input
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={companyForm.cnpj}
+                                onChange={(event) =>
+                                    setCompanyForm((prev) => ({
+                                        ...prev,
+                                        cnpj: event.target.value,
+                                    }))
+                                }
+                                disabled={!canEditCompany}
+                                placeholder="00.000.000/0001-00 ou alfanumerico"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-(--color-primary-strong)">
+                                Email da empresa
+                            </label>
+                            <input
+                                type="email"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={companyForm.email}
+                                onChange={(event) =>
+                                    setCompanyForm((prev) => ({
+                                        ...prev,
+                                        email: event.target.value,
+                                    }))
+                                }
+                                disabled={!canEditCompany}
+                                placeholder="contato@empresa.com"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-(--color-primary-strong)">
+                                Telefone da empresa
+                            </label>
+                            <input
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={companyForm.phone}
+                                onChange={(event) =>
+                                    setCompanyForm((prev) => ({
+                                        ...prev,
+                                        phone: event.target.value,
+                                    }))
+                                }
+                                disabled={!canEditCompany}
+                                placeholder="(00) 00000-0000"
+                            />
+                        </div>
+
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+                            <p className="text-xs font-semibold tracking-widest text-amber-800 uppercase">
+                                Responsavel com acesso
+                            </p>
+                            <p className="mt-1 text-xs text-amber-700">
+                                Este usuario sera vinculado como responsavel da empresa.
+                            </p>
+
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                <input
+                                    placeholder="Nome do responsavel"
+                                    className="h-11 rounded-xl border border-amber-300 bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                                    value={companyForm.responsible.name}
+                                    onChange={(event) =>
+                                        setCompanyForm((prev) => ({
+                                            ...prev,
+                                            responsible: {
+                                                ...prev.responsible,
+                                                name: event.target.value,
+                                            },
+                                        }))
+                                    }
+                                    required
+                                    disabled={!canEditCompany}
+                                />
+                                <input
+                                    type="email"
+                                    placeholder="Email do responsavel"
+                                    className="h-11 rounded-xl border border-amber-300 bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                                    value={companyForm.responsible.email}
+                                    onChange={(event) =>
+                                        setCompanyForm((prev) => ({
+                                            ...prev,
+                                            responsible: {
+                                                ...prev.responsible,
+                                                email: event.target.value,
+                                            },
+                                        }))
+                                    }
+                                    required
+                                    disabled={!canEditCompany}
+                                />
+                                <input
+                                    placeholder="CPF do responsavel"
+                                    className="h-11 rounded-xl border border-amber-300 bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                                    value={companyForm.responsible.cpf}
+                                    onChange={(event) =>
+                                        setCompanyForm((prev) => ({
+                                            ...prev,
+                                            responsible: {
+                                                ...prev.responsible,
+                                                cpf: event.target.value,
+                                            },
+                                        }))
+                                    }
+                                    required
+                                    disabled={!canEditCompany}
+                                />
+                                <input
+                                    placeholder="Telefone do responsavel"
+                                    className="h-11 rounded-xl border border-amber-300 bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                                    value={companyForm.responsible.phone}
+                                    onChange={(event) =>
+                                        setCompanyForm((prev) => ({
+                                            ...prev,
+                                            responsible: {
+                                                ...prev.responsible,
+                                                phone: event.target.value,
+                                            },
+                                        }))
+                                    }
+                                    required
+                                    disabled={!canEditCompany}
+                                />
+                            </div>
+
+                            <input
+                                type="password"
+                                placeholder="Senha do responsavel (obrigatoria no primeiro cadastro)"
+                                className="mt-3 h-11 w-full rounded-xl border border-amber-300 bg-white px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                                value={companyForm.responsible.password}
+                                onChange={(event) =>
+                                    setCompanyForm((prev) => ({
+                                        ...prev,
+                                        responsible: {
+                                            ...prev.responsible,
+                                            password: event.target.value,
+                                        },
+                                    }))
+                                }
+                                disabled={!canEditCompany}
+                            />
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <input
+                                type="number"
+                                min={1}
+                                placeholder="Limite de usuarios"
+                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={companyForm.maxUsers}
+                                onChange={(event) =>
+                                    setCompanyForm((prev) => ({
+                                        ...prev,
+                                        maxUsers: Number(event.target.value || 0),
+                                    }))
+                                }
+                                disabled={!canEditCompany}
+                            />
+                        </div>
+
                         <div className="grid gap-3 sm:grid-cols-2">
                             <input
                                 placeholder="Rua"
@@ -355,16 +570,23 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                         Usuarios
                     </h2>
                     <p className="mt-2 text-sm text-(--color-muted)">
-                        Usuarios ativos: <span className="font-semibold">{totalActiveUsers}</span> |
-                        Limite do pacote basico: <span className="font-semibold">2</span>
+                        Usuarios cadastrados: <span className="font-semibold">{totalUsers}</span> |
+                        Limite da empresa: <span className="font-semibold">{companyUserLimit}</span>
                     </p>
+
+                    {isUserLimitReached ? (
+                        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                            Limite de usuarios atingido. Ajustes de plano serao tratados na task
+                            002.17.
+                        </p>
+                    ) : null}
 
                     {canManageUsers ? (
                         <button
                             type="button"
                             className={`${showNewUserForm ? 'cancel-button' : 'primary-button'} mt-4 rounded-xl px-4 py-2 text-sm font-semibold`}
                             onClick={() => setShowNewUserForm((prev) => !prev)}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isUserLimitReached}
                         >
                             {showNewUserForm ? 'Cancelar novo usuario' : 'Novo usuario'}
                         </button>
@@ -391,6 +613,15 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                     setNewUser((prev) => ({ ...prev, email: event.target.value }))
                                 }
                                 required
+                                disabled={!canManageUsers}
+                            />
+                            <input
+                                placeholder="CPF (opcional)"
+                                className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={newUser.cpf}
+                                onChange={(event) =>
+                                    setNewUser((prev) => ({ ...prev, cpf: event.target.value }))
+                                }
                                 disabled={!canManageUsers}
                             />
                             <input
@@ -452,6 +683,11 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                             <p className="text-xs text-(--color-muted)">
                                                 {user.email}
                                             </p>
+                                            {user.cpf ? (
+                                                <p className="text-xs text-(--color-muted)">
+                                                    CPF: {user.cpf}
+                                                </p>
+                                            ) : null}
                                             <p className="mt-1 text-xs text-(--color-muted)">
                                                 Perfil: {user.role} | Status:{' '}
                                                 {user.active ? 'Ativo' : 'Inativo'}
