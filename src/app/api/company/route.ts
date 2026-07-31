@@ -20,6 +20,8 @@ interface CompanyUpdateBody {
     name?: string
     legalName?: string
     cnpj?: string
+    phoneCommercial?: string
+    phoneMobile?: string
     phone?: string
     email?: string
     maxUsers?: number
@@ -30,6 +32,7 @@ interface CompanyUpdateBody {
         cpf?: string
         phone?: string
         password?: string
+        passwordConfirmation?: string
     }
 }
 
@@ -140,7 +143,9 @@ export async function PATCH(request: Request) {
     const name = body.name?.trim()
     const legalName = body.legalName?.trim()
     const cnpjRaw = normalizeOptionalString(body.cnpj)
-    const companyPhone = normalizeOptionalString(body.phone)
+    const companyPhoneCommercial = normalizeOptionalString(body.phoneCommercial)
+    const companyPhoneMobile = normalizeOptionalString(body.phoneMobile)
+    const companyPhoneLegacy = normalizeOptionalString(body.phone)
     const companyEmail = normalizeOptionalString(body.email)?.toLowerCase()
 
     const maxUsers = typeof body.maxUsers === 'number' ? Math.trunc(body.maxUsers) : Number.NaN
@@ -150,6 +155,7 @@ export async function PATCH(request: Request) {
     const responsibleCpfRaw = normalizeOptionalString(body.responsible?.cpf)
     const responsiblePhone = normalizeOptionalString(body.responsible?.phone)
     const responsiblePassword = body.responsible?.password
+    const responsiblePasswordConfirmation = body.responsible?.passwordConfirmation
 
     if (!name || !legalName) {
         return Response.json({ error: 'name e legalName sao obrigatorios.' }, { status: 400 })
@@ -193,11 +199,27 @@ export async function PATCH(request: Request) {
         )
     }
 
-    if (responsiblePassword && responsiblePassword.length < 8) {
-        return Response.json(
-            { error: 'A senha do responsavel precisa ter no minimo 8 caracteres.' },
-            { status: 400 },
-        )
+    if (responsiblePassword || responsiblePasswordConfirmation) {
+        if (!responsiblePassword || !responsiblePasswordConfirmation) {
+            return Response.json(
+                { error: 'Informe e confirme a senha do responsavel.' },
+                { status: 400 },
+            )
+        }
+
+        if (responsiblePassword.length < 8) {
+            return Response.json(
+                { error: 'A senha do responsavel precisa ter no minimo 8 caracteres.' },
+                { status: 400 },
+            )
+        }
+
+        if (responsiblePassword !== responsiblePasswordConfirmation) {
+            return Response.json(
+                { error: 'A confirmacao de senha do responsavel nao confere.' },
+                { status: 400 },
+            )
+        }
     }
 
     if (!Number.isInteger(maxUsers) || maxUsers < 1) {
@@ -324,8 +346,23 @@ export async function PATCH(request: Request) {
         unsetData.cnpj = 1
     }
 
-    if (companyPhone) {
-        setData.phone = companyPhone
+    const phoneCommercialToSave = companyPhoneCommercial ?? companyPhoneLegacy
+
+    if (phoneCommercialToSave) {
+        setData.phoneCommercial = phoneCommercialToSave
+    } else {
+        unsetData.phoneCommercial = 1
+    }
+
+    if (companyPhoneMobile) {
+        setData.phoneMobile = companyPhoneMobile
+    } else {
+        unsetData.phoneMobile = 1
+    }
+
+    if (phoneCommercialToSave) {
+        // Keep legacy field in sync for backwards compatibility while frontend migrates.
+        setData.phone = phoneCommercialToSave
     } else {
         unsetData.phone = 1
     }

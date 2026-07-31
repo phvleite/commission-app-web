@@ -17,6 +17,8 @@ export interface ITenant extends WithTimestamps {
     slug: string
     cnpj?: string
     responsibleUserId?: Types.ObjectId
+    phoneCommercial?: string
+    phoneMobile?: string
     phone?: string
     email?: string
     maxUsers: number
@@ -46,6 +48,8 @@ const tenantSchema = new Schema<TenantDocument>(
         slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
         cnpj: { type: String, trim: true, uppercase: true },
         responsibleUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+        phoneCommercial: { type: String, trim: true },
+        phoneMobile: { type: String, trim: true },
         phone: { type: String, trim: true },
         email: { type: String, trim: true, lowercase: true },
         maxUsers: { type: Number, default: 3, min: 1 },

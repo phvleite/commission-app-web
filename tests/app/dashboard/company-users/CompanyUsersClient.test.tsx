@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { CompanyUsersClient } from '@/app/dashboard/company-users/CompanyUsersClient'
 
 jest.mock('next/link', () => {
@@ -87,9 +87,10 @@ describe('CompanyUsersClient', () => {
             />,
         )
 
+        fireEvent.click(screen.getByRole('button', { name: 'Editar dados da empresa' }))
         const companyNameInput = screen.getByDisplayValue('Empresa A')
         fireEvent.change(companyNameInput, { target: { value: 'Empresa Atualizada' } })
-        fireEvent.click(screen.getByRole('button', { name: 'Salvar empresa' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Salvar alteracoes' }))
 
         await waitFor(() => {
             expect(
@@ -142,14 +143,26 @@ describe('CompanyUsersClient', () => {
         )
 
         fireEvent.click(screen.getByRole('button', { name: 'Novo usuario' }))
-        fireEvent.change(screen.getByPlaceholderText('Nome'), { target: { value: 'Novo Usuario' } })
-        fireEvent.change(screen.getByPlaceholderText('Email'), {
+        const createSubmitButton = screen.getByRole('button', { name: 'Incluir usuario' })
+        const createForm = createSubmitButton.closest('form')
+        expect(createForm).not.toBeNull()
+        if (!createForm) {
+            throw new Error('Formulario de criacao de usuario nao encontrado.')
+        }
+
+        fireEvent.change(within(createForm).getByPlaceholderText('Nome'), {
+            target: { value: 'Novo Usuario' },
+        })
+        fireEvent.change(within(createForm).getByPlaceholderText('Email'), {
             target: { value: 'novo@company.com' },
         })
-        fireEvent.change(screen.getByPlaceholderText('Senha temporaria'), {
+        fireEvent.change(within(createForm).getByPlaceholderText('Senha'), {
             target: { value: 'Senha@123' },
         })
-        fireEvent.click(screen.getByRole('button', { name: 'Incluir usuario' }))
+        fireEvent.change(within(createForm).getByPlaceholderText('Confirmacao da senha'), {
+            target: { value: 'Senha@123' },
+        })
+        fireEvent.click(createSubmitButton)
 
         await waitFor(() => {
             expect(screen.getByText('Usuario criado com sucesso.')).toBeInTheDocument()
@@ -170,6 +183,120 @@ describe('CompanyUsersClient', () => {
             2,
             '/api/company-users/u1',
             expect.objectContaining({ method: 'PATCH' }),
+        )
+    })
+
+    it('edits user profile data', async () => {
+        const fetchMock = global.fetch as jest.MockedFunction<typeof fetch>
+        fetchMock.mockResolvedValueOnce(
+            createJsonResponse({
+                data: {
+                    _id: 'u1',
+                    name: 'Alice Atualizada',
+                    email: 'alice.atualizada@company.com',
+                    cpf: '52998224725',
+                    phone: '(11) 98888-1111',
+                    role: 'manager',
+                    active: true,
+                },
+            }),
+        )
+
+        render(
+            <CompanyUsersClient
+                userRole="admin"
+                initialCompany={{
+                    _id: 'tenant-1',
+                    name: 'Empresa A',
+                    legalName: 'Empresa A LTDA',
+                    slug: 'empresa-a',
+                    maxUsers: 3,
+                }}
+                initialUsers={[
+                    {
+                        _id: 'u1',
+                        name: 'Alice',
+                        email: 'alice@company.com',
+                        role: 'seller',
+                        active: true,
+                    },
+                ]}
+            />,
+        )
+
+        fireEvent.click(screen.getByRole('button', { name: 'Editar' }))
+        const editSubmitButton = screen.getByRole('button', { name: 'Salvar usuario' })
+        const editForm = editSubmitButton.closest('form')
+        expect(editForm).not.toBeNull()
+        if (!editForm) {
+            throw new Error('Formulario de edicao de usuario nao encontrado.')
+        }
+
+        fireEvent.change(within(editForm).getByPlaceholderText('Nome'), {
+            target: { value: 'Alice Atualizada' },
+        })
+        fireEvent.change(within(editForm).getByPlaceholderText('Email'), {
+            target: { value: 'alice.atualizada@company.com' },
+        })
+
+        fireEvent.click(editSubmitButton)
+
+        await waitFor(() => {
+            expect(screen.getByText('Usuario atualizado com sucesso.')).toBeInTheDocument()
+        })
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/api/company-users/u1',
+            expect.objectContaining({ method: 'PUT' }),
+        )
+    })
+
+    it('changes user password using dedicated form', async () => {
+        const fetchMock = global.fetch as jest.MockedFunction<typeof fetch>
+        fetchMock.mockResolvedValueOnce(createJsonResponse({ ok: true }))
+
+        render(
+            <CompanyUsersClient
+                userRole="admin"
+                initialCompany={{
+                    _id: 'tenant-1',
+                    name: 'Empresa A',
+                    legalName: 'Empresa A LTDA',
+                    slug: 'empresa-a',
+                    maxUsers: 3,
+                }}
+                initialUsers={[
+                    {
+                        _id: 'u1',
+                        name: 'Alice',
+                        email: 'alice@company.com',
+                        role: 'seller',
+                        active: true,
+                    },
+                ]}
+            />,
+        )
+
+        fireEvent.click(screen.getByRole('button', { name: 'Alterar senha' }))
+        fireEvent.change(screen.getByLabelText('Senha atual'), {
+            target: { value: 'Senha@123' },
+        })
+        fireEvent.change(screen.getByLabelText('Nova senha'), {
+            target: { value: 'NovaSenha@123' },
+        })
+        fireEvent.change(screen.getByLabelText('Confirmacao da nova senha'), {
+            target: { value: 'NovaSenha@123' },
+        })
+
+        fireEvent.click(screen.getByRole('button', { name: 'Salvar nova senha' }))
+
+        await waitFor(() => {
+            expect(screen.getByText('Senha atualizada com sucesso.')).toBeInTheDocument()
+        })
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/api/company-users/u1/change-password',
+            expect.objectContaining({ method: 'POST' }),
         )
     })
 })
