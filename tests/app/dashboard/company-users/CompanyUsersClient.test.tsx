@@ -43,6 +43,17 @@ describe('CompanyUsersClient', () => {
                     name: 'Empresa Atualizada',
                     legalName: 'Empresa Atualizada LTDA',
                     slug: 'empresa-a',
+                    cnpj: '12ABC34501DE35',
+                    phone: '(11) 98888-7777',
+                    email: 'contato@empresa.com',
+                    maxUsers: 3,
+                    responsible: {
+                        _id: 'u-resp',
+                        name: 'Ana',
+                        email: 'ana@empresa.com',
+                        cpf: '52998224725',
+                        phone: '(11) 97777-6666',
+                    },
                     address: {
                         street: 'Rua A',
                         number: '10',
@@ -63,6 +74,14 @@ describe('CompanyUsersClient', () => {
                     name: 'Empresa A',
                     legalName: 'Empresa A LTDA',
                     slug: 'empresa-a',
+                    maxUsers: 3,
+                    responsible: {
+                        _id: 'u-resp',
+                        name: 'Ana',
+                        email: 'ana@empresa.com',
+                        cpf: '52998224725',
+                        phone: '(11) 97777-6666',
+                    },
                 }}
                 initialUsers={[]}
             />,
@@ -108,6 +127,7 @@ describe('CompanyUsersClient', () => {
                     name: 'Empresa A',
                     legalName: 'Empresa A LTDA',
                     slug: 'empresa-a',
+                    maxUsers: 3,
                 }}
                 initialUsers={[
                     {

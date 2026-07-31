@@ -1,6 +1,7 @@
 import { Types } from 'mongoose'
 import { connectTestDB, disconnectTestDB, clearTestDB } from '@/lib/test-db'
 import { Tenant } from '@/models/Tenant'
+import { User } from '@/models/User'
 
 jest.mock('@/auth', () => ({
     auth: jest.fn(),
@@ -92,6 +93,17 @@ describe('API company route', () => {
                 body: JSON.stringify({
                     name: 'Empresa Atualizada',
                     legalName: 'Empresa Atualizada LTDA',
+                    cnpj: '12.ABC.345/01DE-35',
+                    phone: '(11) 97777-6666',
+                    email: 'contato@empresa-a.com',
+                    maxUsers: 3,
+                    responsible: {
+                        name: 'Ana Gestora',
+                        email: 'ana@empresa-a.com',
+                        cpf: '529.982.247-25',
+                        phone: '(11) 98888-7777',
+                        password: 'Senha@123',
+                    },
                     address: {
                         street: 'Rua A',
                         number: '10',
@@ -109,6 +121,121 @@ describe('API company route', () => {
         const updated = await Tenant.findById(tenant._id).lean()
         expect(updated?.name).toBe('Empresa Atualizada')
         expect(updated?.legalName).toBe('Empresa Atualizada LTDA')
+        expect(updated?.cnpj).toBe('12ABC34501DE35')
+        expect(updated?.responsibleUserId).toBeDefined()
+        expect(updated?.phone).toBe('(11) 97777-6666')
+        expect(updated?.email).toBe('contato@empresa-a.com')
+        expect(updated?.maxUsers).toBe(3)
         expect(updated?.address?.city).toBe('Sao Paulo')
+
+        const responsible = await User.findOne({
+            _id: updated?.responsibleUserId,
+            tenantId: tenant._id,
+        }).lean()
+        expect(responsible?.name).toBe('Ana Gestora')
+        expect(responsible?.email).toBe('ana@empresa-a.com')
+        expect(responsible?.cpf).toBe('52998224725')
+        expect(responsible?.phone).toBe('(11) 98888-7777')
+    })
+
+    it('PATCH rejeita CNPJ invalido', async () => {
+        const tenant = await Tenant.create({
+            name: 'Empresa A',
+            legalName: 'Empresa A LTDA',
+            slug: 'empresa-a',
+        })
+
+        setSession(tenant._id.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request('http://localhost/api/company', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Empresa A',
+                    legalName: 'Empresa A LTDA',
+                    cnpj: '12.ABC.345/01DE-00',
+                    maxUsers: 3,
+                    responsible: {
+                        name: 'Ana Gestora',
+                        email: 'ana@empresa-a.com',
+                        cpf: '529.982.247-25',
+                        phone: '(11) 98888-7777',
+                        password: 'Senha@123',
+                    },
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(400)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe('Informe um CNPJ valido.')
+    })
+
+    it('PATCH rejeita maxUsers menor que 1', async () => {
+        const tenant = await Tenant.create({
+            name: 'Empresa A',
+            legalName: 'Empresa A LTDA',
+            slug: 'empresa-a',
+        })
+
+        setSession(tenant._id.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request('http://localhost/api/company', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Empresa A',
+                    legalName: 'Empresa A LTDA',
+                    maxUsers: 0,
+                    responsible: {
+                        name: 'Ana Gestora',
+                        email: 'ana@empresa-a.com',
+                        cpf: '529.982.247-25',
+                        phone: '(11) 98888-7777',
+                        password: 'Senha@123',
+                    },
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(400)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe('maxUsers deve ser um numero inteiro maior que zero.')
+    })
+
+    it('PATCH exige senha do responsavel no primeiro cadastro', async () => {
+        const tenant = await Tenant.create({
+            name: 'Empresa A',
+            legalName: 'Empresa A LTDA',
+            slug: 'empresa-a',
+        })
+
+        setSession(tenant._id.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request('http://localhost/api/company', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Empresa A',
+                    legalName: 'Empresa A LTDA',
+                    maxUsers: 3,
+                    responsible: {
+                        name: 'Ana Gestora',
+                        email: 'ana@empresa-a.com',
+                        cpf: '529.982.247-25',
+                        phone: '(11) 98888-7777',
+                    },
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(400)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe(
+            'Defina a senha do responsavel para concluir o cadastro de acesso.',
+        )
     })
 })

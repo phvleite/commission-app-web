@@ -2,6 +2,7 @@ import { connectDB } from '@/lib/db'
 import { getRouteSessionUser } from '@/lib/api/route-auth'
 import { hashPassword } from '@/lib/password'
 import { User, type UserRole } from '@/models/User'
+import { isValidCpf, normalizeCpf } from '@/lib/validators/cpf'
 
 const ALLOWED_ROLES: UserRole[] = ['admin', 'manager', 'seller']
 
@@ -40,12 +41,14 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
         name?: string
         email?: string
+        cpf?: string
         password?: string
         role?: UserRole
     }
 
     const name = body.name?.trim()
     const email = body.email?.trim().toLowerCase()
+    const cpf = body.cpf?.trim() ? normalizeCpf(body.cpf) : undefined
     const password = body.password
     const role = body.role
 
@@ -72,6 +75,10 @@ export async function POST(request: Request) {
         return Response.json({ error: 'Informe um email valido.' }, { status: 400 })
     }
 
+    if (cpf && !isValidCpf(cpf)) {
+        return Response.json({ error: 'Informe um CPF valido.' }, { status: 400 })
+    }
+
     await connectDB()
 
     try {
@@ -81,6 +88,7 @@ export async function POST(request: Request) {
             tenantId: user.tenantId,
             name,
             email,
+            cpf,
             passwordHash,
             role,
             active: true,
@@ -102,7 +110,7 @@ export async function POST(request: Request) {
         }
 
         const message = error instanceof Error ? error.message : ''
-        if (message.includes('Limite de 2 usuarios por tenant')) {
+        if (message.includes('Limite de ') && message.includes('usuarios por tenant')) {
             return Response.json({ error: message }, { status: 400 })
         }
 

@@ -25,7 +25,24 @@ describe('Tenant model', () => {
         const doc = await Tenant.create(validData)
         expect(doc._id).toBeDefined()
         expect(doc.active).toBe(true)
+        expect(doc.maxUsers).toBe(3)
         expect(doc.address).toBeUndefined()
+    })
+
+    it('cria tenant com novos dados de cadastro da empresa', async () => {
+        const doc = await Tenant.create({
+            ...validData,
+            slug: 'empresa-xyz',
+            cnpj: '12ABC34501DE35',
+            phone: '(11) 99999-0000',
+            email: 'contato@empresa.com',
+            maxUsers: 5,
+        })
+
+        expect(doc.cnpj).toBe('12ABC34501DE35')
+        expect(doc.phone).toBe('(11) 99999-0000')
+        expect(doc.email).toBe('contato@empresa.com')
+        expect(doc.maxUsers).toBe(5)
     })
 
     it('cria um tenant com endereço completo', async () => {
