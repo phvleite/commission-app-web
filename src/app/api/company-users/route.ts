@@ -42,14 +42,18 @@ export async function POST(request: Request) {
         name?: string
         email?: string
         cpf?: string
+        phone?: string
         password?: string
+        passwordConfirmation?: string
         role?: UserRole
     }
 
     const name = body.name?.trim()
     const email = body.email?.trim().toLowerCase()
     const cpf = body.cpf?.trim() ? normalizeCpf(body.cpf) : undefined
+    const phone = body.phone?.trim() || undefined
     const password = body.password
+    const passwordConfirmation = body.passwordConfirmation
     const role = body.role
 
     if (!name || !email || !password || !role) {
@@ -68,6 +72,14 @@ export async function POST(request: Request) {
             { error: 'A senha precisa ter no minimo 8 caracteres.' },
             { status: 400 },
         )
+    }
+
+    if (!passwordConfirmation) {
+        return Response.json({ error: 'Confirme a senha informada.' }, { status: 400 })
+    }
+
+    if (password !== passwordConfirmation) {
+        return Response.json({ error: 'A confirmacao de senha nao confere.' }, { status: 400 })
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -89,6 +101,7 @@ export async function POST(request: Request) {
             name,
             email,
             cpf,
+            phone,
             passwordHash,
             role,
             active: true,

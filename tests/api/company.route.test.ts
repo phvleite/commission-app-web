@@ -103,6 +103,7 @@ describe('API company route', () => {
                         cpf: '529.982.247-25',
                         phone: '(11) 98888-7777',
                         password: 'Senha@123',
+                        passwordConfirmation: 'Senha@123',
                     },
                     address: {
                         street: 'Rua A',
@@ -162,6 +163,42 @@ describe('API company route', () => {
                         cpf: '529.982.247-25',
                         phone: '(11) 98888-7777',
                         password: 'Senha@123',
+                        passwordConfirmation: 'Senha@123',
+                    },
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(400)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe('Informe um CNPJ valido.')
+    })
+
+    it("PATCH rejeita CNPJ curto como '1'", async () => {
+        const tenant = await Tenant.create({
+            name: 'Empresa A',
+            legalName: 'Empresa A LTDA',
+            slug: 'empresa-a',
+        })
+
+        setSession(tenant._id.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request('http://localhost/api/company', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Empresa A',
+                    legalName: 'Empresa A LTDA',
+                    cnpj: '1',
+                    maxUsers: 3,
+                    responsible: {
+                        name: 'Ana Gestora',
+                        email: 'ana@empresa-a.com',
+                        cpf: '529.982.247-25',
+                        phone: '(11) 98888-7777',
+                        password: 'Senha@123',
+                        passwordConfirmation: 'Senha@123',
                     },
                 }),
             }),
@@ -195,6 +232,7 @@ describe('API company route', () => {
                         cpf: '529.982.247-25',
                         phone: '(11) 98888-7777',
                         password: 'Senha@123',
+                        passwordConfirmation: 'Senha@123',
                     },
                 }),
             }),
