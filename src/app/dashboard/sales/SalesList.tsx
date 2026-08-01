@@ -64,7 +64,7 @@ export function SalesList({
                         <tr className="border-b border-(--color-border) bg-surface-soft">
                             <th className="py-3 px-2 text-center">Data</th>
                             <th className="py-3 px-2 text-center">Valor da Venda</th>
-                            <th className="py-3 px-2 text-center">Comissão Total</th>
+                            <th className="py-3 px-2 text-center">Gorjeta Total</th>
                             <th className="py-3 px-2 text-center">Ações</th>
                         </tr>
                     </thead>

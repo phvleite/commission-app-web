@@ -10,7 +10,7 @@ export default function Home() {
                             </div>
                             <div className="space-y-4">
                                 <h1 className="max-w-2xl text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">
-                                    Gestão de comissões com a mesma identidade visual da versão
+                                    Gestão de Gorjetas com a mesma identidade visual da versão
                                     desktop.
                                 </h1>
                                 <p className="max-w-2xl text-sm leading-7 text-slate-200 sm:text-base sm:leading-8 lg:text-lg">

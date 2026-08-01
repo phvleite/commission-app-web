@@ -48,8 +48,7 @@ describe('SidebarNav', () => {
 
         expect(screen.getByText('Colaboradores').closest('a')).toBeNull()
         expect(screen.getByText('Situações').closest('a')).toBeNull()
-        expect(screen.getByText('Vendas').closest('a')).toBeNull()
-        expect(screen.getByText('Comissões').closest('a')).toBeNull()
+        expect(screen.getByText('Gorjetas').closest('a')).toBeNull()
     })
 
     it('opens and closes mobile menu', () => {

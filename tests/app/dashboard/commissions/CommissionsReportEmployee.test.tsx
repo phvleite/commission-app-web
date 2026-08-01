@@ -88,7 +88,7 @@ describe('CommissionsReportEmployee', () => {
 
         expect(screen.getByText('Relatorio da ALICE - Julho/2026')).toBeInTheDocument()
         expect(screen.getByText('Resumo por Setor')).toBeInTheDocument()
-        expect(screen.getByText('Detalhamento das Comissões')).toBeInTheDocument()
+        expect(screen.getByText('Detalhamento das Gorjetas')).toBeInTheDocument()
         expect(screen.getByText('Total Geral: R$ 20,00')).toBeInTheDocument()
         expect(screen.getByText('01/07/2026')).toBeInTheDocument()
         expect(screen.getByText('02/07/2026')).toBeInTheDocument()
@@ -126,7 +126,7 @@ describe('CommissionsReportEmployee', () => {
 
         expect(window.open).toHaveBeenCalledWith('blob:mock-url', '_blank', 'noopener,noreferrer')
         expect(createdAnchor).not.toBeNull()
-        expect(createdAnchor?.download).toMatch(/^relatorio-alice-silva-\d{8}-\d{6}\.pdf$/)
+        expect(createdAnchor?.download).toMatch(/^relatorio-Gorjetas-alice-silva-\d{8}-\d{6}\.pdf$/)
 
         jest.advanceTimersByTime(60_000)
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')

@@ -121,7 +121,7 @@ function renderReportEmployeeHtml(params: {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Relatorio de Comissoes - Colaborador</title>
+    <title>Relatorio de Gorjetas - Colaborador</title>
     <style>
         @page {
             size: A4;
@@ -195,7 +195,7 @@ function renderReportEmployeeHtml(params: {
         </tbody>
     </table>
 
-    <h2>Detalhamento das Comissoes</h2>
+    <h2>Detalhamento das Gorjetas</h2>
     <table>
         <thead>
             <tr>
@@ -203,8 +203,8 @@ function renderReportEmployeeHtml(params: {
                 <th class="center">Situacao</th>
                 <th class="center">Qtde Colab.</th>
                 <th class="center">Qtde Aptos</th>
-                <th class="right">Comissao Setor</th>
-                <th class="right">Comissao Colaborador</th>
+                <th class="right">Gorjetas Setor</th>
+                <th class="right">Gorjetas Colaborador</th>
             </tr>
         </thead>
         <tbody>

@@ -6,7 +6,7 @@ export function generatePeriodTitle(start: string, end: string) {
     }
 
     if (start === end) {
-        return `COMISSOES DO DIA ${formatDateToBR(start)}`
+        return `GORJETAS DO DIA ${formatDateToBR(start)}`
     }
 
     const [yi, mi, di] = start.split('-')
@@ -32,8 +32,8 @@ export function generatePeriodTitle(start: string, end: string) {
 
         const monthName = months[Number(mi) - 1]
 
-        return `COMISSOES REF. ${monthName}/${yi}`
+        return `GORJETAS REF. ${monthName}/${yi}`
     }
 
-    return `COMISSOES DE ${formatDateToBR(start)} ATE ${formatDateToBR(end)}`
+    return `GORJETAS DE ${formatDateToBR(start)} ATE ${formatDateToBR(end)}`
 }

@@ -67,11 +67,9 @@ export interface CommissionsClientState {
     employeeId: string
     employees: EmployeeOption[]
     employeesLoading: boolean
-    showSituations: boolean
     setStartDate: Dispatch<SetStateAction<string>>
     setEndDate: Dispatch<SetStateAction<string>>
     setEmployeeId: Dispatch<SetStateAction<string>>
-    setShowSituations: Dispatch<SetStateAction<boolean>>
     result: CommissionsResult
     loading: boolean
     error: string | null
@@ -102,7 +100,6 @@ export function useCommissionsClient(): CommissionsClientState {
     const [employeeId, setEmployeeId] = useState('')
     const [employees, setEmployees] = useState<EmployeeOption[]>([])
     const [employeesLoading, setEmployeesLoading] = useState(true)
-    const [showSituations, setShowSituations] = useState(true)
 
     const [result, setResult] = useState<CommissionsResult>(null)
 
@@ -157,7 +154,6 @@ export function useCommissionsClient(): CommissionsClientState {
         setStartDate('')
         setEndDate('')
         setEmployeeId('')
-        setShowSituations(true)
         setResult(null)
     }
 
@@ -167,12 +163,10 @@ export function useCommissionsClient(): CommissionsClientState {
         employeeId,
         employees,
         employeesLoading,
-        showSituations,
 
         setStartDate,
         setEndDate,
         setEmployeeId,
-        setShowSituations,
 
         result,
         loading,

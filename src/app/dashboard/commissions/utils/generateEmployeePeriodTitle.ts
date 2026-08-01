@@ -2,11 +2,11 @@ import { formatDateToBR } from './formatDate'
 
 export function generateEmployeePeriodTitle(name: string, start: string, end: string) {
     if (!start || !end) {
-        return `COMISSOES DE ${name} - PERIODO INVALIDO`
+        return `GORJETAS DE ${name} - PERIODO INVALIDO`
     }
 
     if (start === end) {
-        return `COMISSOES DE ${name} - DIA ${formatDateToBR(start)}`
+        return `GORJETAS DE ${name} - DIA ${formatDateToBR(start)}`
     }
 
     const [yi, mi, di] = start.split('-')
@@ -32,8 +32,8 @@ export function generateEmployeePeriodTitle(name: string, start: string, end: st
 
         const monthName = months[Number(mi) - 1]
 
-        return `COMISSOES DE ${name} - REF. ${monthName}/${yi}`
+        return `GORJETAS DE ${name} - REF. ${monthName}/${yi}`
     }
 
-    return `COMISSOES DE ${name} - DE ${formatDateToBR(start)} ATE ${formatDateToBR(end)}`
+    return `GORJETAS DE ${name} - DE ${formatDateToBR(start)} ATE ${formatDateToBR(end)}`
 }

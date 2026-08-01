@@ -98,7 +98,7 @@ describe('CommissionsReportAll', () => {
 
         expect(screen.getByText('Relatorio Geral - Julho/2026')).toBeInTheDocument()
         expect(screen.getByText('Valor total das vendas:')).toBeInTheDocument()
-        expect(screen.getByText('Comissão total do período:')).toBeInTheDocument()
+        expect(screen.getByText('Gorjetas total do período:')).toBeInTheDocument()
         expect(screen.getByText('Total dos Setores (sem meritocracia)')).toBeInTheDocument()
         expect(screen.getByText('Total Geral: R$ 70,00')).toBeInTheDocument()
     })
@@ -155,7 +155,7 @@ describe('CommissionsReportAll', () => {
 
         expect(URL.createObjectURL).toHaveBeenCalledWith(blob)
         expect(createdAnchor).not.toBeNull()
-        expect(createdAnchor?.download).toMatch(/^relatorio-geral-\d{8}-\d{6}\.pdf$/)
+        expect(createdAnchor?.download).toMatch(/^relatorio-geral-Gorjetas-\d{8}-\d{6}\.pdf$/)
 
         jest.advanceTimersByTime(60_000)
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')

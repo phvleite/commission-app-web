@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
     title: 'Commission App Web',
-    description: 'Sistema web de gestão de comissões multi-tenant',
+    description: 'Sistema web de gestão de Gorjetas multi-tenant',
 }
 
 export default function RootLayout({
