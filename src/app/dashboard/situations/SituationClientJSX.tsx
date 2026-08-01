@@ -70,12 +70,14 @@ export default function SituationClientJSX({
         editSituation,
         activateSituation,
         deactivateSituation,
+        exportSituationsPdf,
 
         showTypes,
         setShowTypes,
         showCreate,
         setShowCreate,
         isSubmitting,
+        isExportingPdf,
         isLoading,
         feedback,
     } = client
@@ -204,6 +206,17 @@ export default function SituationClientJSX({
                 setFiltroAno={setFilterYear}
                 limparFiltros={clearFilters}
             />
+
+            <div className="flex justify-end">
+                <button
+                    type="button"
+                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-70"
+                    onClick={exportSituationsPdf}
+                    disabled={isExportingPdf || isLoading || situations.length === 0}
+                >
+                    {isExportingPdf ? 'Gerando PDF...' : 'Gerar PDF das situacoes exibidas'}
+                </button>
+            </div>
 
             {/* LISTA */}
             {isLoading ? (

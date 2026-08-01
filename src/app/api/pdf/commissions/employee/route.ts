@@ -83,8 +83,8 @@ function renderReportEmployeeHtml(params: {
 }): string {
     const sectorRows = params.sectorSummary
         .map(
-            (sector) => `
-            <tr>
+            (sector, index) => `
+            <tr class="report-row-${index % 2 === 0 ? 'even' : 'odd'}">
                 <td>${escapeHtml(sector.sectorName)}</td>
                 <td class="right">R$ ${formatCurrencyFromDatabase(sector.sectorValue)}</td>
                 <td class="right">R$ ${formatCurrencyFromDatabase(sector.employeeValue)}</td>
@@ -104,8 +104,8 @@ function renderReportEmployeeHtml(params: {
 
     const detailRows = sortedData
         .map(
-            (row) => `
-            <tr>
+            (row, index) => `
+            <tr class="report-row-${index % 2 === 0 ? 'even' : 'odd'}">
                 <td class="center">${escapeHtml(normalizeDateForReport(row.date))}</td>
                 <td class="center">${escapeHtml(row.situation)}</td>
                 <td class="center">${row.totalCount}</td>
@@ -172,6 +172,8 @@ function renderReportEmployeeHtml(params: {
         }
         .right { text-align: right; }
         .center { text-align: center; }
+        .report-row-even td { background: #f5f9ff; }
+        .report-row-odd td { background: #ffffff; }
     </style>
 </head>
 <body>

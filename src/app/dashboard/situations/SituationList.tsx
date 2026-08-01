@@ -7,6 +7,7 @@ interface Situation {
     _id: string
     employeeId: string
     employeeName: string | null
+    employeeActive?: boolean
     typeId: string
     typeDescription: string | null
     startDate: string
@@ -116,7 +117,12 @@ export default function SituationList({
                                     </p>
 
                                     <p className="text-xs text-(--color-muted)">
-                                        Status: {s.active ? 'Ativo' : 'Inativo'}
+                                        Status do colaborador:{' '}
+                                        {s.employeeActive === false ? 'Inativo' : 'Ativo'}
+                                    </p>
+
+                                    <p className="text-xs text-(--color-muted)">
+                                        Status da situacao: {s.active ? 'Ativa' : 'Inativa'}
                                     </p>
                                 </div>
 

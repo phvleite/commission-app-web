@@ -20,6 +20,7 @@ describe('SituationList', () => {
                 _id: 's1',
                 employeeId: 'e1',
                 employeeName: 'Alice',
+                employeeActive: false,
                 typeId: 't1',
                 typeDescription: 'Ferias',
                 startDate: '2026-07-01',
@@ -50,6 +51,9 @@ describe('SituationList', () => {
 
     it('calls onInativar for active situation', () => {
         render(<SituationList {...baseProps} />)
+
+        expect(screen.getByText('Status do colaborador: Inativo')).toBeInTheDocument()
+        expect(screen.getByText('Status da situacao: Ativa')).toBeInTheDocument()
 
         fireEvent.click(screen.getByRole('button', { name: 'Inativar' }))
 

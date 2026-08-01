@@ -221,4 +221,131 @@ describe('useSituationClient', () => {
             message: 'Descrição duplicada.',
         })
     })
+
+    it('exportSituationsPdf envia os dados exibidos e filtros atuais', async () => {
+        const fetchMock = global.fetch as jest.MockedFunction<typeof fetch>
+
+        fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = String(input)
+
+            if (url.includes('/api/situation-types')) {
+                return createJsonResponse({
+                    types: [{ _id: 't1', description: 'Ferias', active: true }],
+                })
+            }
+
+            if (url.includes('/api/situations') && !url.includes('/api/pdf/situations')) {
+                return createJsonResponse({
+                    situations: [
+                        {
+                            _id: 's1',
+                            employeeId: 'e1',
+                            employeeName: 'Alice',
+                            typeId: 't1',
+                            typeDescription: 'Ferias',
+                            startDate: '2026-07-01',
+                            endDate: '2026-07-10',
+                            active: true,
+                        },
+                    ],
+                })
+            }
+
+            if (url.includes('/api/pdf/situations') && init?.method === 'POST') {
+                return {
+                    ok: true,
+                    status: 200,
+                    blob: async () => new Blob(['fake-pdf'], { type: 'application/pdf' }),
+                } as Response
+            }
+
+            return createJsonResponse({})
+        })
+
+        const createElementSpy = jest.spyOn(document, 'createElement')
+        const clickMock = jest.fn()
+        createElementSpy.mockImplementation(((tagName: string) => {
+            const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName)
+            if (tagName.toLowerCase() === 'a') {
+                ;(element as HTMLAnchorElement).click = clickMock
+            }
+            return element
+        }) as typeof document.createElement)
+
+        const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null)
+
+        const originalCreateObjectURL = URL.createObjectURL
+        const originalRevokeObjectURL = URL.revokeObjectURL
+        URL.createObjectURL = jest.fn(() => 'blob://situations-pdf')
+        URL.revokeObjectURL = jest.fn()
+
+        const { result } = renderHook(() =>
+            useSituationClient({
+                initialTypes: [{ _id: 't1', description: 'Ferias', active: true }],
+                initialSituations: [
+                    {
+                        _id: 's1',
+                        employeeId: 'e1',
+                        employeeName: 'Alice',
+                        typeId: 't1',
+                        typeDescription: 'Ferias',
+                        startDate: '2026-07-01',
+                        endDate: '2026-07-10',
+                        active: true,
+                    },
+                ],
+                initialEmployees: [{ _id: 'e1', name: 'Alice', active: true }],
+                initialSectors: [{ _id: 'sec1', name: 'Setor A', active: true }],
+                initialStartDate: '2026-07-01',
+                initialEndDate: '2026-07-10',
+            }),
+        )
+
+        await act(async () => {
+            jest.runOnlyPendingTimers()
+        })
+
+        fetchMock.mockClear()
+
+        await act(async () => {
+            await result.current.exportSituationsPdf()
+        })
+
+        const pdfCall = fetchMock.mock.calls.find((call) =>
+            String(call[0]).includes('/api/pdf/situations'),
+        )
+        expect(pdfCall).toBeDefined()
+
+        const pdfRequestInit = pdfCall?.[1] as RequestInit
+        const payload = JSON.parse(String(pdfRequestInit.body)) as {
+            filters: {
+                employee: string
+                type: string
+                sector: string
+                startDate: string
+                endDate: string
+            }
+            situations: Array<{ employeeName: string }>
+        }
+
+        expect(payload.filters.employee).toBe('Todos')
+        expect(payload.filters.type).toBe('Todos')
+        expect(payload.filters.sector).toBe('Todos')
+        expect(payload.filters.startDate).toBe('2026-07-01')
+        expect(payload.filters.endDate).toBe('2026-07-10')
+        expect(payload.situations).toHaveLength(1)
+        expect(payload.situations[0].employeeName).toBe('Alice')
+
+        expect(openSpy).toHaveBeenCalledWith(
+            'blob://situations-pdf',
+            '_blank',
+            'noopener,noreferrer',
+        )
+        expect(clickMock).toHaveBeenCalled()
+
+        openSpy.mockRestore()
+        URL.createObjectURL = originalCreateObjectURL
+        URL.revokeObjectURL = originalRevokeObjectURL
+        createElementSpy.mockRestore()
+    })
 })

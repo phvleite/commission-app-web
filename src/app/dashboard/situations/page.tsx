@@ -53,7 +53,7 @@ export default async function Page() {
         tenantId,
         $and: [{ startDate: { $lte: endRange.end } }, { endDate: { $gte: startRange.start } }],
     })
-        .populate('employeeId', 'name')
+        .populate('employeeId', 'name active')
         .populate('typeId', 'description')
         .sort({ startDate: -1 })
         .lean()
@@ -63,6 +63,7 @@ export default async function Page() {
         _id: String(s._id),
         employeeId: String(s.employeeId._id),
         employeeName: s.employeeId.name,
+        employeeActive: s.employeeId.active,
         typeId: String(s.typeId._id),
         typeDescription: s.typeId.description,
         startDate: formatDateToYmdInTimeZone(s.startDate, timeZone),

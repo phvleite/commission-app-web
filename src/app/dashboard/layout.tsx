@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { validateActiveSectorsPercentage } from '@/lib/api/business-rules'
 import { connectDB } from '@/lib/db'
 import { SidebarNav } from './_components/SidebarNav'
+import { SessionActivityHeartbeat } from './_components/SessionActivityHeartbeat'
 
 export default async function DashboardLayout({
     children,
@@ -20,6 +21,7 @@ export default async function DashboardLayout({
 
     return (
         <div className="app-shell min-h-screen">
+            <SessionActivityHeartbeat />
             <SidebarNav
                 userName={session.user.name}
                 role={session.user.role}

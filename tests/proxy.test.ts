@@ -4,22 +4,29 @@ jest.mock('@/auth', () => ({
 
 import middleware, { config } from '@/proxy'
 
+function buildRequest(url: string, authValue: unknown, cookies?: Record<string, string>) {
+    return {
+        nextUrl: new URL(url),
+        auth: authValue,
+        cookies: {
+            get: (name: string) => {
+                const value = cookies?.[name]
+                return value ? { value } : undefined
+            },
+        },
+    }
+}
+
 describe('proxy middleware', () => {
     it('allows access to public routes', () => {
-        const response = middleware({
-            nextUrl: new URL('http://localhost/login'),
-            auth: null,
-        })
+        const response = middleware(buildRequest('http://localhost/login', null))
 
         expect(response.status).toBe(200)
         expect(response.headers.get('location')).toBeNull()
     })
 
     it('redirects unauthenticated user to login with callbackUrl on protected route', () => {
-        const response = middleware({
-            nextUrl: new URL('http://localhost/dashboard/sales'),
-            auth: null,
-        })
+        const response = middleware(buildRequest('http://localhost/dashboard/sales', null))
 
         expect(response.status).toBeGreaterThanOrEqual(300)
         expect(response.status).toBeLessThan(400)
@@ -29,13 +36,32 @@ describe('proxy middleware', () => {
     })
 
     it('allows authenticated user on protected route', () => {
-        const response = middleware({
-            nextUrl: new URL('http://localhost/dashboard/sales'),
-            auth: { user: { id: 'u1' } },
-        })
+        const response = middleware(
+            buildRequest('http://localhost/dashboard/sales', { user: { id: 'u1' } }),
+        )
 
         expect(response.status).toBe(200)
         expect(response.headers.get('location')).toBeNull()
+    })
+
+    it('redirects authenticated user to login when inactivity timeout is exceeded', () => {
+        const oldTimestamp = String(Date.now() - 1000 * 60 * 61)
+
+        const response = middleware(
+            buildRequest(
+                'http://localhost/dashboard/sales?tab=list',
+                { user: { id: 'u1' } },
+                {
+                    last_activity_at: oldTimestamp,
+                },
+            ),
+        )
+
+        expect(response.status).toBeGreaterThanOrEqual(300)
+        expect(response.status).toBeLessThan(400)
+        expect(response.headers.get('location')).toBe(
+            'http://localhost/login?callbackUrl=%2Fdashboard%2Fsales%3Ftab%3Dlist&reason=inactivity',
+        )
     })
 
     it('keeps expected matcher config', () => {
