@@ -6,7 +6,12 @@ import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 import { connectDB } from '@/lib/db'
 import { auth } from '@/auth'
-import { formatDateToYmdInTimeZone, normalizeTimeZone } from '@/lib/date-timezone'
+import {
+    formatDateToYmdInTimeZone,
+    getRollingWindowYmd,
+    getUtcRangeForCalendarDay,
+    normalizeTimeZone,
+} from '@/lib/date-timezone'
 
 export default async function Page() {
     const session = await auth()
@@ -16,6 +21,13 @@ export default async function Page() {
 
     const tenantId = session.user.tenantId
     const timeZone = normalizeTimeZone(session.user.tenantTimeZone)
+    const initialWindow = getRollingWindowYmd(45, timeZone)
+    const startRange = getUtcRangeForCalendarDay(initialWindow.start, timeZone)
+    const endRange = getUtcRangeForCalendarDay(initialWindow.end, timeZone)
+
+    if (!startRange || !endRange) {
+        throw new Error('Janela inicial de situacoes invalida.')
+    }
 
     await connectDB()
 
@@ -37,7 +49,10 @@ export default async function Page() {
     // ============================================================
     // CARREGAR SITUAÇÕES
     // ============================================================
-    const situations = await Situation.find({ tenantId })
+    const situations = await Situation.find({
+        tenantId,
+        $and: [{ startDate: { $lte: endRange.end } }, { endDate: { $gte: startRange.start } }],
+    })
         .populate('employeeId', 'name')
         .populate('typeId', 'description')
         .sort({ startDate: -1 })
@@ -79,6 +94,8 @@ export default async function Page() {
             initialSituations={normalizedSituations}
             initialEmployees={normalizedEmployees}
             initialSectors={normalizedSectors}
+            initialStartDate={initialWindow.start}
+            initialEndDate={initialWindow.end}
         />
     )
 }

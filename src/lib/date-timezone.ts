@@ -212,4 +212,20 @@ export function formatDateToYmdInTimeZone(value: string | Date, timeZone: string
     return toYmd({ year: parts.year, month: parts.month, day: parts.day })
 }
 
+export function getRollingWindowYmd(
+    days: number,
+    timeZone: string,
+    anchorDate: Date = new Date(),
+): { start: string; end: string } {
+    const safeDays = Number.isFinite(days) ? Math.max(1, Math.trunc(days)) : 1
+    const endDate = new Date(anchorDate)
+    const startDate = new Date(anchorDate)
+    startDate.setDate(startDate.getDate() - (safeDays - 1))
+
+    return {
+        start: formatDateToYmdInTimeZone(startDate, timeZone),
+        end: formatDateToYmdInTimeZone(endDate, timeZone),
+    }
+}
+
 export { DEFAULT_TIME_ZONE }

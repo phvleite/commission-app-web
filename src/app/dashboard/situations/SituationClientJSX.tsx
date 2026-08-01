@@ -19,17 +19,23 @@ export default function SituationClientJSX({
     initialSituations,
     initialEmployees,
     initialSectors,
+    initialStartDate,
+    initialEndDate,
 }: {
     initialTypes: SituationTypeItem[]
     initialSituations: SituationItem[]
     initialEmployees: EmployeeItem[]
     initialSectors: SectorItem[]
+    initialStartDate?: string
+    initialEndDate?: string
 }) {
     const client = useSituationClient({
         initialTypes,
         initialSituations,
         initialEmployees,
         initialSectors,
+        initialStartDate,
+        initialEndDate,
     })
 
     const {
