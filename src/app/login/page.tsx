@@ -22,7 +22,7 @@ export default async function LoginPage() {
                     </h1>
 
                     <p className="mt-4 text-sm leading-7 text-slate-200 sm:text-base">
-                        Entre com email e senha para acessar sua area de comissoes.
+                        Entre com email e senha para acessar sua area de Gorjetas.
                     </p>
 
                     <div className="mt-8 grid gap-3 sm:grid-cols-2">

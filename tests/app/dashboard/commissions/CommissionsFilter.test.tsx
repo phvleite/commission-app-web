@@ -29,13 +29,11 @@ function buildProps(overrides: Partial<React.ComponentProps<typeof CommissionsFi
         employeeId: 'emp-1',
         employees: [{ _id: 'emp-1', name: 'Alice', active: true }],
         employeesLoading: false,
-        showSituations: true,
         loading: false,
         apiError: null,
         setStartDate: jest.fn(),
         setEndDate: jest.fn(),
         setEmployeeId: jest.fn(),
-        setShowSituations: jest.fn(),
         onClear: jest.fn(),
         onResult: jest.fn() as React.Dispatch<React.SetStateAction<CommissionsResult>>,
         listByPeriod: jest.fn(),
@@ -55,7 +53,7 @@ describe('CommissionsFilter flow', () => {
         const props = buildProps({ startDate: '', endDate: '' })
         render(<CommissionsFilter {...props} />)
 
-        fireEvent.click(screen.getByRole('button', { name: 'Gerar relatório geral' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Gerar relatório de Gorjetas' }))
 
         expect(await screen.findByText('Informe data inicial e final.')).toBeInTheDocument()
     })
@@ -87,10 +85,12 @@ describe('CommissionsFilter flow', () => {
         const props = buildProps({ listByPeriod, listSituations, onResult })
         render(<CommissionsFilter {...props} />)
 
-        fireEvent.click(screen.getByRole('button', { name: 'Gerar relatório geral' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Gerar relatório de Gorjetas' }))
 
         expect(screen.getByRole('button', { name: 'Processando...' })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: 'Gerar por colaborador' })).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: 'Gerar Gorjetas por colaborador' }),
+        ).toBeInTheDocument()
 
         periodDeferred.resolve({
             data: [
@@ -120,7 +120,7 @@ describe('CommissionsFilter flow', () => {
         })
 
         expect(listSituations).toHaveBeenCalledWith('2026-07-01', '2026-07-31')
-        expect(toastSuccessMock).toHaveBeenCalledWith('Relatório geral gerado.')
+        expect(toastSuccessMock).toHaveBeenCalledWith('Relatório de Gorjetas gerado.')
     })
 
     it('warns and clears result when employee report has no data', async () => {
@@ -133,14 +133,14 @@ describe('CommissionsFilter flow', () => {
         const props = buildProps({ listByPeriodEmployee, onResult })
         render(<CommissionsFilter {...props} />)
 
-        fireEvent.click(screen.getByRole('button', { name: 'Gerar por colaborador' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Gerar Gorjetas por colaborador' }))
 
         await waitFor(() => {
             expect(onResult).toHaveBeenCalledWith(null)
         })
 
         expect(toastWarningMock).toHaveBeenCalledWith(
-            'Não existem registros de comissões para o colaborador no período informado.',
+            'Não existem registros de Gorjetas para o colaborador no período informado.',
         )
     })
 })

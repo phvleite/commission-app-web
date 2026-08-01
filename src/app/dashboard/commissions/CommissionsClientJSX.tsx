@@ -19,14 +19,12 @@ export default function CommissionsClientJSX({ client }: CommissionsClientJSXPro
                 employeeId={client.employeeId}
                 employees={client.employees}
                 employeesLoading={client.employeesLoading}
-                showSituations={client.showSituations}
                 loading={client.loading}
                 apiError={client.error}
 
                 setStartDate={client.setStartDate}
                 setEndDate={client.setEndDate}
                 setEmployeeId={client.setEmployeeId}
-                setShowSituations={client.setShowSituations}
 
                 onClear={client.clearFilters}
                 onResult={client.setResult}
@@ -38,10 +36,7 @@ export default function CommissionsClientJSX({ client }: CommissionsClientJSXPro
             {client.result?.type === 'all' && (
                 <>
                     <CommissionsReportAll result={client.result} />
-
-                    {client.showSituations && (
-                        <CommissionsSituation situations={client.result.situations} />
-                    )}
+                    <CommissionsSituation situations={client.result.situations} />
                 </>
             )}
 

@@ -51,7 +51,7 @@ export function SalesSectorsModal({ date, onClose }: SalesSectorsModalProps) {
         <div className="gold-bar-title fixed inset-0 bg-black/40 flex items-center justify-center z-9950 p-4">
             <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                 <h3 className="gold-bar-title text-xl font-semibold text-(--color-primary-strong)">
-                    Comissões por Setor — {formatDateFromDatabase(date)}
+                    Gorjetas por Setor — {formatDateFromDatabase(date)}
                 </h3>
 
                 <hr className="my-6" />

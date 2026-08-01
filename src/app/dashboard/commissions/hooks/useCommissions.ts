@@ -84,10 +84,10 @@ export function useCommissions() {
                 sectorSummary?: SectorSummaryRow[]
                 salesSummary?: SalesSummaryRow[]
                 error?: string
-            }>(res, 'Erro ao buscar comissões por período.')
+            }>(res, 'Erro ao buscar Gorjetas por período.')
 
             if (!res.ok) {
-                setError(json.error || 'Erro ao buscar comissões por período.')
+                setError(json.error || 'Erro ao buscar Gorjetas por período.')
                 return null
             }
 
@@ -98,7 +98,7 @@ export function useCommissions() {
             }
         } catch (err) {
             console.error(err)
-            setError('Erro ao buscar comissões por período.')
+            setError('Erro ao buscar Gorjetas por período.')
             return null
         } finally {
             setLoading(false)
@@ -118,10 +118,10 @@ export function useCommissions() {
                 data?: CommissionRow[]
                 sectorSummary?: Array<SectorSummaryRow & { employeeValue: number }>
                 error?: string
-            }>(res, 'Erro ao buscar comissões do colaborador.')
+            }>(res, 'Erro ao buscar Gorjetas do colaborador.')
 
             if (!res.ok) {
-                setError(json.error || 'Erro ao buscar comissões do colaborador.')
+                setError(json.error || 'Erro ao buscar Gorjetas do colaborador.')
                 return null
             }
 
@@ -143,7 +143,7 @@ export function useCommissions() {
             }
         } catch (err) {
             console.error(err)
-            setError('Erro ao buscar comissões do colaborador.')
+            setError('Erro ao buscar Gorjetas do colaborador.')
             return null
         } finally {
             setLoading(false)

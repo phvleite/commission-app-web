@@ -67,7 +67,7 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
             const a = document.createElement('a')
             a.href = url
             const timestamp = getFilenameTimestamp()
-            a.download = `relatorio-geral-${timestamp}.pdf`
+            a.download = `relatorio-geral-Gorjetas-${timestamp}.pdf`
             a.click()
 
             window.setTimeout(() => {
@@ -93,7 +93,7 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <strong>Comissão total do período:</strong>
+                    <strong>Gorjetas total do período:</strong>
                     <span>R$ {formatCurrencyFromDatabase(totalSalesCommission)}</span>
                 </div>
             </div>
@@ -146,8 +146,8 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
 
             <hr className="my-6 border-(--color-border)" />
 
-            {/* COMISSÕES POR COLABORADOR */}
-            <h4 className="gold-bar-title text-md font-semibold mb-3">Comissões por Colaborador</h4>
+            {/* Gorjetas POR COLABORADOR */}
+            <h4 className="gold-bar-title text-md font-semibold mb-3">Gorjetas por Colaborador</h4>
 
             <div className="overflow-x-auto">
                 <table className="min-w-150 w-full text-sm">

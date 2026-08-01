@@ -16,7 +16,7 @@ const MENU_ITEMS = [
     { href: '/dashboard/employees', label: 'Colaboradores', requiresSectorsOk: true },
     { href: '/dashboard/situations', label: 'Situações', requiresSectorsOk: true },
     { href: '/dashboard/sales', label: 'Vendas', requiresSectorsOk: true },
-    { href: '/dashboard/commissions', label: 'Comissões', requiresSectorsOk: true },
+    { href: '/dashboard/commissions', label: 'Gorjetas', requiresSectorsOk: true },
     { href: '/dashboard/company-users', label: 'Empresa/Usuários' },
 ]
 

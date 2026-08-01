@@ -87,7 +87,7 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
             const a = document.createElement('a')
             a.href = url
             const timestamp = getFilenameTimestamp()
-            a.download = `relatorio-${employeeName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.pdf`
+            a.download = `relatorio-Gorjetas-${employeeName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.pdf`
             a.click()
 
             window.setTimeout(() => {
@@ -138,7 +138,7 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
             </div>
 
             {/* DETALHAMENTO */}
-            <h4 className="text-md font-semibold mt-10 mb-3">Detalhamento das Comissões</h4>
+            <h4 className="text-md font-semibold mt-10 mb-3">Detalhamento das Gorjetas</h4>
 
             <div className="overflow-x-auto">
                 <table className="min-w-225 w-full text-sm">
@@ -148,8 +148,8 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
                             <th className="py-3 px-2 text-center">Situação</th>
                             <th className="py-3 px-2 text-center">Qtde Total</th>
                             <th className="py-3 px-2 text-center">Qtde Aptos</th>
-                            <th className="py-3 px-2 text-right">Comissão Setor</th>
-                            <th className="py-3 px-2 text-right">Comissão Colaborador</th>
+                            <th className="py-3 px-2 text-right">Gorjetas Setor</th>
+                            <th className="py-3 px-2 text-right">Gorjetas Colaborador</th>
                         </tr>
                     </thead>
 

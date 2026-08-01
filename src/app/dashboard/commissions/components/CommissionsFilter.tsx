@@ -10,13 +10,11 @@ interface CommissionsFilterProps {
     employeeId: string
     employees: EmployeeOption[]
     employeesLoading: boolean
-    showSituations: boolean
     loading: boolean
     apiError: string | null
     setStartDate: Dispatch<SetStateAction<string>>
     setEndDate: Dispatch<SetStateAction<string>>
     setEmployeeId: Dispatch<SetStateAction<string>>
-    setShowSituations: Dispatch<SetStateAction<boolean>>
     onClear: () => void
     onResult: Dispatch<SetStateAction<CommissionsResult>>
     listByPeriod: (
@@ -83,13 +81,11 @@ export default function CommissionsFilter({
     employeeId,
     employees,
     employeesLoading,
-    showSituations,
     loading,
     apiError,
     setStartDate,
     setEndDate,
     setEmployeeId,
-    setShowSituations,
     onClear,
     onResult,
     listByPeriod,
@@ -108,7 +104,7 @@ export default function CommissionsFilter({
 
         setError('')
         setGeneratingAction('all')
-        setStatusMessage('Gerando relatório geral...')
+        setStatusMessage('Gerando relatório de Gorjetas...')
         try {
             const periodResult = await listByPeriod(startDate, endDate)
 
@@ -117,16 +113,14 @@ export default function CommissionsFilter({
             }
 
             if (periodResult.data.length === 0) {
-                const message = 'Não existem registros de comissões para o período informado.'
+                const message = 'Não existem registros de Gorjetas para o período informado.'
                 setError(message)
                 onResult(null)
                 toast.warning(message)
                 return
             }
 
-            const situations = showSituations
-                ? ((await listSituations(startDate, endDate)) ?? [])
-                : []
+            const situations = (await listSituations(startDate, endDate)) ?? []
 
             onResult({
                 type: 'all',
@@ -137,7 +131,7 @@ export default function CommissionsFilter({
                 salesSummary: periodResult.salesSummary,
                 situations,
             })
-            toast.success('Relatório geral gerado.')
+            toast.success('Relatório de Gorjetas gerado.')
         } finally {
             setGeneratingAction(null)
             setStatusMessage(null)
@@ -152,7 +146,7 @@ export default function CommissionsFilter({
 
         setError('')
         setGeneratingAction('employee')
-        setStatusMessage('Gerando relatório por colaborador...')
+        setStatusMessage('Gerando relatório de Gorjetas por colaborador...')
         try {
             const employeeResult = await listByPeriodEmployee(startDate, endDate, employeeId)
 
@@ -162,7 +156,7 @@ export default function CommissionsFilter({
 
             if (employeeResult.data.length === 0) {
                 const message =
-                    'Não existem registros de comissões para o colaborador no período informado.'
+                    'Não existem registros de Gorjetas para o colaborador no período informado.'
                 setError(message)
                 onResult(null)
                 toast.warning(message)
@@ -176,7 +170,7 @@ export default function CommissionsFilter({
                 data: employeeResult.data,
                 sectorSummary: employeeResult.sectorSummary,
             })
-            toast.success('Relatório por colaborador gerado.')
+            toast.success('Relatório de Gorjetas por colaborador gerado.')
         } finally {
             setGeneratingAction(null)
             setStatusMessage(null)
@@ -233,15 +227,6 @@ export default function CommissionsFilter({
                 </select>
             </label>
 
-            <label className="flex items-center gap-2 text-sm text-(--color-muted)">
-                <input
-                    type="checkbox"
-                    checked={showSituations}
-                    onChange={(event) => setShowSituations(event.target.checked)}
-                />
-                Mostrar situações no relatório geral
-            </label>
-
             {statusMessage ? (
                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
                     {statusMessage}
@@ -267,7 +252,7 @@ export default function CommissionsFilter({
                     onClick={handleAll}
                     disabled={generatingAction !== null || loading}
                 >
-                    {generatingAction === 'all' ? 'Processando...' : 'Gerar relatório geral'}
+                    {generatingAction === 'all' ? 'Processando...' : 'Gerar relatório de Gorjetas'}
                 </button>
 
                 <button
@@ -279,7 +264,9 @@ export default function CommissionsFilter({
                     }
                     title={!employeeId ? 'Selecione um colaborador para gerar o relatório.' : ''}
                 >
-                    {generatingAction === 'employee' ? 'Processando...' : 'Gerar por colaborador'}
+                    {generatingAction === 'employee'
+                        ? 'Processando...'
+                        : 'Gerar Gorjetas por colaborador'}
                 </button>
 
                 <button

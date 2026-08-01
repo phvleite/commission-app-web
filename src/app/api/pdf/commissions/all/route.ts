@@ -160,7 +160,7 @@ function renderReportAllHtml(params: {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Relatorio Geral de Comissoes</title>
+    <title>Relatorio Geral de Gorjetas</title>
     <style>
         @page {
             size: A4;
@@ -231,7 +231,7 @@ function renderReportAllHtml(params: {
 
     <div class="summary">
         <div><strong>Valor total das vendas:</strong> R$ ${formatCurrencyFromDatabase(params.totalSales)}</div>
-        <div><strong>Comissao total do periodo:</strong> R$ ${formatCurrencyFromDatabase(params.totalSalesCommission)}</div>
+        <div><strong>Gorjetas total do periodo:</strong> R$ ${formatCurrencyFromDatabase(params.totalSalesCommission)}</div>
     </div>
 
     <h2 class="center">Resumo por Setor</h2>
@@ -255,7 +255,7 @@ function renderReportAllHtml(params: {
         </tbody>
     </table>
 
-    <h2 class="center">Comissoes por Colaborador</h2>
+    <h2 class="center">Gorjetas por Colaborador</h2>
     <table>
         <thead>
             <tr>
