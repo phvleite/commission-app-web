@@ -40,22 +40,40 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
         return a.employeeName.localeCompare(b.employeeName, 'pt-BR')
     })
 
+    let currentGroupIndex = -1
     const processed = sortedSituations.map((s, index, array) => {
         const formattedDate = formatDateFromDatabase(
             s.date.includes('T') ? s.date.split('T')[0] : s.date,
         )
+
         const previous = array[index - 1]
+        const next = array[index + 1]
+
         const previousFormattedDate = previous
             ? formatDateFromDatabase(
                   previous.date.includes('T') ? previous.date.split('T')[0] : previous.date,
               )
             : ''
 
-        const showDate = formattedDate !== previousFormattedDate ? formattedDate : ''
+        const nextFormattedDate = next
+            ? formatDateFromDatabase(next.date.includes('T') ? next.date.split('T')[0] : next.date)
+            : ''
+
+        const isGroupStart = formattedDate !== previousFormattedDate
+        const isGroupEnd = formattedDate !== nextFormattedDate
+
+        if (isGroupStart) {
+            currentGroupIndex += 1
+        }
+
+        const rowToneClass = currentGroupIndex % 2 === 0 ? 'bg-[#f5f9ff]' : 'bg-white'
 
         return {
             ...s,
-            showDate,
+            showDate: isGroupStart ? formattedDate : '',
+            isGroupStart,
+            isGroupEnd,
+            rowToneClass,
         }
     })
 
@@ -82,7 +100,12 @@ export default function CommissionsSituations({ situations }: CommissionsSituati
                         {processed.map((s) => (
                             <tr
                                 key={`${s.date}-${s.employeeName}-${s.sectorName}`}
-                                className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
+                                className={`
+                                    ${s.rowToneClass}
+                                    ${s.isGroupStart ? 'border-t-2 border-t-(--color-primary-strong)' : ''}
+                                    ${s.isGroupEnd ? 'border-b-2 border-b-(--color-primary-strong)' : 'border-b border-transparent'}
+                                    transition-colors hover:bg-surface-soft
+                                `}
                             >
                                 <td className="py-3 px-2 text-center font-semibold">
                                     {s.showDate}

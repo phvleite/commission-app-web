@@ -91,7 +91,7 @@ export async function GET(req: Request) {
     }
 
     const situations = await Situation.find(query)
-        .populate('employeeId', 'name')
+        .populate('employeeId', 'name active')
         .populate('typeId', 'description')
         .sort({ startDate: -1 })
         .lean()
@@ -101,6 +101,11 @@ export async function GET(req: Request) {
             _id: String(s._id),
             employeeId: String((s.employeeId as Record<string, unknown>)?._id ?? ''),
             employeeName: (s.employeeId as Record<string, unknown>)?.name ?? '',
+            employeeActive:
+                (s.employeeId as Record<string, unknown>)?.active === true ||
+                (s.employeeId as Record<string, unknown>)?.active === false
+                    ? ((s.employeeId as Record<string, unknown>).active as boolean)
+                    : true,
             typeId: String((s.typeId as Record<string, unknown>)?._id ?? ''),
             typeDescription: (s.typeId as Record<string, unknown>)?.description ?? '',
             startDate: formatDateToYmdInTimeZone(s.startDate, timeZone),

@@ -13,6 +13,7 @@ export interface SituationItem {
     _id: string
     employeeId: string
     employeeName: string
+    employeeActive?: boolean
     typeId: string
     typeDescription: string
     startDate: string
@@ -62,6 +63,7 @@ export function useSituationClient({
     const [filterMonth, setFilterMonth] = useState('')
     const [filterYear, setFilterYear] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isExportingPdf, setIsExportingPdf] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [feedback, setFeedback] = useState<{
         type: 'info' | 'success' | 'error'
@@ -380,6 +382,80 @@ export function useSituationClient({
         }
     }
 
+    async function exportSituationsPdf() {
+        if (situations.length === 0) {
+            setFeedback({
+                type: 'error',
+                message: 'Nao ha situacoes para exportar no momento.',
+            })
+            return
+        }
+
+        setIsExportingPdf(true)
+
+        try {
+            const employeeLabel =
+                filterEmployee === 'todos'
+                    ? 'Todos'
+                    : (employees.find((employee) => employee._id === filterEmployee)?.name ??
+                      'Todos')
+
+            const typeLabel =
+                filterType === 'todos'
+                    ? 'Todos'
+                    : (types.find((type) => type._id === filterType)?.description ?? 'Todos')
+
+            const sectorLabel =
+                filterSector === 'todos'
+                    ? 'Todos'
+                    : (sectors.find((sector) => sector._id === filterSector)?.name ?? 'Todos')
+
+            const payload = {
+                title: 'Relatorio de Situacoes',
+                generatedAt: new Date().toISOString(),
+                filters: {
+                    employee: employeeLabel,
+                    type: typeLabel,
+                    sector: sectorLabel,
+                    startDate: filterStart || 'Todos',
+                    endDate: filterEnd || 'Todos',
+                    month: filterMonth || 'Todos',
+                    year: filterYear || 'Todos',
+                },
+                situations,
+            }
+
+            const response = await fetch('/api/pdf/situations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+
+            if (!response.ok) {
+                throw new Error('Nao foi possivel gerar o PDF de situacoes.')
+            }
+
+            const blob = await response.blob()
+            const url = URL.createObjectURL(blob)
+
+            window.open(url, '_blank', 'noopener,noreferrer')
+
+            const anchor = document.createElement('a')
+            anchor.href = url
+            anchor.download = `relatorio-situacoes-${Date.now()}.pdf`
+            anchor.click()
+
+            window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Erro ao gerar PDF de situacoes.',
+            })
+        } finally {
+            setIsExportingPdf(false)
+        }
+    }
+
     return {
         types,
         situations,
@@ -412,12 +488,14 @@ export function useSituationClient({
         editSituation,
         activateSituation,
         deactivateSituation,
+        exportSituationsPdf,
 
         showTypes,
         setShowTypes,
         showCreate,
         setShowCreate,
         isSubmitting,
+        isExportingPdf,
         isLoading,
         feedback,
     }

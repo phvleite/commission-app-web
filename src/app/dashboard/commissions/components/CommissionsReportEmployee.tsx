@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { formatCurrencyFromDatabase } from '@/utils/formatCurrency'
 import { formatDateFromDatabase } from '@/utils/formatDate'
 import type { CommissionsEmployeeResult } from '../CommissionsClient'
@@ -41,6 +42,7 @@ function getFilenameTimestamp(date = new Date()): string {
 
 export default function CommissionsReportEmployee({ result }: CommissionsReportEmployeeProps) {
     const { getEmployeePeriodTitle } = useCommissions()
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
     const employeeName =
         result.data.length > 0 ? result.data[0].employeeName.toUpperCase() : 'COLABORADOR'
@@ -60,30 +62,40 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
     })
 
     async function handleGeneratePdf() {
-        const res = await fetch('/api/pdf/commissions/employee', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(result),
-        })
-
-        if (!res.ok) {
+        if (isGeneratingPdf) {
             return
         }
 
-        const blob = await res.blob()
-        const url = URL.createObjectURL(blob)
+        setIsGeneratingPdf(true)
 
-        window.open(url, '_blank', 'noopener,noreferrer')
+        try {
+            const res = await fetch('/api/pdf/commissions/employee', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(result),
+            })
 
-        const a = document.createElement('a')
-        a.href = url
-        const timestamp = getFilenameTimestamp()
-        a.download = `relatorio-${employeeName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.pdf`
-        a.click()
+            if (!res.ok) {
+                return
+            }
 
-        window.setTimeout(() => {
-            URL.revokeObjectURL(url)
-        }, 60_000)
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+
+            window.open(url, '_blank', 'noopener,noreferrer')
+
+            const a = document.createElement('a')
+            a.href = url
+            const timestamp = getFilenameTimestamp()
+            a.download = `relatorio-${employeeName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.pdf`
+            a.click()
+
+            window.setTimeout(() => {
+                URL.revokeObjectURL(url)
+            }, 60_000)
+        } finally {
+            setIsGeneratingPdf(false)
+        }
     }
 
     return (
@@ -107,10 +119,10 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
                     </thead>
 
                     <tbody>
-                        {result.sectorSummary.map((s) => (
+                        {result.sectorSummary.map((s, index) => (
                             <tr
                                 key={s.sectorName}
-                                className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
+                                className={`${index % 2 === 0 ? 'bg-[#f5f9ff]' : 'bg-white'} transition-colors hover:bg-surface-soft`}
                             >
                                 <td className="py-3 px-2">{s.sectorName}</td>
                                 <td className="py-3 px-2 text-right">
@@ -142,10 +154,10 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
                     </thead>
 
                     <tbody>
-                        {sortedData.map((d) => (
+                        {sortedData.map((d, index) => (
                             <tr
                                 key={`${String(d.date)}-${d.sectorName}`}
-                                className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
+                                className={`${index % 2 === 0 ? 'bg-[#f5f9ff]' : 'bg-white'} transition-colors hover:bg-surface-soft`}
                             >
                                 <td className="py-3 px-2 text-center">
                                     {formatDateFromDatabase(d.date)}
@@ -177,8 +189,12 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
 
             {/* BOTÃO PDF */}
             <div className="mt-6">
-                <button className="primary-button px-5 py-2 rounded-xl" onClick={handleGeneratePdf}>
-                    Gerar PDF
+                <button
+                    className="primary-button px-5 py-2 rounded-xl disabled:opacity-70"
+                    onClick={handleGeneratePdf}
+                    disabled={isGeneratingPdf}
+                >
+                    {isGeneratingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
                 </button>
             </div>
         </div>

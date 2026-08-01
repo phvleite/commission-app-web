@@ -132,6 +132,29 @@ describe('API situations route', () => {
         expect(payload.situations[0].endDate).toMatch(/^2026-07-\d{2}$/)
     })
 
+    it('GET retorna status ativo do colaborador junto das situacoes', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId)
+        const { employeeA } = await seed(tenantId)
+
+        await Employee.updateOne({ _id: employeeA._id }, { $set: { active: false } })
+
+        const res = await GET(
+            new Request(
+                `http://localhost/api/situations?employeeId=${employeeA._id.toString()}&start=2026-07-01&end=2026-07-31`,
+            ),
+        )
+
+        expect(res.status).toBe(200)
+        const payload = (await res.json()) as {
+            situations: Array<{ employeeName: string; employeeActive?: boolean }>
+        }
+
+        expect(payload.situations).toHaveLength(1)
+        expect(payload.situations[0].employeeName).toBe('Alice')
+        expect(payload.situations[0].employeeActive).toBe(false)
+    })
+
     it('POST valida campos obrigatorios', async () => {
         const tenantId = new Types.ObjectId().toString()
         setSession(tenantId)
