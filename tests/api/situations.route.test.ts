@@ -198,4 +198,76 @@ describe('API situations route', () => {
         const created = await Situation.findById(payload._id).lean()
         expect(created).not.toBeNull()
     })
+
+    it('GET sem filtros retorna apenas situacoes da janela inicial de 45 dias', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId)
+
+        const sector = await Sector.create({
+            tenantId,
+            name: 'Setor Janela',
+            percentage: 100,
+            active: true,
+            isMeritocracia: false,
+        })
+
+        const employee = await Employee.create({
+            tenantId,
+            name: 'Funcionario Janela',
+            sectorId: sector._id,
+            admissionDate: new Date('2026-01-01T00:00:00.000Z'),
+            active: true,
+        })
+
+        const situationType = await SituationType.create({
+            tenantId,
+            description: 'Afastamento',
+            active: true,
+        })
+
+        const now = new Date()
+
+        const recentStart = new Date(now)
+        recentStart.setDate(now.getDate() - 5)
+        recentStart.setUTCHours(0, 0, 0, 0)
+
+        const recentEnd = new Date(now)
+        recentEnd.setDate(now.getDate() + 2)
+        recentEnd.setUTCHours(23, 59, 59, 999)
+
+        const oldStart = new Date(now)
+        oldStart.setDate(now.getDate() - 120)
+        oldStart.setUTCHours(0, 0, 0, 0)
+
+        const oldEnd = new Date(now)
+        oldEnd.setDate(now.getDate() - 110)
+        oldEnd.setUTCHours(23, 59, 59, 999)
+
+        await Situation.create({
+            tenantId,
+            employeeId: employee._id,
+            typeId: situationType._id,
+            startDate: recentStart,
+            endDate: recentEnd,
+            active: true,
+        })
+
+        await Situation.create({
+            tenantId,
+            employeeId: employee._id,
+            typeId: situationType._id,
+            startDate: oldStart,
+            endDate: oldEnd,
+            active: true,
+        })
+
+        const res = await GET(new Request('http://localhost/api/situations'))
+
+        expect(res.status).toBe(200)
+        const payload = (await res.json()) as {
+            situations: Array<{ startDate: string; endDate: string }>
+        }
+
+        expect(payload.situations).toHaveLength(1)
+    })
 })

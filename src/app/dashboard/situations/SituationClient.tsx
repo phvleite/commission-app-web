@@ -37,6 +37,8 @@ interface SituationClientProps {
     initialSituations: SituationItem[]
     initialEmployees: EmployeeItem[]
     initialSectors: SectorItem[]
+    initialStartDate?: string
+    initialEndDate?: string
 }
 
 export function useSituationClient({
@@ -44,6 +46,8 @@ export function useSituationClient({
     initialSituations,
     initialEmployees,
     initialSectors,
+    initialStartDate = '',
+    initialEndDate = '',
 }: SituationClientProps) {
     const [types, setTypes] = useState(initialTypes)
     const [situations, setSituations] = useState(initialSituations)
@@ -53,8 +57,8 @@ export function useSituationClient({
     const [filterEmployee, setFilterEmployee] = useState('todos')
     const [filterType, setFilterType] = useState('todos')
     const [filterSector, setFilterSector] = useState('todos')
-    const [filterStart, setFilterStart] = useState('')
-    const [filterEnd, setFilterEnd] = useState('')
+    const [filterStart, setFilterStart] = useState(initialStartDate)
+    const [filterEnd, setFilterEnd] = useState(initialEndDate)
     const [filterMonth, setFilterMonth] = useState('')
     const [filterYear, setFilterYear] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -68,8 +72,8 @@ export function useSituationClient({
         setFilterEmployee('todos')
         setFilterType('todos')
         setFilterSector('todos')
-        setFilterStart('')
-        setFilterEnd('')
+        setFilterStart(initialStartDate)
+        setFilterEnd(initialEndDate)
         setFilterMonth('')
         setFilterYear('')
     }
@@ -114,11 +118,10 @@ export function useSituationClient({
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
             void loadTypes()
-            void loadSituations()
         }, 0)
 
         return () => window.clearTimeout(timeoutId)
-    }, [loadTypes, loadSituations])
+    }, [loadTypes])
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {

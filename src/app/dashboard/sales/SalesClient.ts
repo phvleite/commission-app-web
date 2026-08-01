@@ -16,18 +16,28 @@ interface SaleItem {
 
 export interface ISaleClientProps {
     initialSales: SaleItem[]
+    initialStartDate?: string
+    initialEndDate?: string
 }
 
 export default function SalesClient(props: ISaleClientProps) {
-    const { initialSales } = props
-    return createElement(SalesClientContainer, { initialSales })
+    const { initialSales, initialStartDate, initialEndDate } = props
+    return createElement(SalesClientContainer, {
+        initialSales,
+        initialStartDate,
+        initialEndDate,
+    })
 }
 
-export function useSalesClient(initialSales: SaleItem[]) {
+export function useSalesClient(
+    initialSales: SaleItem[],
+    initialStartDate = '',
+    initialEndDate = '',
+) {
     const [sales, setSales] = useState(initialSales)
     const [editId, setEditId] = useState<string | null>(null)
-    const [startDate, setStartDate] = useState('')
-    const [endDate, setEndDate] = useState('')
+    const [startDate, setStartDate] = useState(initialStartDate)
+    const [endDate, setEndDate] = useState(initialEndDate)
     const [modalDate, setModalDate] = useState<string | null>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
@@ -124,8 +134,8 @@ export function useSalesClient(initialSales: SaleItem[]) {
         setStartDate,
         setEndDate,
         clearFilters: () => {
-            setStartDate('')
-            setEndDate('')
+            setStartDate(initialStartDate)
+            setEndDate(initialEndDate)
         },
 
         modalDate,

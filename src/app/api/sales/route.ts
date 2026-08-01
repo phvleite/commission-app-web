@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server'
 import { Sale } from '@/models/Sale'
 import { deleteCommissionsForDate } from '@/services/commissions/delete'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
-import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
+import {
+    getRollingWindowYmd,
+    getUtcRangeForCalendarDay,
+    resolveRequestTimeZone,
+} from '@/lib/date-timezone'
 
 interface SalesQuery {
     tenantId: string
@@ -39,6 +43,22 @@ export async function GET(req: Request) {
                 return NextResponse.json({ error: 'Data final inválida.' }, { status: 400 })
             }
             query.date = { ...query.date, $lte: endRange.end }
+        }
+
+        if (!start && !end) {
+            const initialWindow = getRollingWindowYmd(45, timeZone)
+            const startRange = getUtcRangeForCalendarDay(initialWindow.start, timeZone)
+            const endRange = getUtcRangeForCalendarDay(initialWindow.end, timeZone)
+
+            if (!startRange || !endRange) {
+                return NextResponse.json({ error: 'Período inicial inválido.' }, { status: 500 })
+            }
+
+            query.date = {
+                ...query.date,
+                $gte: startRange.start,
+                $lte: endRange.end,
+            }
         }
 
         const sales = await Sale.find(query).sort({ date: -1 }).lean()

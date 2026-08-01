@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/db'
 import { Situation } from '@/models/Situation'
 import { Employee } from '@/models/Employee'
 import {
+    getRollingWindowYmd,
     formatDateToYmdInTimeZone,
     getUtcRangeForCalendarDay,
     getUtcRangeForCalendarMonth,
@@ -74,6 +75,19 @@ export async function GET(req: Request) {
                 : getUtcRangeForCalendarMonth(y, 12, timeZone).end
 
         query.$and = [{ startDate: { $lte: lastDay } }, { endDate: { $gte: firstDay } }]
+    } else {
+        const initialWindow = getRollingWindowYmd(45, timeZone)
+        const startRange = getUtcRangeForCalendarDay(initialWindow.start, timeZone)
+        const endRange = getUtcRangeForCalendarDay(initialWindow.end, timeZone)
+
+        if (!startRange || !endRange) {
+            return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+        }
+
+        query.$and = [
+            { startDate: { $lte: endRange.end } },
+            { endDate: { $gte: startRange.start } },
+        ]
     }
 
     const situations = await Situation.find(query)

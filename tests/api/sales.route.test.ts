@@ -11,7 +11,7 @@ jest.mock('@/services/commissions/generate', () => ({
 }))
 
 import { auth } from '@/auth'
-import { POST } from '@/app/api/sales/route'
+import { GET, POST } from '@/app/api/sales/route'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
 
 const authMock = auth as unknown as jest.Mock
@@ -103,5 +103,43 @@ describe('API sales routes', () => {
         const sales = await Sale.find({ tenantId }).lean()
         expect(sales).toHaveLength(1)
         expect(sales[0]?.value).toBe(15000)
+    })
+
+    it('GET sem filtros retorna apenas vendas da janela inicial de 45 dias', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId)
+
+        const now = new Date()
+        const recentDate = new Date(now)
+        recentDate.setDate(now.getDate() - 5)
+        recentDate.setUTCHours(12, 0, 0, 0)
+
+        const oldDate = new Date(now)
+        oldDate.setDate(now.getDate() - 70)
+        oldDate.setUTCHours(12, 0, 0, 0)
+
+        await Sale.create({
+            tenantId,
+            date: recentDate,
+            value: 10000,
+            totalCommissionValue: 1000,
+        })
+
+        await Sale.create({
+            tenantId,
+            date: oldDate,
+            value: 20000,
+            totalCommissionValue: 2000,
+        })
+
+        const res = await GET(new Request('http://localhost/api/sales'))
+
+        expect(res.status).toBe(200)
+        const payload = (await res.json()) as {
+            sales: Array<{ value: number; date: string }>
+        }
+
+        expect(payload.sales).toHaveLength(1)
+        expect(payload.sales[0]?.value).toBe(10000)
     })
 })
