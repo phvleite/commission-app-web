@@ -58,6 +58,17 @@ describe('CommissionsFilter flow', () => {
         expect(await screen.findByText('Informe data inicial e final.')).toBeInTheDocument()
     })
 
+    it('shows validation when initial date is greater than final date', async () => {
+        const props = buildProps({ startDate: '2026-07-31', endDate: '2026-07-01' })
+        render(<CommissionsFilter {...props} />)
+
+        fireEvent.click(screen.getByRole('button', { name: 'Gerar relatório de Gorjetas' }))
+
+        expect(
+            await screen.findByText('A data inicial nao pode ser maior que a data final.'),
+        ).toBeInTheDocument()
+    })
+
     it('shows processing only on clicked button and emits all-report result', async () => {
         const periodDeferred = deferred<{
             data: Array<{

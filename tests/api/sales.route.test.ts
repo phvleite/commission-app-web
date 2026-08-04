@@ -105,7 +105,7 @@ describe('API sales routes', () => {
         expect(sales[0]?.value).toBe(15000)
     })
 
-    it('GET sem filtros retorna apenas vendas da janela inicial de 45 dias', async () => {
+    it('GET sem filtros retorna todas as vendas do tenant', async () => {
         const tenantId = new Types.ObjectId().toString()
         setSession(tenantId)
 
@@ -139,7 +139,44 @@ describe('API sales routes', () => {
             sales: Array<{ value: number; date: string }>
         }
 
-        expect(payload.sales).toHaveLength(1)
-        expect(payload.sales[0]?.value).toBe(10000)
+        expect(payload.sales).toHaveLength(2)
+        expect(payload.sales.map((sale) => sale.value)).toEqual([10000, 20000])
+    })
+
+    it('GET com page retorna paginação de 50 itens com metadados', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId)
+
+        const baseDate = new Date('2026-01-01T12:00:00.000Z')
+
+        await Promise.all(
+            Array.from({ length: 55 }).map((_, index) => {
+                const date = new Date(baseDate)
+                date.setUTCDate(baseDate.getUTCDate() + index)
+                return Sale.create({
+                    tenantId,
+                    date,
+                    value: (index + 1) * 100,
+                    totalCommissionValue: (index + 1) * 10,
+                })
+            }),
+        )
+
+        const res = await GET(new Request('http://localhost/api/sales?page=2&pageSize=50'))
+
+        expect(res.status).toBe(200)
+        const payload = (await res.json()) as {
+            sales: Array<{ value: number }>
+            currentPage: number
+            totalPages: number
+            totalItems: number
+            pageSize: number
+        }
+
+        expect(payload.currentPage).toBe(2)
+        expect(payload.totalPages).toBe(2)
+        expect(payload.totalItems).toBe(55)
+        expect(payload.pageSize).toBe(50)
+        expect(payload.sales).toHaveLength(5)
     })
 })

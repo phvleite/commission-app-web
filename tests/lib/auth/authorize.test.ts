@@ -137,4 +137,48 @@ describe('authorizeCredentials', () => {
 
         expect(user).toBeNull()
     })
+
+    it('retorna usuario de plataforma quando tem platformRole e dominio permitido', async () => {
+        await User.collection.insertOne({
+            name: 'Platform Owner',
+            email: 'owner@commission.com.br',
+            passwordHash: await hashPassword('Senha@123'),
+            role: 'admin',
+            platformRole: 'platform_owner',
+            active: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        })
+
+        const user = await authorizeCredentials({
+            email: 'owner@commission.com.br',
+            password: 'Senha@123',
+        })
+
+        expect(user).toMatchObject({
+            email: 'owner@commission.com.br',
+            platformRole: 'platform_owner',
+            tenantId: '',
+        })
+    })
+
+    it('retorna null para platformRole fora do dominio @commission.com.br', async () => {
+        await User.collection.insertOne({
+            name: 'Platform Owner',
+            email: 'owner@gmail.com',
+            passwordHash: await hashPassword('Senha@123'),
+            role: 'admin',
+            platformRole: 'platform_owner',
+            active: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        })
+
+        const user = await authorizeCredentials({
+            email: 'owner@gmail.com',
+            password: 'Senha@123',
+        })
+
+        expect(user).toBeNull()
+    })
 })

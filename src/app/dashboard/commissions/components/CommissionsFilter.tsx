@@ -96,9 +96,19 @@ export default function CommissionsFilter({
     const [generatingAction, setGeneratingAction] = useState<'all' | 'employee' | null>(null)
     const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
+    function hasInvalidPeriod() {
+        if (!startDate || !endDate) return false
+        return startDate > endDate
+    }
+
     async function handleAll() {
         if (!startDate || !endDate) {
             setError('Informe data inicial e final.')
+            return
+        }
+
+        if (hasInvalidPeriod()) {
+            setError('A data inicial nao pode ser maior que a data final.')
             return
         }
 
@@ -141,6 +151,11 @@ export default function CommissionsFilter({
     async function handleEmployee() {
         if (!startDate || !endDate || !employeeId) {
             setError('Informe data inicial, final e selecione um colaborador.')
+            return
+        }
+
+        if (hasInvalidPeriod()) {
+            setError('A data inicial nao pode ser maior que a data final.')
             return
         }
 

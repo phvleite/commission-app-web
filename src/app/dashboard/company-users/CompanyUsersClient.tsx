@@ -228,6 +228,8 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
 
     const [newUser, setNewUser] = useState<UserFormState>(getEmptyUserForm())
     const [showNewUserForm, setShowNewUserForm] = useState(false)
+    const [newUserEmailConflict, setNewUserEmailConflict] = useState(false)
+    const [newUserPasswordMismatch, setNewUserPasswordMismatch] = useState(false)
     const [editingUserId, setEditingUserId] = useState<string | null>(null)
     const [editUserForm, setEditUserForm] = useState<UserEditFormState | null>(null)
     const [passwordUserId, setPasswordUserId] = useState<string | null>(null)
@@ -304,6 +306,8 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
         event.preventDefault()
         setError(null)
         setSuccess(null)
+        setNewUserEmailConflict(false)
+        setNewUserPasswordMismatch(false)
         setIsSubmitting(true)
 
         if (isUserLimitReached) {
@@ -325,6 +329,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
         }
 
         if (newUser.password !== newUser.passwordConfirmation) {
+            setNewUserPasswordMismatch(true)
             setError('A confirmacao de senha nao confere.')
             setIsSubmitting(false)
             return
@@ -340,10 +345,15 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
             const payload = (await res.json()) as { data?: CompanyUser; error?: string }
 
             if (!res.ok) {
+                if (payload.error === 'Ja existe usuario com este email.') {
+                    setNewUserEmailConflict(true)
+                }
                 throw new Error(payload.error ?? 'Falha ao criar usuario.')
             }
 
             setNewUser(getEmptyUserForm())
+            setNewUserEmailConflict(false)
+            setNewUserPasswordMismatch(false)
             setUsers((prev) => {
                 const merged = [...prev, payload.data as CompanyUser]
                 return merged.sort((a, b) => a.name.localeCompare(b.name))
@@ -1037,7 +1047,10 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                         <button
                             type="button"
                             className={`${showNewUserForm ? 'cancel-button' : 'primary-button'} mt-4 rounded-xl px-4 py-2 text-sm font-semibold`}
-                            onClick={() => setShowNewUserForm((prev) => !prev)}
+                            onClick={() => {
+                                setShowNewUserForm((prev) => !prev)
+                                setNewUserEmailConflict(false)
+                            }}
                             disabled={isSubmitting || isUserLimitReached}
                         >
                             {showNewUserForm ? 'Cancelar novo usuario' : 'Novo usuario'}
@@ -1071,14 +1084,23 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                 <input
                                     type="email"
                                     placeholder="Email"
-                                    className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                    className={`h-11 w-full rounded-xl bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition ${
+                                        newUserEmailConflict
+                                            ? 'border-2 border-red-600 focus:border-red-600 focus:ring-2 focus:ring-red-200'
+                                            : 'border border-(--color-border) focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25'
+                                    }`}
                                     value={newUser.email}
-                                    onChange={(event) =>
+                                    onChange={(event) => {
+                                        const nextEmail = event.target.value
                                         setNewUser((prev) => ({
                                             ...prev,
-                                            email: event.target.value,
+                                            email: nextEmail,
                                         }))
-                                    }
+
+                                        if (newUserEmailConflict && nextEmail.trim()) {
+                                            setNewUserEmailConflict(false)
+                                        }
+                                    }}
                                     required
                                     disabled={!canManageUsers}
                                 />
@@ -1126,12 +1148,20 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                     placeholder="Senha"
                                     className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
                                     value={newUser.password}
-                                    onChange={(event) =>
+                                    onChange={(event) => {
+                                        const nextPassword = event.target.value
                                         setNewUser((prev) => ({
                                             ...prev,
-                                            password: event.target.value,
+                                            password: nextPassword,
                                         }))
-                                    }
+
+                                        if (
+                                            newUserPasswordMismatch &&
+                                            nextPassword === newUser.passwordConfirmation
+                                        ) {
+                                            setNewUserPasswordMismatch(false)
+                                        }
+                                    }}
                                     required
                                     disabled={!canManageUsers}
                                 />
@@ -1143,14 +1173,26 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                 <input
                                     type="password"
                                     placeholder="Confirmacao da senha"
-                                    className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                    className={`h-11 w-full rounded-xl bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition ${
+                                        newUserPasswordMismatch
+                                            ? 'border-2 border-red-600 focus:border-red-600 focus:ring-2 focus:ring-red-200'
+                                            : 'border border-(--color-border) focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25'
+                                    }`}
                                     value={newUser.passwordConfirmation}
-                                    onChange={(event) =>
+                                    onChange={(event) => {
+                                        const nextPasswordConfirmation = event.target.value
                                         setNewUser((prev) => ({
                                             ...prev,
-                                            passwordConfirmation: event.target.value,
+                                            passwordConfirmation: nextPasswordConfirmation,
                                         }))
-                                    }
+
+                                        if (
+                                            newUserPasswordMismatch &&
+                                            nextPasswordConfirmation === newUser.password
+                                        ) {
+                                            setNewUserPasswordMismatch(false)
+                                        }
+                                    }}
                                     required
                                     disabled={!canManageUsers}
                                 />

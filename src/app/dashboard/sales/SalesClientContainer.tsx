@@ -8,8 +8,20 @@ export function SalesClientContainer({
     initialSales,
     initialStartDate,
     initialEndDate,
+    initialCurrentPage,
+    initialTotalPages,
+    initialTotalItems,
+    initialPageSize,
 }: ISaleClientProps) {
-    const client = useSalesClient(initialSales, initialStartDate, initialEndDate)
+    const client = useSalesClient(
+        initialSales,
+        initialStartDate,
+        initialEndDate,
+        initialCurrentPage,
+        initialTotalPages,
+        initialTotalItems,
+        initialPageSize,
+    )
 
     return (
         <div className="panel mx-auto w-full max-w-4xl p-6 sm:p-8 border border-(--color-border) bg-surface">

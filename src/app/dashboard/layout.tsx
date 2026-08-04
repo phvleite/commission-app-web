@@ -16,6 +16,10 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
+    if (session.user.platformRole) {
+        redirect('/platform-admin')
+    }
+
     await connectDB()
     const sectorStatus = await validateActiveSectorsPercentage(session.user.tenantId)
 
@@ -27,7 +31,7 @@ export default async function DashboardLayout({
                 role={session.user.role}
                 sectorsOk={sectorStatus.valid}
             />
-            <div className="lg:pl-65">
+            <div className="lg:pl-72">
                 <div className="px-4 py-6 sm:px-6 sm:py-8">{children}</div>
             </div>
         </div>

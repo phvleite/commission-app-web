@@ -3,6 +3,7 @@ import type { WithTenant, WithTimestamps } from '@/types'
 import { Tenant } from './Tenant'
 
 export type UserRole = 'admin' | 'manager' | 'seller'
+export type PlatformRole = 'platform_owner' | 'platform_admin' | 'platform_auditor'
 const DEFAULT_MAX_USERS_PER_TENANT = 3
 
 export interface IUser extends WithTenant, WithTimestamps {
@@ -13,6 +14,7 @@ export interface IUser extends WithTenant, WithTimestamps {
     phone?: string
     passwordHash: string
     role: UserRole
+    platformRole?: PlatformRole
     active: boolean
 }
 
@@ -27,6 +29,11 @@ const userSchema = new Schema<UserDocument>(
         phone: { type: String, trim: true },
         passwordHash: { type: String, required: true },
         role: { type: String, enum: ['admin', 'manager', 'seller'], default: 'seller' },
+        platformRole: {
+            type: String,
+            enum: ['platform_owner', 'platform_admin', 'platform_auditor'],
+            required: false,
+        },
         active: { type: Boolean, default: true },
     },
     { timestamps: true },

@@ -21,6 +21,10 @@ export default function SituationClientJSX({
     initialSectors,
     initialStartDate,
     initialEndDate,
+    initialCurrentPage,
+    initialTotalPages,
+    initialTotalItems,
+    initialPageSize,
 }: {
     initialTypes: SituationTypeItem[]
     initialSituations: SituationItem[]
@@ -28,6 +32,10 @@ export default function SituationClientJSX({
     initialSectors: SectorItem[]
     initialStartDate?: string
     initialEndDate?: string
+    initialCurrentPage?: number
+    initialTotalPages?: number
+    initialTotalItems?: number
+    initialPageSize?: number
 }) {
     const client = useSituationClient({
         initialTypes,
@@ -36,6 +44,10 @@ export default function SituationClientJSX({
         initialSectors,
         initialStartDate,
         initialEndDate,
+        initialCurrentPage,
+        initialTotalPages,
+        initialTotalItems,
+        initialPageSize,
     })
 
     const {
@@ -80,7 +92,20 @@ export default function SituationClientJSX({
         isExportingPdf,
         isLoading,
         feedback,
+        currentPage,
+        totalPages,
+        totalItems,
+        pageSize,
+        canGoPrevious,
+        canGoNext,
+        goToPreviousPage,
+        goToNextPage,
     } = client
+
+    const formatPageNumber = (value: number) => String(value).padStart(2, '0')
+    const pageIndicator = `${formatPageNumber(currentPage)}/${formatPageNumber(totalPages)}`
+    const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
+    const endItem = Math.min(currentPage * pageSize, totalItems)
 
     return (
         <section className="panel mx-auto w-full max-w-5xl p-4 sm:p-8 space-y-8">
@@ -217,6 +242,40 @@ export default function SituationClientJSX({
                     {isExportingPdf ? 'Gerando PDF...' : 'Gerar PDF das situacoes exibidas'}
                 </button>
             </div>
+
+            {totalItems > 0 ? (
+                <div className="rounded-2xl border border-(--color-border) bg-white px-4 py-3 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs font-medium text-(--color-primary-weak)">
+                            Exibindo {startItem}-{endItem} de {totalItems} situações
+                        </p>
+
+                        <div className="flex items-center justify-between gap-3 sm:justify-end">
+                            <button
+                                type="button"
+                                className="h-9 min-w-9 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-(--color-primary-strong) hover:text-white disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-(--color-muted) disabled:hover:bg-surface-soft"
+                                onClick={goToPreviousPage}
+                                disabled={!canGoPrevious}
+                            >
+                                {'<'}
+                            </button>
+
+                            <p className="min-w-18 rounded-lg border border-(--color-border) bg-surface-soft px-3 py-1.5 text-center text-sm font-semibold tracking-widest text-(--color-primary-strong)">
+                                {pageIndicator}
+                            </p>
+
+                            <button
+                                type="button"
+                                className="h-9 min-w-9 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-(--color-primary-strong) hover:text-white disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-(--color-muted) disabled:hover:bg-surface-soft"
+                                onClick={goToNextPage}
+                                disabled={!canGoNext}
+                            >
+                                {'>'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
 
             {/* LISTA */}
             {isLoading ? (

@@ -2,11 +2,7 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { Sale } from '@/models/Sale'
 import SalesClient from './SalesClient'
-import {
-    getRollingWindowYmd,
-    getUtcRangeForCalendarDay,
-    normalizeTimeZone,
-} from '@/lib/date-timezone'
+import { normalizeTimeZone } from '@/lib/date-timezone'
 
 export default async function SalesPage() {
     const session = await auth()
@@ -14,23 +10,17 @@ export default async function SalesPage() {
         redirect('/login')
     }
 
-    const timeZone = normalizeTimeZone(session.user.tenantTimeZone)
-    const initialWindow = getRollingWindowYmd(45, timeZone)
-    const startRange = getUtcRangeForCalendarDay(initialWindow.start, timeZone)
-    const endRange = getUtcRangeForCalendarDay(initialWindow.end, timeZone)
+    normalizeTimeZone(session.user.tenantTimeZone)
 
-    if (!startRange || !endRange) {
-        throw new Error('Janela inicial de vendas invalida.')
-    }
+    const pageSize = 50
+    const totalItems = await Sale.countDocuments({ tenantId: session.user.tenantId })
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
     const sales = await Sale.find({
         tenantId: session.user.tenantId,
-        date: {
-            $gte: startRange.start,
-            $lte: endRange.end,
-        },
     })
         .sort({ date: -1 })
+        .limit(pageSize)
         .lean()
 
     const initialSales = sales.map((sale) => ({
@@ -43,8 +33,12 @@ export default async function SalesPage() {
     return (
         <SalesClient
             initialSales={initialSales}
-            initialStartDate={initialWindow.start}
-            initialEndDate={initialWindow.end}
+            initialStartDate=""
+            initialEndDate=""
+            initialCurrentPage={1}
+            initialTotalPages={totalPages}
+            initialTotalItems={totalItems}
+            initialPageSize={pageSize}
         />
     )
 }

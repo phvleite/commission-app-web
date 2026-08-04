@@ -7,13 +7,14 @@
     --surface-soft: #e8f3fa;
     --primary: #12395b;
     --secondary: #808080;
-    --secondary-soft: #DCDCDC;
+    --secondary-soft: #dcdcdc;
     --secondary-strong: #363636;
     --primary-strong: #0a1a2f;
     --primary-soft: #4fa3d1;
     --accent: #d4af37;
-    --danger: #B22222;
-    --danger-soft: #F08080;
+    --accent-soft: #F2DBA5;
+    --danger: #b22222;
+    --danger-soft: #f08080;
     --border: #d7dee8;
     --muted: #5f7083;
     --shadow-soft: 0 10px 8px rgba(20, 26, 47, 0.08), 0 4px 3px rgba(20, 26, 47, 0.04);
@@ -123,6 +124,25 @@ textarea {
     transform: translateY(1px);
 }
 
+.gold-button {
+    background: var(--accent);
+    color: var(--primary);
+    font-size: 22px;
+    font-weight: 700;
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.gold-button:hover {
+    background: var(--accent-soft);
+    color: var(--primary-strong);
+}
+
+.gold-button:active {
+    transform: translateY(1px);
+}
+
 .cancel-button {
     background: var(--danger);
     color: #ffffff;
@@ -167,7 +187,7 @@ textarea {
         position: fixed;
         top: 0;
         left: 0;
-        width: 260px;
+        width: 288px;
         height: 100vh;
     }
 }

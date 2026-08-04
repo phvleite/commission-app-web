@@ -98,6 +98,40 @@ describe('API company users routes', () => {
         expect(user?.cpf).toBe('52998224725')
     })
 
+    it('POST bloqueia email ja existente na base, mesmo em outro tenant', async () => {
+        const tenantA = new Types.ObjectId()
+        const tenantB = new Types.ObjectId()
+
+        await User.create({
+            tenantId: tenantA,
+            name: 'Usuario Existente',
+            email: 'repetido@company.com',
+            role: 'admin',
+            passwordHash: await hashPassword('Senha@123'),
+            active: true,
+        })
+
+        setSession(tenantB.toString(), 'admin')
+
+        const res = await POST(
+            new Request('http://localhost/api/company-users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Novo Usuario',
+                    email: 'repetido@company.com',
+                    password: 'Senha@123',
+                    passwordConfirmation: 'Senha@123',
+                    role: 'seller',
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(409)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe('Ja existe usuario com este email.')
+    })
+
     it('POST rejeita CPF invalido', async () => {
         const tenantId = new Types.ObjectId().toString()
         setSession(tenantId, 'admin')

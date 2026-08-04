@@ -4,7 +4,6 @@ import { connectDB } from '@/lib/db'
 import { Situation } from '@/models/Situation'
 import { Employee } from '@/models/Employee'
 import {
-    getRollingWindowYmd,
     formatDateToYmdInTimeZone,
     getUtcRangeForCalendarDay,
     getUtcRangeForCalendarMonth,
@@ -28,6 +27,10 @@ export async function GET(req: Request) {
     const end = searchParams.get('end')
     const month = searchParams.get('month')
     const year = searchParams.get('year')
+    const shouldPaginate = searchParams.has('page') || searchParams.has('pageSize')
+    const requestedPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
+    const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1
+    const pageSize = shouldPaginate ? 50 : 0
     const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
 
     await connectDB()
@@ -75,26 +78,45 @@ export async function GET(req: Request) {
                 : getUtcRangeForCalendarMonth(y, 12, timeZone).end
 
         query.$and = [{ startDate: { $lte: lastDay } }, { endDate: { $gte: firstDay } }]
-    } else {
-        const initialWindow = getRollingWindowYmd(45, timeZone)
-        const startRange = getUtcRangeForCalendarDay(initialWindow.start, timeZone)
-        const endRange = getUtcRangeForCalendarDay(initialWindow.end, timeZone)
-
-        if (!startRange || !endRange) {
-            return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
-        }
-
-        query.$and = [
-            { startDate: { $lte: endRange.end } },
-            { endDate: { $gte: startRange.start } },
-        ]
     }
 
-    const situations = await Situation.find(query)
+    const queryBuilder = Situation.find(query)
         .populate('employeeId', 'name active')
         .populate('typeId', 'description')
         .sort({ startDate: -1 })
-        .lean()
+
+    if (shouldPaginate) {
+        const totalItems = await Situation.countDocuments(query)
+        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+        const currentPage = Math.min(page, totalPages)
+        const skip = (currentPage - 1) * pageSize
+
+        const situations = await queryBuilder.skip(skip).limit(pageSize).lean()
+
+        return NextResponse.json({
+            situations: situations.map((s) => ({
+                _id: String(s._id),
+                employeeId: String((s.employeeId as Record<string, unknown>)?._id ?? ''),
+                employeeName: (s.employeeId as Record<string, unknown>)?.name ?? '',
+                employeeActive:
+                    (s.employeeId as Record<string, unknown>)?.active === true ||
+                    (s.employeeId as Record<string, unknown>)?.active === false
+                        ? ((s.employeeId as Record<string, unknown>).active as boolean)
+                        : true,
+                typeId: String((s.typeId as Record<string, unknown>)?._id ?? ''),
+                typeDescription: (s.typeId as Record<string, unknown>)?.description ?? '',
+                startDate: formatDateToYmdInTimeZone(s.startDate, timeZone),
+                endDate: formatDateToYmdInTimeZone(s.endDate, timeZone),
+                active: s.active,
+            })),
+            currentPage,
+            totalPages,
+            totalItems,
+            pageSize,
+        })
+    }
+
+    const situations = await queryBuilder.lean()
 
     return NextResponse.json({
         situations: situations.map((s) => ({
@@ -112,6 +134,10 @@ export async function GET(req: Request) {
             endDate: formatDateToYmdInTimeZone(s.endDate, timeZone),
             active: s.active,
         })),
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: situations.length,
+        pageSize: situations.length,
     })
 }
 

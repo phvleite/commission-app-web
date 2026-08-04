@@ -33,6 +33,14 @@ export function SalesClientJSX({ client }: SalesClientJSXProps) {
                 onEdit={client.beginEdit}
                 onOpenModal={client.openModal}
                 isLoading={client.isLoading}
+                currentPage={client.currentPage}
+                totalPages={client.totalPages}
+                totalItems={client.totalItems}
+                pageSize={client.pageSize}
+                canGoPrevious={client.canGoPrevious}
+                canGoNext={client.canGoNext}
+                onPreviousPage={client.goToPreviousPage}
+                onNextPage={client.goToNextPage}
             />
 
             {client.modalDate && (

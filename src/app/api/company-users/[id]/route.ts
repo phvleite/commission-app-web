@@ -8,6 +8,11 @@ export interface RouteContext {
     params: Promise<{ id: string }>
 }
 
+function toExactCaseInsensitiveEmailRegex(value: string): RegExp {
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^${escaped}$`, 'i')
+}
+
 function canManageUsers(role: 'admin' | 'manager' | 'seller'): boolean {
     return role === 'admin'
 }
@@ -72,6 +77,17 @@ export async function PUT(request: Request, context: RouteContext) {
         return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
     }
 
+    if (targetUser.email.toLowerCase() !== email) {
+        const existingUserEmail = await User.findOne({
+            email: toExactCaseInsensitiveEmailRegex(email),
+        })
+            .select('_id')
+            .lean()
+        if (existingUserEmail) {
+            return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
+        }
+    }
+
     if (targetUser.role === 'admin' && role !== 'admin' && targetUser.active) {
         const totalActiveAdmins = await User.countDocuments({
             tenantId: sessionUser.tenantId,
@@ -102,10 +118,7 @@ export async function PUT(request: Request, context: RouteContext) {
             'code' in error &&
             (error as { code?: number }).code === 11000
         ) {
-            return Response.json(
-                { error: 'Ja existe usuario com este email neste tenant.' },
-                { status: 409 },
-            )
+            return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
         }
 
         return Response.json({ error: 'Nao foi possivel atualizar o usuario.' }, { status: 500 })
