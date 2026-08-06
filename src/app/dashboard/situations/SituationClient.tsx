@@ -33,6 +33,16 @@ export interface SectorItem {
     active: boolean
 }
 
+interface PaginatedSituationsResponse {
+    situations?: SituationItem[]
+    currentPage?: number
+    totalPages?: number
+    totalItems?: number
+    pageSize?: number
+}
+
+const PAGE_SIZE = 50
+
 interface SituationClientProps {
     initialTypes: SituationTypeItem[]
     initialSituations: SituationItem[]
@@ -40,6 +50,10 @@ interface SituationClientProps {
     initialSectors: SectorItem[]
     initialStartDate?: string
     initialEndDate?: string
+    initialCurrentPage?: number
+    initialTotalPages?: number
+    initialTotalItems?: number
+    initialPageSize?: number
 }
 
 export function useSituationClient({
@@ -49,9 +63,17 @@ export function useSituationClient({
     initialSectors,
     initialStartDate = '',
     initialEndDate = '',
+    initialCurrentPage = 1,
+    initialTotalPages = 1,
+    initialTotalItems = initialSituations.length,
+    initialPageSize = PAGE_SIZE,
 }: SituationClientProps) {
     const [types, setTypes] = useState(initialTypes)
     const [situations, setSituations] = useState(initialSituations)
+    const [currentPage, setCurrentPage] = useState(initialCurrentPage)
+    const [totalPages, setTotalPages] = useState(initialTotalPages)
+    const [totalItems, setTotalItems] = useState(initialTotalItems)
+    const [pageSize] = useState(initialPageSize)
     const [employees] = useState(initialEmployees)
     const [sectors] = useState(initialSectors)
 
@@ -64,13 +86,16 @@ export function useSituationClient({
     const [filterYear, setFilterYear] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isExportingPdf, setIsExportingPdf] = useState(false)
-    const [isLoading, setIsLoading] = useState(true)
+    const [isLoading, setIsLoading] = useState(false)
     const [feedback, setFeedback] = useState<{
         type: 'info' | 'success' | 'error'
         message: string
     } | null>(null)
 
+    const resetToFirstPage = useCallback(() => setCurrentPage(1), [])
+
     function clearFilters() {
+        resetToFirstPage()
         setFilterEmployee('todos')
         setFilterType('todos')
         setFilterSector('todos')
@@ -105,17 +130,34 @@ export function useSituationClient({
 
         if (filterMonth) params.set('month', filterMonth)
         if (filterYear) params.set('year', filterYear)
+        params.set('page', String(currentPage))
+        params.set('pageSize', String(PAGE_SIZE))
 
         try {
             const res = await fetch(`/api/situations?${params.toString()}`, withTimeZoneHeader())
-            const json = await res.json()
-            setSituations(json.situations)
+            const json = (await res.json()) as PaginatedSituationsResponse
+            setSituations(json.situations ?? [])
+            setCurrentPage(json.currentPage ?? 1)
+            setTotalPages(json.totalPages ?? 1)
+            setTotalItems(json.totalItems ?? 0)
         } catch {
             setSituations([])
+            setCurrentPage(1)
+            setTotalPages(1)
+            setTotalItems(0)
         } finally {
             setIsLoading(false)
         }
-    }, [filterEmployee, filterType, filterSector, filterStart, filterEnd, filterMonth, filterYear])
+    }, [
+        filterEmployee,
+        filterType,
+        filterSector,
+        filterStart,
+        filterEnd,
+        filterMonth,
+        filterYear,
+        currentPage,
+    ])
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
@@ -470,13 +512,34 @@ export function useSituationClient({
         filterMonth,
         filterYear,
 
-        setFilterEmployee,
-        setFilterType,
-        setFilterSector,
-        setFilterStart,
-        setFilterEnd,
-        setFilterMonth,
-        setFilterYear,
+        setFilterEmployee: (value: string) => {
+            resetToFirstPage()
+            setFilterEmployee(value)
+        },
+        setFilterType: (value: string) => {
+            resetToFirstPage()
+            setFilterType(value)
+        },
+        setFilterSector: (value: string) => {
+            resetToFirstPage()
+            setFilterSector(value)
+        },
+        setFilterStart: (value: string) => {
+            resetToFirstPage()
+            setFilterStart(value)
+        },
+        setFilterEnd: (value: string) => {
+            resetToFirstPage()
+            setFilterEnd(value)
+        },
+        setFilterMonth: (value: string) => {
+            resetToFirstPage()
+            setFilterMonth(value)
+        },
+        setFilterYear: (value: string) => {
+            resetToFirstPage()
+            setFilterYear(value)
+        },
         clearFilters,
 
         createType,
@@ -498,5 +561,13 @@ export function useSituationClient({
         isExportingPdf,
         isLoading,
         feedback,
+        currentPage,
+        totalPages,
+        totalItems,
+        pageSize,
+        canGoPrevious: currentPage > 1,
+        canGoNext: currentPage < totalPages,
+        goToPreviousPage: () => setCurrentPage((prev) => Math.max(1, prev - 1)),
+        goToNextPage: () => setCurrentPage((prev) => Math.min(totalPages, prev + 1)),
     }
 }

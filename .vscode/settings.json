@@ -38,5 +38,7 @@
     "files.exclude": {
         "**/.next": true,
         "**/node_modules": true
-    }
+    },
+    "editor.fontFamily": "JetBrains Mono Light, Consolas, 'Courier New', monospace",
+    "editor.fontSize": 14
 }

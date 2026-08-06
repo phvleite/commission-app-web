@@ -4,18 +4,18 @@ Sistema web de gestão de comissões com suporte a múltiplos tenants.
 
 ## Stack
 
-| Tecnologia | Versão |
-|---|---|
-| Next.js | 16 (App Router) |
-| TypeScript | 5 |
-| Node.js | 22 LTS |
-| MongoDB Atlas | 7 |
-| Mongoose | 9 |
-| NextAuth.js | 5 (beta) |
-| Tailwind CSS | 4 |
-| Puppeteer | 25 (geração de PDF) |
-| Jest + RTL | testes unitários/integração |
-| Playwright | testes E2E |
+| Tecnologia    | Versão                      |
+| ------------- | --------------------------- |
+| Next.js       | 16 (App Router)             |
+| TypeScript    | 5                           |
+| Node.js       | 22 LTS                      |
+| MongoDB Atlas | 7                           |
+| Mongoose      | 9                           |
+| NextAuth.js   | 5 (beta)                    |
+| Tailwind CSS  | 4                           |
+| Puppeteer     | 25 (geração de PDF)         |
+| Jest + RTL    | testes unitários/integração |
+| Playwright    | testes E2E                  |
 
 ## Pré-requisitos
 
@@ -38,6 +38,17 @@ Para gerar o `AUTH_SECRET`:
 ```bash
 openssl rand -base64 32
 ```
+
+Para o fluxo de confirmacao por e-mail no signup, configure tambem:
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASSWORD`
+- `SMTP_FROM` (exemplo: `Commission <contato@commission.com.br>`)
+- `SMTP_SECURE` (opcional, `true` ou `false`)
+- `APP_BASE_URL` (exemplo: `https://app.commission.com.br`, para montar URL da logo)
+- `SMTP_LOGO_URL` (opcional; se nao informar, usa `${APP_BASE_URL}/logo-commission-star-name-gold.svg`)
 
 ## Desenvolvimento
 

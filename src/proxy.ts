@@ -6,7 +6,7 @@ import {
     isInactivityExpired,
 } from '@/lib/auth/inactivity'
 
-const PUBLIC_ROUTES = ['/', '/login', '/signup']
+const PUBLIC_ROUTES = ['/', '/login', '/signup', '/saiba-mais']
 const AUTH_SESSION_COOKIES = [
     'authjs.session-token',
     '__Secure-authjs.session-token',
@@ -16,6 +16,10 @@ const AUTH_SESSION_COOKIES = [
 
 function isPublicPath(pathname: string): boolean {
     if (PUBLIC_ROUTES.includes(pathname)) {
+        return true
+    }
+
+    if (pathname.startsWith('/showcase')) {
         return true
     }
 
@@ -30,6 +34,19 @@ function isPublicPath(pathname: string): boolean {
     return false
 }
 
+function getPlatformRole(authValue: unknown): string | undefined {
+    if (!authValue || typeof authValue !== 'object') {
+        return undefined
+    }
+
+    const candidate = authValue as {
+        user?: { platformRole?: string }
+        platformRole?: string
+    }
+
+    return candidate.user?.platformRole ?? candidate.platformRole
+}
+
 export default auth((req) => {
     const { nextUrl } = req
     const { pathname } = nextUrl
@@ -42,6 +59,18 @@ export default auth((req) => {
         const loginUrl = new URL('/login', nextUrl.origin)
         loginUrl.searchParams.set('callbackUrl', pathname)
         return NextResponse.redirect(loginUrl)
+    }
+
+    const platformRole = getPlatformRole(req.auth)
+    const isPlatformAdminPath = pathname.startsWith('/platform-admin')
+    const isDashboardPath = pathname.startsWith('/dashboard')
+
+    if (isPlatformAdminPath && !platformRole) {
+        return NextResponse.redirect(new URL('/dashboard', nextUrl.origin))
+    }
+
+    if (isDashboardPath && platformRole) {
+        return NextResponse.redirect(new URL('/platform-admin', nextUrl.origin))
     }
 
     const cookieOptions = getInactivityCookieOptions(nextUrl.protocol === 'https:')
@@ -81,6 +110,6 @@ export default auth((req) => {
 
 export const config = {
     matcher: [
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|pdf)$).*)',
     ],
 }

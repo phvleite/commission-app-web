@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
     title: 'Commission App Web',
     description: 'Sistema web de gestão de Gorjetas multi-tenant',
+    icons: {
+        icon: '/logo-commission-star-icone.svg',
+        shortcut: '/logo-commission-star-icone.svg',
+        apple: '/logo-commission-star-icone.svg',
+    },
 }
 
 export default function RootLayout({

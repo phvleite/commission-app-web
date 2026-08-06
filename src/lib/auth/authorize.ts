@@ -1,6 +1,6 @@
 import { connectDB } from '@/lib/db'
 import { verifyPassword } from '@/lib/password'
-import { User, type UserRole } from '@/models/User'
+import { User, type PlatformRole, type UserRole } from '@/models/User'
 import { Tenant } from '@/models/Tenant'
 
 export interface AuthorizeCredentialsInput {
@@ -14,9 +14,12 @@ export interface AuthorizedUser {
     name: string
     email: string
     role: UserRole
+    platformRole?: PlatformRole
     tenantName: string
     tenantTimeZone?: string
 }
+
+const PLATFORM_ADMIN_EMAIL_DOMAIN = '@commission.com.br'
 
 export async function authorizeCredentials({
     email: rawEmail,
@@ -50,6 +53,23 @@ export async function authorizeCredentials({
     const validPassword = await verifyPassword(password, user.passwordHash)
     if (!validPassword) {
         return null
+    }
+
+    if (user.platformRole) {
+        if (!email.endsWith(PLATFORM_ADMIN_EMAIL_DOMAIN)) {
+            return null
+        }
+
+        return {
+            id: user._id.toString(),
+            tenantId: '',
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            platformRole: user.platformRole,
+            tenantName: 'Plataforma Commission',
+            tenantTimeZone: undefined,
+        }
     }
 
     // Buscar o nome da empresa (Tenant)

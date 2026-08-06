@@ -60,4 +60,12 @@ const tenantSchema = new Schema<TenantDocument>(
     { timestamps: true },
 )
 
+tenantSchema.index(
+    { cnpj: 1 },
+    {
+        unique: true,
+        sparse: true,
+    },
+)
+
 export const Tenant = models.Tenant ?? model<TenantDocument>('Tenant', tenantSchema)

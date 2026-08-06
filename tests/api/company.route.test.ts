@@ -174,6 +174,49 @@ describe('API company route', () => {
         expect(payload.error).toBe('Informe um CNPJ valido.')
     })
 
+    it('PATCH bloqueia CNPJ que ja pertence a outro tenant', async () => {
+        const tenantA = await Tenant.create({
+            name: 'Empresa A',
+            legalName: 'Empresa A LTDA',
+            slug: 'empresa-a',
+            cnpj: '12ABC34501DE35',
+        })
+
+        const tenantB = await Tenant.create({
+            name: 'Empresa B',
+            legalName: 'Empresa B LTDA',
+            slug: 'empresa-b',
+        })
+
+        setSession(tenantB._id.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request('http://localhost/api/company', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Empresa B',
+                    legalName: 'Empresa B LTDA',
+                    cnpj: '12.ABC.345/01DE-35',
+                    maxUsers: 3,
+                    responsible: {
+                        name: 'Ana Gestora',
+                        email: 'ana@empresa-b.com',
+                        cpf: '529.982.247-25',
+                        phone: '(11) 98888-7777',
+                        password: 'Senha@123',
+                        passwordConfirmation: 'Senha@123',
+                    },
+                }),
+            }),
+        )
+
+        expect(tenantA).toBeDefined()
+        expect(res.status).toBe(409)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe('Ja existe empresa com este CNPJ.')
+    })
+
     it("PATCH rejeita CNPJ curto como '1'", async () => {
         const tenant = await Tenant.create({
             name: 'Empresa A',

@@ -245,10 +245,25 @@ export async function PATCH(request: Request) {
 
     await connectDB()
 
+    const DUPLICATE_CNPJ_ERROR = 'Ja existe empresa com este CNPJ.'
+
     const tenantBefore = await Tenant.findById(user.tenantId).select('responsibleUserId').lean()
 
     if (!tenantBefore) {
         return Response.json({ error: 'Empresa nao encontrada.' }, { status: 404 })
+    }
+
+    if (cnpj) {
+        const existingTenantWithCnpj = await Tenant.findOne({
+            cnpj,
+            _id: { $ne: user.tenantId },
+        })
+            .select('_id')
+            .lean()
+
+        if (existingTenantWithCnpj) {
+            return Response.json({ error: DUPLICATE_CNPJ_ERROR }, { status: 409 })
+        }
     }
 
     let responsibleUserId = tenantBefore.responsibleUserId
@@ -373,14 +388,34 @@ export async function PATCH(request: Request) {
         unsetData.email = 1
     }
 
-    const tenant = await Tenant.findByIdAndUpdate(
-        user.tenantId,
-        {
-            $set: setData,
-            ...(Object.keys(unsetData).length > 0 ? { $unset: unsetData } : {}),
-        },
-        { returnDocument: 'after' },
-    ).lean()
+    let tenant
+    try {
+        tenant = await Tenant.findByIdAndUpdate(
+            user.tenantId,
+            {
+                $set: setData,
+                ...(Object.keys(unsetData).length > 0 ? { $unset: unsetData } : {}),
+            },
+            { returnDocument: 'after' },
+        ).lean()
+    } catch (error) {
+        if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            (error as { code?: number }).code === 11000
+        ) {
+            if (
+                'keyPattern' in error &&
+                typeof (error as { keyPattern?: unknown }).keyPattern === 'object' &&
+                (error as { keyPattern?: Record<string, unknown> }).keyPattern?.cnpj
+            ) {
+                return Response.json({ error: DUPLICATE_CNPJ_ERROR }, { status: 409 })
+            }
+        }
+
+        return Response.json({ error: 'Nao foi possivel atualizar a empresa.' }, { status: 500 })
+    }
 
     if (!tenant) {
         return Response.json({ error: 'Empresa nao encontrada.' }, { status: 404 })

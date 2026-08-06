@@ -25,6 +25,25 @@ describe('proxy middleware', () => {
         expect(response.headers.get('location')).toBeNull()
     })
 
+    it('allows access to /saiba-mais as a public route', () => {
+        const response = middleware(buildRequest('http://localhost/saiba-mais', null))
+
+        expect(response.status).toBe(200)
+        expect(response.headers.get('location')).toBeNull()
+    })
+
+    it('allows access to showcase assets as a public route', () => {
+        const response = middleware(
+            buildRequest(
+                'http://localhost/showcase/situations/relatorio-situacoes-1785960660906.pdf',
+                null,
+            ),
+        )
+
+        expect(response.status).toBe(200)
+        expect(response.headers.get('location')).toBeNull()
+    })
+
     it('redirects unauthenticated user to login with callbackUrl on protected route', () => {
         const response = middleware(buildRequest('http://localhost/dashboard/sales', null))
 
@@ -42,6 +61,28 @@ describe('proxy middleware', () => {
 
         expect(response.status).toBe(200)
         expect(response.headers.get('location')).toBeNull()
+    })
+
+    it('redirects non-platform user away from /platform-admin', () => {
+        const response = middleware(
+            buildRequest('http://localhost/platform-admin', { user: { id: 'u1' } }),
+        )
+
+        expect(response.status).toBeGreaterThanOrEqual(300)
+        expect(response.status).toBeLessThan(400)
+        expect(response.headers.get('location')).toBe('http://localhost/dashboard')
+    })
+
+    it('redirects platform user away from /dashboard to /platform-admin', () => {
+        const response = middleware(
+            buildRequest('http://localhost/dashboard', {
+                user: { id: 'u1', platformRole: 'platform_admin' },
+            }),
+        )
+
+        expect(response.status).toBeGreaterThanOrEqual(300)
+        expect(response.status).toBeLessThan(400)
+        expect(response.headers.get('location')).toBe('http://localhost/platform-admin')
     })
 
     it('redirects authenticated user to login when inactivity timeout is exceeded', () => {
@@ -66,7 +107,7 @@ describe('proxy middleware', () => {
 
     it('keeps expected matcher config', () => {
         expect(config.matcher).toEqual([
-            '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+            '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|pdf)$).*)',
         ])
     })
 })

@@ -222,7 +222,7 @@ describe('API situations route', () => {
         expect(created).not.toBeNull()
     })
 
-    it('GET sem filtros retorna apenas situacoes da janela inicial de 45 dias', async () => {
+    it('GET sem filtros retorna todas as situacoes do tenant', async () => {
         const tenantId = new Types.ObjectId().toString()
         setSession(tenantId)
 
@@ -291,6 +291,69 @@ describe('API situations route', () => {
             situations: Array<{ startDate: string; endDate: string }>
         }
 
-        expect(payload.situations).toHaveLength(1)
+        expect(payload.situations).toHaveLength(2)
+    })
+
+    it('GET com page retorna paginação de 50 itens com metadados', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId)
+
+        const sector = await Sector.create({
+            tenantId,
+            name: 'Setor Paginacao',
+            percentage: 100,
+            active: true,
+            isMeritocracia: false,
+        })
+
+        const employee = await Employee.create({
+            tenantId,
+            name: 'Funcionario Paginacao',
+            sectorId: sector._id,
+            admissionDate: new Date('2026-01-01T00:00:00.000Z'),
+            active: true,
+        })
+
+        const situationType = await SituationType.create({
+            tenantId,
+            description: 'Banco de Horas',
+            active: true,
+        })
+
+        const baseDate = new Date('2026-01-01T00:00:00.000Z')
+        await Promise.all(
+            Array.from({ length: 55 }).map((_, index) => {
+                const startDate = new Date(baseDate)
+                startDate.setUTCDate(baseDate.getUTCDate() + index)
+                const endDate = new Date(startDate)
+                endDate.setUTCDate(startDate.getUTCDate() + 1)
+
+                return Situation.create({
+                    tenantId,
+                    employeeId: employee._id,
+                    typeId: situationType._id,
+                    startDate,
+                    endDate,
+                    active: true,
+                })
+            }),
+        )
+
+        const res = await GET(new Request('http://localhost/api/situations?page=2&pageSize=50'))
+
+        expect(res.status).toBe(200)
+        const payload = (await res.json()) as {
+            situations: Array<{ _id: string }>
+            currentPage: number
+            totalPages: number
+            totalItems: number
+            pageSize: number
+        }
+
+        expect(payload.currentPage).toBe(2)
+        expect(payload.totalPages).toBe(2)
+        expect(payload.totalItems).toBe(55)
+        expect(payload.pageSize).toBe(50)
+        expect(payload.situations).toHaveLength(5)
     })
 })

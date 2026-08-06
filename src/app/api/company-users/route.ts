@@ -6,6 +6,11 @@ import { isValidCpf, normalizeCpf } from '@/lib/validators/cpf'
 
 const ALLOWED_ROLES: UserRole[] = ['admin', 'manager', 'seller']
 
+function toExactCaseInsensitiveEmailRegex(value: string): RegExp {
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^${escaped}$`, 'i')
+}
+
 function canManageUsers(role: UserRole): boolean {
     return role === 'admin'
 }
@@ -93,6 +98,15 @@ export async function POST(request: Request) {
 
     await connectDB()
 
+    const existingUserEmail = await User.findOne({
+        email: toExactCaseInsensitiveEmailRegex(email),
+    })
+        .select('_id')
+        .lean()
+    if (existingUserEmail) {
+        return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
+    }
+
     try {
         const passwordHash = await hashPassword(password)
 
@@ -116,10 +130,7 @@ export async function POST(request: Request) {
             'code' in error &&
             (error as { code?: number }).code === 11000
         ) {
-            return Response.json(
-                { error: 'Ja existe usuario com este email neste tenant.' },
-                { status: 409 },
-            )
+            return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
         }
 
         const message = error instanceof Error ? error.message : ''
