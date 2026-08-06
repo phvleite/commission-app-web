@@ -3,10 +3,20 @@ import { auth } from '@/auth'
 import { connectDB } from '@/lib/db'
 import { Situation } from '@/models/Situation'
 import { Employee } from '@/models/Employee'
+import {
+    formatDateToYmdInTimeZone,
+    getUtcRangeForCalendarDay,
+    getUtcRangeForCalendarMonth,
+    resolveRequestTimeZone,
+} from '@/lib/date-timezone'
 
 export async function GET(req: Request) {
     const session = await auth()
     const tenantId = session?.user?.tenantId
+
+    if (!tenantId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const { searchParams } = new URL(req.url)
 
@@ -17,6 +27,11 @@ export async function GET(req: Request) {
     const end = searchParams.get('end')
     const month = searchParams.get('month')
     const year = searchParams.get('year')
+    const shouldPaginate = searchParams.has('page') || searchParams.has('pageSize')
+    const requestedPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
+    const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1
+    const pageSize = shouldPaginate ? 50 : 0
+    const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
 
     await connectDB()
 
@@ -33,37 +48,96 @@ export async function GET(req: Request) {
     }
 
     if (start && end) {
-        const startDate = new Date(start)
-        const endDate = new Date(end)
+        const startRange = getUtcRangeForCalendarDay(start, timeZone)
+        const endRange = getUtcRangeForCalendarDay(end, timeZone)
 
-        query.$and = [{ startDate: { $lte: endDate } }, { endDate: { $gte: startDate } }]
+        if (!startRange || !endRange) {
+            return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+        }
+
+        query.$and = [
+            { startDate: { $lte: endRange.end } },
+            { endDate: { $gte: startRange.start } },
+        ]
     } else if (month || year) {
         const y = year ? parseInt(year) : new Date().getFullYear()
-        const m = month ? parseInt(month) - 1 : undefined
+        const m = month ? parseInt(month) : undefined
 
-        const firstDay = m !== undefined ? new Date(y, m, 1) : new Date(y, 0, 1)
-        const lastDay = m !== undefined ? new Date(y, m + 1, 0) : new Date(y, 11, 31)
+        if (Number.isNaN(y) || (m !== undefined && Number.isNaN(m))) {
+            return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+        }
+
+        const firstDay =
+            m !== undefined
+                ? getUtcRangeForCalendarMonth(y, m, timeZone).start
+                : getUtcRangeForCalendarMonth(y, 1, timeZone).start
+
+        const lastDay =
+            m !== undefined
+                ? getUtcRangeForCalendarMonth(y, m, timeZone).end
+                : getUtcRangeForCalendarMonth(y, 12, timeZone).end
 
         query.$and = [{ startDate: { $lte: lastDay } }, { endDate: { $gte: firstDay } }]
     }
 
-    const situations = await Situation.find(query)
-        .populate('employeeId', 'name')
+    const queryBuilder = Situation.find(query)
+        .populate('employeeId', 'name active')
         .populate('typeId', 'description')
         .sort({ startDate: -1 })
-        .lean()
+
+    if (shouldPaginate) {
+        const totalItems = await Situation.countDocuments(query)
+        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+        const currentPage = Math.min(page, totalPages)
+        const skip = (currentPage - 1) * pageSize
+
+        const situations = await queryBuilder.skip(skip).limit(pageSize).lean()
+
+        return NextResponse.json({
+            situations: situations.map((s) => ({
+                _id: String(s._id),
+                employeeId: String((s.employeeId as Record<string, unknown>)?._id ?? ''),
+                employeeName: (s.employeeId as Record<string, unknown>)?.name ?? '',
+                employeeActive:
+                    (s.employeeId as Record<string, unknown>)?.active === true ||
+                    (s.employeeId as Record<string, unknown>)?.active === false
+                        ? ((s.employeeId as Record<string, unknown>).active as boolean)
+                        : true,
+                typeId: String((s.typeId as Record<string, unknown>)?._id ?? ''),
+                typeDescription: (s.typeId as Record<string, unknown>)?.description ?? '',
+                startDate: formatDateToYmdInTimeZone(s.startDate, timeZone),
+                endDate: formatDateToYmdInTimeZone(s.endDate, timeZone),
+                active: s.active,
+            })),
+            currentPage,
+            totalPages,
+            totalItems,
+            pageSize,
+        })
+    }
+
+    const situations = await queryBuilder.lean()
 
     return NextResponse.json({
         situations: situations.map((s) => ({
             _id: String(s._id),
             employeeId: String((s.employeeId as Record<string, unknown>)?._id ?? ''),
             employeeName: (s.employeeId as Record<string, unknown>)?.name ?? '',
+            employeeActive:
+                (s.employeeId as Record<string, unknown>)?.active === true ||
+                (s.employeeId as Record<string, unknown>)?.active === false
+                    ? ((s.employeeId as Record<string, unknown>).active as boolean)
+                    : true,
             typeId: String((s.typeId as Record<string, unknown>)?._id ?? ''),
             typeDescription: (s.typeId as Record<string, unknown>)?.description ?? '',
-            startDate: s.startDate.toISOString().substring(0, 10),
-            endDate: s.endDate.toISOString().substring(0, 10),
+            startDate: formatDateToYmdInTimeZone(s.startDate, timeZone),
+            endDate: formatDateToYmdInTimeZone(s.endDate, timeZone),
             active: s.active,
         })),
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: situations.length,
+        pageSize: situations.length,
     })
 }
 
@@ -71,13 +145,25 @@ export async function POST(req: Request) {
     const session = await auth()
     const tenantId = session?.user?.tenantId
 
+    if (!tenantId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { startDate, endDate, employeeId, typeId } = await req.json()
 
     if (!startDate || !endDate || !employeeId || !typeId) {
         return NextResponse.json({ error: 'Todos os campos são obrigatórios.' }, { status: 400 })
     }
 
-    if (new Date(endDate) < new Date(startDate)) {
+    const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+    const startRange = getUtcRangeForCalendarDay(startDate, timeZone)
+    const endRange = getUtcRangeForCalendarDay(endDate, timeZone)
+
+    if (!startRange || !endRange) {
+        return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
+    }
+
+    if (endRange.start < startRange.start) {
         return NextResponse.json(
             { error: 'A data final não pode ser menor que a inicial.' },
             { status: 400 },
@@ -88,8 +174,8 @@ export async function POST(req: Request) {
 
     const created = await Situation.create({
         tenantId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: startRange.start,
+        endDate: endRange.end,
         employeeId,
         typeId,
         active: true,

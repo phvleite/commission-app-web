@@ -90,8 +90,8 @@ function renderReportAllHtml(params: {
 }): string {
     const sectorRows = params.sectorSummary
         .map(
-            (sector) => `
-            <tr>
+            (sector, index) => `
+            <tr class="report-row-${index % 2 === 0 ? 'even' : 'odd'}">
                 <td>${escapeHtml(sector.sectorName)}</td>
                 <td class="right">R$ ${formatCurrencyFromDatabase(sector.sectorValue)}</td>
             </tr>`,
@@ -100,8 +100,8 @@ function renderReportAllHtml(params: {
 
     const employeeRows = params.groupedEmployees
         .map(
-            (employee) => `
-            <tr>
+            (employee, index) => `
+            <tr class="report-row-${index % 2 === 0 ? 'even' : 'odd'}">
                 <td>${escapeHtml(employee.employeeName)}</td>
                 <td>${escapeHtml(employee.sectorName)}</td>
                 <td class="right">R$ ${formatCurrencyFromDatabase(employee.totalCommission)}</td>
@@ -123,15 +123,29 @@ function renderReportAllHtml(params: {
 
     const hasSituations = sortedSituations.length > 0
     let previousDate = ''
+    let dateGroupIndex = -1
     const situationRows = sortedSituations
-        .map((situation) => {
+        .map((situation, index, array) => {
             const dateValue = normalizeDateForReport(situation.date)
-            const showDate = dateValue !== previousDate ? dateValue : ''
+            const isNewDate = dateValue !== previousDate
+            const nextDateValue =
+                index < array.length - 1 ? normalizeDateForReport(array[index + 1].date) : ''
+            const isGroupEnd = dateValue !== nextDateValue
+
+            if (isNewDate) {
+                dateGroupIndex += 1
+            }
+
+            const rowToneClass =
+                dateGroupIndex % 2 === 0 ? 'situation-group-even' : 'situation-group-odd'
+            const rowStartClass = isNewDate ? 'situation-group-start-row' : ''
+            const rowEndClass = isGroupEnd ? 'situation-group-end-row' : ''
+            const dateCellClass = isNewDate ? 'situation-date-label' : 'situation-date-empty'
             previousDate = dateValue
 
             return `
-            <tr>
-                <td class="center"><strong>${escapeHtml(showDate)}</strong></td>
+            <tr class="${rowToneClass} ${rowStartClass} ${rowEndClass}">
+                <td class="center ${dateCellClass}"><strong>${isNewDate ? escapeHtml(dateValue) : ''}</strong></td>
                 <td>${escapeHtml(situation.employeeName)}</td>
                 <td>${escapeHtml(situation.sectorName)}</td>
                 <td class="center">${escapeHtml(situation.situation)}</td>
@@ -146,7 +160,7 @@ function renderReportAllHtml(params: {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Relatorio Geral de Comissoes</title>
+    <title>Relatorio Geral de Gorjetas</title>
     <style>
         @page {
             size: A4;
@@ -187,7 +201,27 @@ function renderReportAllHtml(params: {
         }
         .right { text-align: right; }
         .center { text-align: center; }
-        .total { font-weight: 700; background: #f8fbff; }
+        .report-row-even td { background: #f5f9ff; }
+        .report-row-odd td { background: #ffffff; }
+        .total td {
+            font-weight: 700;
+            background: #d2e2f6 !important;
+            color: #0f2c4d;
+        }
+        .situation-table tbody tr.situation-group-even td { background: #f5f9ff; }
+        .situation-table tbody tr.situation-group-odd td { background: #ffffff; }
+        .situation-table tbody tr.situation-group-start-row td { border-top: 2.5px solid #4f6f92; }
+        .situation-table tbody tr.situation-group-end-row td { border-bottom: 2.5px solid #4f6f92; }
+        .situation-table tbody td {
+            border-top: 0;
+            border-bottom: 0;
+        }
+        .situation-table td.situation-date-label {
+            font-weight: 700;
+        }
+        .situation-table td.situation-date-empty {
+            color: transparent;
+        }
     </style>
 </head>
 <body>
@@ -197,7 +231,7 @@ function renderReportAllHtml(params: {
 
     <div class="summary">
         <div><strong>Valor total das vendas:</strong> R$ ${formatCurrencyFromDatabase(params.totalSales)}</div>
-        <div><strong>Comissao total do periodo:</strong> R$ ${formatCurrencyFromDatabase(params.totalSalesCommission)}</div>
+        <div><strong>Gorjetas total do periodo:</strong> R$ ${formatCurrencyFromDatabase(params.totalSalesCommission)}</div>
     </div>
 
     <h2 class="center">Resumo por Setor</h2>
@@ -221,7 +255,7 @@ function renderReportAllHtml(params: {
         </tbody>
     </table>
 
-    <h2 class="center">Comissoes por Colaborador</h2>
+    <h2 class="center">Gorjetas por Colaborador</h2>
     <table>
         <thead>
             <tr>
@@ -241,7 +275,7 @@ function renderReportAllHtml(params: {
         hasSituations
             ? `
     <h2 class="center">Situacoes do Periodo</h2>
-    <table>
+    <table class="situation-table">
         <thead>
             <tr>
                 <th class="center">Data</th>

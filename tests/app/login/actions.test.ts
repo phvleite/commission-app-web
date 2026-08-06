@@ -60,6 +60,24 @@ describe('login authenticate action', () => {
         })
     })
 
+    it('redireciona usuarios de plataforma para /platform-admin', async () => {
+        signInMock.mockResolvedValue(undefined)
+
+        await authenticate(
+            {},
+            makeFormData({
+                email: 'OWNER@commission.com.br',
+                password: '123456',
+            }),
+        )
+
+        expect(signInMock).toHaveBeenCalledWith('credentials', {
+            email: 'owner@commission.com.br',
+            password: '123456',
+            redirectTo: '/platform-admin',
+        })
+    })
+
     it('retorna erro amigavel para credenciais invalidas', async () => {
         signInMock.mockRejectedValue(new AuthError('CredentialsSignin'))
 

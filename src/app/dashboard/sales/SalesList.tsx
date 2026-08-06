@@ -13,15 +13,110 @@ interface SalesListProps {
     onEdit: (id: string) => void
     onOpenModal: (date: string) => void
     onRecalc?: (date: string) => void
+    isLoading?: boolean
+    currentPage: number
+    totalPages: number
+    totalItems: number
+    pageSize: number
+    canGoPrevious: boolean
+    canGoNext: boolean
+    onPreviousPage: () => void
+    onNextPage: () => void
 }
 
-export function SalesList({ sales, onEdit, onOpenModal, onRecalc }: SalesListProps) {
+export function SalesList({
+    sales,
+    onEdit,
+    onOpenModal,
+    onRecalc,
+    isLoading = false,
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    canGoPrevious,
+    canGoNext,
+    onPreviousPage,
+    onNextPage,
+}: SalesListProps) {
+    function formatPageNumber(value: number) {
+        return String(value).padStart(2, '0')
+    }
+
+    function formatPageIndicator(page: number, pages: number) {
+        return `${formatPageNumber(page)}/${formatPageNumber(pages)}`
+    }
+
+    const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
+    const endItem = Math.min(currentPage * pageSize, totalItems)
+
+    if (isLoading) {
+        return (
+            <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface">
+                <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
+                    Histórico de Vendas
+                </h3>
+
+                <div className="mt-6 rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                    Carregando vendas...
+                </div>
+            </div>
+        )
+    }
+
+    if (sales.length === 0) {
+        return (
+            <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface">
+                <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
+                    Histórico de Vendas
+                </h3>
+
+                <div className="mt-6 rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                    Nenhuma venda encontrada para o período selecionado.
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="panel p-6 rounded-xl border border-(--color-border) bg-surface">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
+                        Histórico de Vendas
+                    </h3>
 
-            <h3 className="gold-bar-title text-lg font-semibold text-(--color-primary-strong)">
-                Histórico de Vendas
-            </h3>
+                    <p className="mt-1 text-xs text-(--color-muted)">
+                        Exibindo {startItem}-{endItem} de {totalItems} vendas
+                    </p>
+                </div>
+
+                <div className="w-full sm:w-auto rounded-2xl border border-(--color-border) bg-white px-3 py-2 shadow-sm">
+                    <div className="flex items-center justify-between gap-3 sm:justify-center">
+                        <button
+                            type="button"
+                            className="h-9 min-w-9 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-(--color-primary-strong) hover:text-white disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-(--color-muted) disabled:hover:bg-surface-soft"
+                            onClick={onPreviousPage}
+                            disabled={!canGoPrevious}
+                        >
+                            {'<'}
+                        </button>
+
+                        <p className="min-w-18 rounded-lg border border-(--color-border) bg-surface-soft px-3 py-1.5 text-center text-sm font-semibold tracking-widest text-(--color-primary-strong)">
+                            {formatPageIndicator(currentPage, totalPages)}
+                        </p>
+
+                        <button
+                            type="button"
+                            className="h-9 min-w-9 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-(--color-primary-strong) hover:text-white disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-(--color-muted) disabled:hover:bg-surface-soft"
+                            onClick={onNextPage}
+                            disabled={!canGoNext}
+                        >
+                            {'>'}
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {/* WRAPPER RESPONSIVO */}
             <div className="mt-6 overflow-x-auto">
@@ -30,7 +125,7 @@ export function SalesList({ sales, onEdit, onOpenModal, onRecalc }: SalesListPro
                         <tr className="border-b border-(--color-border) bg-surface-soft">
                             <th className="py-3 px-2 text-center">Data</th>
                             <th className="py-3 px-2 text-center">Valor da Venda</th>
-                            <th className="py-3 px-2 text-center">Comissão Total</th>
+                            <th className="py-3 px-2 text-center">Gorjeta Total</th>
                             <th className="py-3 px-2 text-center">Ações</th>
                         </tr>
                     </thead>

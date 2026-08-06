@@ -15,6 +15,14 @@ export interface ITenant extends WithTimestamps {
     name: string
     legalName: string
     slug: string
+    cnpj?: string
+    responsibleUserId?: Types.ObjectId
+    phoneCommercial?: string
+    phoneMobile?: string
+    phone?: string
+    email?: string
+    maxUsers: number
+    timeZone?: string
     address?: IAddress
     active: boolean
 }
@@ -38,10 +46,26 @@ const tenantSchema = new Schema<TenantDocument>(
         name: { type: String, required: true, trim: true },
         legalName: { type: String, required: true, trim: true },
         slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+        cnpj: { type: String, trim: true, uppercase: true },
+        responsibleUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+        phoneCommercial: { type: String, trim: true },
+        phoneMobile: { type: String, trim: true },
+        phone: { type: String, trim: true },
+        email: { type: String, trim: true, lowercase: true },
+        maxUsers: { type: Number, default: 3, min: 1 },
+        timeZone: { type: String, default: 'America/Sao_Paulo', trim: true },
         address: { type: addressSchema },
         active: { type: Boolean, default: true },
     },
     { timestamps: true },
+)
+
+tenantSchema.index(
+    { cnpj: 1 },
+    {
+        unique: true,
+        sparse: true,
+    },
 )
 
 export const Tenant = models.Tenant ?? model<TenantDocument>('Tenant', tenantSchema)

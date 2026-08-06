@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { validateActiveSectorsPercentage } from '@/lib/api/business-rules'
 import { connectDB } from '@/lib/db'
 import { SidebarNav } from './_components/SidebarNav'
+import { SessionActivityHeartbeat } from './_components/SessionActivityHeartbeat'
 
 export default async function DashboardLayout({
     children,
@@ -15,17 +16,22 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
+    if (session.user.platformRole) {
+        redirect('/platform-admin')
+    }
+
     await connectDB()
     const sectorStatus = await validateActiveSectorsPercentage(session.user.tenantId)
 
     return (
         <div className="app-shell min-h-screen">
+            <SessionActivityHeartbeat />
             <SidebarNav
                 userName={session.user.name}
                 role={session.user.role}
                 sectorsOk={sectorStatus.valid}
             />
-            <div className="lg:pl-65">
+            <div className="lg:pl-72">
                 <div className="px-4 py-6 sm:px-6 sm:py-8">{children}</div>
             </div>
         </div>

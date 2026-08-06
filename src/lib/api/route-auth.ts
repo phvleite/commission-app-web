@@ -6,6 +6,7 @@ export interface RouteSessionUser {
     id: string
     tenantId: string
     role: SessionRole
+    tenantTimeZone?: string
     email?: string | null
     name?: string | null
 }
@@ -21,6 +22,7 @@ export async function getRouteSessionUser(): Promise<RouteSessionUser | null> {
         id: session.user.id,
         tenantId: session.user.tenantId,
         role: session.user.role,
+        tenantTimeZone: session.user.tenantTimeZone,
         email: session.user.email,
         name: session.user.name,
     }

@@ -1,5 +1,7 @@
 'use client'
 
+import { readJsonResponse } from '@/lib/api/fetchJson'
+import { withTimeZoneHeader } from '@/lib/api/time-zone-header'
 import { useState } from 'react'
 import { generatePeriodTitle } from '../utils/generatePeriodTitle'
 import { generateEmployeePeriodTitle } from '../utils/generateEmployeePeriodTitle'
@@ -41,6 +43,25 @@ interface GroupedEmployeeRow {
     totalCommission: number
 }
 
+function toDateSortKey(value: string): number {
+    if (!value) return Number.POSITIVE_INFINITY
+
+    const base = value.includes('T') ? value.split('T')[0] : value
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(base)) {
+        const [year, month, day] = base.split('-').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(base)) {
+        const [day, month, year] = base.split('/').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
+}
+
 export function useCommissions() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -54,11 +75,19 @@ export function useCommissions() {
         setError(null)
 
         try {
-            const res = await fetch(`/api/commissions/period?start=${start}&end=${end}`)
-            const json = await res.json()
+            const res = await fetch(
+                `/api/commissions/period?start=${start}&end=${end}`,
+                withTimeZoneHeader(),
+            )
+            const json = await readJsonResponse<{
+                data?: CommissionRow[]
+                sectorSummary?: SectorSummaryRow[]
+                salesSummary?: SalesSummaryRow[]
+                error?: string
+            }>(res, 'Erro ao buscar Gorjetas por período.')
 
             if (!res.ok) {
-                setError(json.error || 'Erro ao buscar comissões por período.')
+                setError(json.error || 'Erro ao buscar Gorjetas por período.')
                 return null
             }
 
@@ -69,7 +98,7 @@ export function useCommissions() {
             }
         } catch (err) {
             console.error(err)
-            setError('Erro ao buscar comissões por período.')
+            setError('Erro ao buscar Gorjetas por período.')
             return null
         } finally {
             setLoading(false)
@@ -83,23 +112,38 @@ export function useCommissions() {
         try {
             const res = await fetch(
                 `/api/commissions/period/employee?start=${start}&end=${end}&id=${employeeId}`,
+                withTimeZoneHeader(),
             )
-            const json = await res.json()
+            const json = await readJsonResponse<{
+                data?: CommissionRow[]
+                sectorSummary?: Array<SectorSummaryRow & { employeeValue: number }>
+                error?: string
+            }>(res, 'Erro ao buscar Gorjetas do colaborador.')
 
             if (!res.ok) {
-                setError(json.error || 'Erro ao buscar comissões do colaborador.')
+                setError(json.error || 'Erro ao buscar Gorjetas do colaborador.')
                 return null
             }
 
+            const sortedData = [...(json.data ?? [])].sort((a, b) => {
+                const dateCompare = toDateSortKey(a.date) - toDateSortKey(b.date)
+                if (dateCompare !== 0) return dateCompare
+
+                const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
+                if (sectorCompare !== 0) return sectorCompare
+
+                return a.situation.localeCompare(b.situation, 'pt-BR')
+            })
+
             return {
-                data: (json.data ?? []) as CommissionRow[],
+                data: sortedData as CommissionRow[],
                 sectorSummary: (json.sectorSummary ?? []) as Array<
                     SectorSummaryRow & { employeeValue: number }
                 >,
             }
         } catch (err) {
             console.error(err)
-            setError('Erro ao buscar comissões do colaborador.')
+            setError('Erro ao buscar Gorjetas do colaborador.')
             return null
         } finally {
             setLoading(false)
@@ -111,8 +155,14 @@ export function useCommissions() {
         setError(null)
 
         try {
-            const res = await fetch(`/api/commissions/situations?start=${start}&end=${end}`)
-            const json = await res.json()
+            const res = await fetch(
+                `/api/commissions/situations?start=${start}&end=${end}`,
+                withTimeZoneHeader(),
+            )
+            const json = await readJsonResponse<{
+                situations?: SituationRow[]
+                error?: string
+            }>(res, 'Erro ao buscar situações do período.')
 
             if (!res.ok) {
                 setError(json.error || 'Erro ao buscar situações do período.')
