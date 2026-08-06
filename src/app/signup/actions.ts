@@ -37,6 +37,18 @@ const INITIAL_RESEND_STATE: SignupResendState = {}
 const SIGNUP_CODE_TTL_MINUTES = 15
 const DUPLICATE_CNPJ_ERROR = 'Ja existe empresa com este CNPJ.'
 
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message
+    }
+
+    if (typeof error === 'string') {
+        return error
+    }
+
+    return 'erro-desconhecido'
+}
+
 function toExactCaseInsensitiveEmailRegex(value: string): RegExp {
     const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     return new RegExp(`^${escaped}$`, 'i')
@@ -293,6 +305,12 @@ export async function registerTenantAndAdmin(
             return { error: 'Ja existe usuario com este email.' }
         }
 
+        console.error('[signup] registerTenantAndAdmin failed', {
+            adminEmail,
+            tenantSlug,
+            message: getErrorMessage(error),
+        })
+
         return { error: 'Nao foi possivel concluir o cadastro agora.' }
     }
 }
@@ -494,7 +512,7 @@ export async function resendSignupConfirmationCode(
             adminName: signupRequest.adminName,
             companyName: signupRequest.companyName,
         })
-    } catch (_error) {
+    } catch (error) {
         await SignupVerification.updateOne(
             { _id: signupRequest._id },
             {
@@ -507,6 +525,12 @@ export async function resendSignupConfirmationCode(
                 },
             },
         )
+
+        console.error('[signup] resendSignupConfirmationCode failed', {
+            adminEmail: rawEmail,
+            signupRequestId,
+            message: getErrorMessage(error),
+        })
 
         return { error: 'Nao foi possivel reenviar o codigo agora.' }
     }
