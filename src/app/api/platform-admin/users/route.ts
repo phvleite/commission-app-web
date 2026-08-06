@@ -4,10 +4,6 @@ import { hashPassword } from '@/lib/password'
 import { User, type PlatformRole } from '@/models/User'
 
 const PLATFORM_EMAIL_DOMAIN = '@commission.com.br'
-const ALLOWED_PLATFORM_ROLES: Exclude<PlatformRole, 'platform_owner'>[] = [
-    'platform_admin',
-    'platform_auditor',
-]
 
 function toExactCaseInsensitiveEmailRegex(value: string): RegExp {
     const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -22,6 +18,11 @@ function isPlatformAdminRole(value?: string | null): value is PlatformRole {
     return value === 'platform_owner' || value === 'platform_admin' || value === 'platform_auditor'
 }
 
+function isAllowedPlatformRole(
+    value: PlatformRole,
+): value is Exclude<PlatformRole, 'platform_owner'> {
+    return value === 'platform_admin' || value === 'platform_auditor'
+}
 export async function GET() {
     const session = await auth()
 
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
         )
     }
 
-    if (!ALLOWED_PLATFORM_ROLES.includes(platformRole)) {
+    if (!isAllowedPlatformRole(platformRole)) {
         return Response.json({ error: 'platformRole invalido.' }, { status: 400 })
     }
 
@@ -279,7 +280,7 @@ export async function PUT(request: Request) {
         return Response.json({ error: 'ID invalido.' }, { status: 400 })
     }
 
-    if (!ALLOWED_PLATFORM_ROLES.includes(platformRole)) {
+    if (!isAllowedPlatformRole(platformRole)) {
         return Response.json({ error: 'platformRole invalido.' }, { status: 400 })
     }
 
