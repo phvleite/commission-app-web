@@ -1,6 +1,17 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+type GalleryItem =
+    | string
+    | {
+          title: string
+          description: string
+          src?: string
+          alt?: string
+          href?: string
+          hrefLabel?: string
+      }
+
 const modules = [
     {
         id: 'setores',
@@ -19,9 +30,33 @@ const modules = [
             'Impede inconsistências no cadastro com validações próprias da operação.',
         ],
         gallery: [
-            'Tela de cadastro de setores',
-            'Configuração de percentuais',
-            'Setor especial de Meritocracia',
+            {
+                title: 'Sem setores cadastrados',
+                description:
+                    'Soma dos percentuais em 0%, com os demais módulos ainda inabilitados.',
+                src: '/showcase/sectors/img-sector-001.webp',
+                alt: 'Tela de setores sem registros e percentuais em 0%',
+            },
+            {
+                title: 'Primeiro setor cadastrado',
+                description:
+                    'Com 40% definidos, o sistema mostra o quanto ainda falta para liberar os módulos.',
+                src: '/showcase/sectors/img-sector-002.webp',
+                alt: 'Tela de setores com um setor cadastrado e soma de 40%',
+            },
+            {
+                title: 'Setores com 100% concluído',
+                description:
+                    'Com a soma fechada em 100%, os outros módulos ficam liberados para a operação.',
+                src: '/showcase/sectors/img-sector-003.webp',
+                alt: 'Tela de setores com soma total de 100% e módulos liberados',
+            },
+            {
+                title: 'Edição de setor',
+                description: 'Exemplo de atualização de dados em um setor já cadastrado.',
+                src: '/showcase/sectors/img-sector-004.webp',
+                alt: 'Tela de edição de um setor cadastrado',
+            },
         ],
     },
     {
@@ -39,7 +74,42 @@ const modules = [
             'Mantém o histórico coerente com datas de admissão e desligamento.',
             'Prepara a base humana do rateio sem burocracia desnecessária.',
         ],
-        gallery: ['Lista de colaboradores', 'Cadastro individual', 'Filtros por setor e status'],
+        gallery: [
+            {
+                title: 'Cadastro de colaboradores vazio',
+                description: 'Estado inicial do módulo, sem registros cadastrados para a empresa.',
+                src: '/showcase/employees/img-employees-001.webp',
+                alt: 'Tela do módulo Colaboradores sem registros cadastrados',
+            },
+            {
+                title: 'Formulário de cadastro de colaborador',
+                description:
+                    'Exibe os campos para inclusão de um novo colaborador com vínculo ao setor.',
+                src: '/showcase/employees/img-employees-002.webp',
+                alt: 'Formulário de cadastro de colaborador no módulo Colaboradores',
+            },
+            {
+                title: 'Listagem de colaboradores cadastrados',
+                description:
+                    'Visualização dos colaboradores já cadastrados com dados operacionais.',
+                src: '/showcase/employees/img-employees-003.webp',
+                alt: 'Listagem de colaboradores cadastrados no sistema',
+            },
+            {
+                title: 'Filtro por demitidos',
+                description:
+                    'Neste estado a barra deixa de ser dourada e fica vermelha, destacando o status do colaborador demitido.',
+                src: '/showcase/employees/img-employees-004.webp',
+                alt: 'Filtro de colaboradores demitidos com barra vermelha de status',
+            },
+            {
+                title: 'Edição de colaborador',
+                description:
+                    'Exemplo da tela de edição para atualizar dados de um colaborador existente.',
+                src: '/showcase/employees/img-employees-005.webp',
+                alt: 'Tela de edição de colaborador no módulo Colaboradores',
+            },
+        ],
     },
     {
         id: 'situacoes',
@@ -58,9 +128,41 @@ const modules = [
             'Gera relatórios em PDF com apoio de filtros de consulta.',
         ],
         gallery: [
-            'Cadastro de tipos de situação',
-            'Lançamento por período',
-            'Relatório PDF de situações',
+            {
+                title: 'Cadastro vazio com aviso de dependência',
+                description:
+                    'Estado inicial do módulo, mostrando que antes de cadastrar situações é necessário criar pelo menos um tipo de situação.',
+                src: '/showcase/situations/img-situations-001.webp',
+                alt: 'Tela vazia do módulo Situações com aviso para cadastrar tipo de situação primeiro',
+            },
+            {
+                title: 'Cadastro de tipo e listagem de situações',
+                description:
+                    'Exibe o formulário para cadastrar tipo de situação e a listagem já disponível no módulo.',
+                src: '/showcase/situations/img-situations-002.webp',
+                alt: 'Tela do módulo Situações com cadastro de tipo e listagem de situações',
+            },
+            {
+                title: 'Cadastro de situações',
+                description:
+                    'Tela de lançamento das situações por colaborador e período, com os dados necessários para o rateio.',
+                src: '/showcase/situations/img-situations-003.webp',
+                alt: 'Tela de cadastro de situações no sistema',
+            },
+            {
+                title: 'Listagem com barras de status',
+                description:
+                    'Na listagem existem situações com barra vermelha e também uma ponta de barra dourada, refletindo estados visuais diferentes da operação.',
+                src: '/showcase/situations/img-situations-004.webp',
+                alt: 'Listagem de situações com barras vermelhas e detalhe de barra dourada',
+            },
+            {
+                title: 'Relatório PDF de situações',
+                description:
+                    'Arquivo em PDF gerado pelo módulo para auditoria, conferência e impressão do período selecionado.',
+                href: '/showcase/situations/relatorio-situacoes-1785960660906.pdf',
+                hrefLabel: 'Abrir relatório em PDF',
+            },
         ],
     },
     {
@@ -79,7 +181,43 @@ const modules = [
             'Distribui os valores por setor e por colaborador.',
             'Grava o histórico do cálculo para consultas e relatórios posteriores.',
         ],
-        gallery: ['Cadastro da venda', 'Histórico diário', 'Detalhamento por setores'],
+        gallery: [
+            {
+                title: 'Lançamento simples da venda',
+                description:
+                    'No módulo de vendas basta informar a data e o valor da venda para registrar a movimentação do dia.',
+                src: '/showcase/sales/img-sales-001.webp',
+                alt: 'Tela do módulo Vendas com campos de data e valor para lançamento',
+            },
+            {
+                title: 'Valores de venda lançados',
+                description:
+                    'Exibe os valores já registrados no módulo, formando o histórico operacional das vendas lançadas.',
+                src: '/showcase/sales/img-sales-002.webp',
+                alt: 'Listagem com valores de vendas já lançados no sistema',
+            },
+            {
+                title: 'Gorjetas por setor no dia',
+                description:
+                    'Ao clicar no botão para ver setores, o sistema detalha como a gorjeta daquele dia foi distribuída entre os setores.',
+                src: '/showcase/sales/img-sales-003.webp',
+                alt: 'Detalhamento das gorjetas por setor em um determinado dia',
+            },
+            {
+                title: 'Alteração de lançamento de venda',
+                description:
+                    'Mostra a edição de um lançamento já realizado, permitindo corrigir dados antes de seguir a operação.',
+                src: '/showcase/sales/img-sales-004.webp',
+                alt: 'Tela de alteração de um lançamento de venda no módulo Vendas',
+            },
+            {
+                title: 'Bloqueio de data já lançada',
+                description:
+                    'O sistema impede novo lançamento para uma data que já foi registrada, evitando duplicidade no cálculo.',
+                src: '/showcase/sales/img-sales-005.webp',
+                alt: 'Aviso do sistema informando que não é permitido lançar novamente uma data já registrada',
+            },
+        ],
     },
     {
         id: 'gorjetas',
@@ -96,7 +234,57 @@ const modules = [
             'Mais transparência na conferência dos valores apurados.',
             'Relatórios úteis para gestão, auditoria e esclarecimentos internos.',
         ],
-        gallery: ['Consulta geral do período', 'Consulta individual', 'Relatório consolidado'],
+        gallery: [
+            {
+                title: 'Tela inicial para consulta por período',
+                description:
+                    'Estado inicial do módulo, aguardando o lançamento do período inicial e final e, opcionalmente, a escolha de um colaborador para relatório individual.',
+                src: '/showcase/commissions/img-commissions-001.webp',
+                alt: 'Tela inicial do módulo Gorjetas com filtros de período e colaborador',
+            },
+            {
+                title: 'Resumo por setor no período solicitado',
+                description:
+                    'Mostra a listagem consolidada dos valores de gorjeta por setor no período selecionado.',
+                src: '/showcase/commissions/img-commissions-002.webp',
+                alt: 'Resumo de gorjetas por setor no período solicitado',
+            },
+            {
+                title: 'Gorjetas por colaborador',
+                description:
+                    'Exibe a lista detalhada de gorjetas distribuídas para cada colaborador no período consultado.',
+                src: '/showcase/commissions/img-commissions-003.webp',
+                alt: 'Listagem de gorjetas por colaborador',
+            },
+            {
+                title: 'Situações consideradas no período',
+                description:
+                    'Apresenta as situações registradas no período, que compõem o contexto do cálculo das gorjetas.',
+                src: '/showcase/commissions/img-commissions-004.webp',
+                alt: 'Tela com situações do período no módulo de gorjetas',
+            },
+            {
+                title: 'Visualização de relatório por colaborador',
+                description:
+                    'Prévia da consulta individual, focada em um colaborador específico no período selecionado.',
+                src: '/showcase/commissions/img-commissions-005.webp',
+                alt: 'Tela de relatório individual por colaborador no módulo de gorjetas',
+            },
+            {
+                title: 'Relatório geral de gorjetas',
+                description:
+                    'Relatório consolidado por período com a visão geral da distribuição de gorjetas.',
+                href: '/showcase/commissions/relatorio-geral-Gorjetas-20260805-180335.pdf',
+                hrefLabel: 'Abrir relatório geral',
+            },
+            {
+                title: 'Relatório de gorjetas por colaborador',
+                description:
+                    'Relatório individual com os dados de um colaborador específico no período consultado.',
+                href: '/showcase/commissions/relatorio-Gorjetas-marli-bezerra-20260805-181430.pdf',
+                hrefLabel: 'Abrir relatório individual',
+            },
+        ],
     },
     {
         id: 'empresa-usuarios',
@@ -113,13 +301,37 @@ const modules = [
             'Permite criar, editar e inativar usuários autorizados.',
             'Mantém o acesso da plataforma sob controle administrativo.',
         ],
-        gallery: ['Cadastro da empresa', 'Gestão de usuários', 'Ajustes de acesso'],
+        gallery: [
+            {
+                title: 'Dados da empresa e usuário responsável',
+                description:
+                    'Tela com os dados da empresa e do usuário responsável principal da conta.',
+                src: '/showcase/company-users/img-company-users-001.webp',
+                alt: 'Dados da empresa e do usuário responsável no módulo Empresa e Usuários',
+            },
+            {
+                title: 'Responsável no card da empresa',
+                description:
+                    'Destaque dos dados do responsável pela empresa exibidos no card de informações da empresa.',
+                src: '/showcase/company-users/img-company-users-002.webp',
+                alt: 'Card de dados da empresa com informações do responsável',
+            },
+            {
+                title: 'Inserção de novo usuário',
+                description: 'Exemplo de cadastro de um novo usuário autorizado dentro da empresa.',
+                src: '/showcase/company-users/img-company-users-003.webp',
+                alt: 'Tela de inserção de um novo usuário no módulo Empresa e Usuários',
+            },
+        ],
     },
 ] as const
 
 export default function SaibaMaisPage() {
     return (
-        <main id="topo" className="app-shell px-4 py-6 sm:px-6 sm:py-8 lg:px-6 lg:py-12">
+        <main
+            id="topo"
+            className="app-shell overflow-x-clip px-4 py-6 sm:px-6 sm:py-8 lg:px-6 lg:py-12"
+        >
             <section className="mx-auto w-full max-w-6xl space-y-8">
                 <section className="panel overflow-hidden">
                     <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
@@ -200,7 +412,7 @@ export default function SaibaMaisPage() {
                             <p className="text-xs font-semibold tracking-[0.18em] text-(--color-primary) uppercase">
                                 {String(index + 1).padStart(2, '0')} {module.eyebrow}
                             </p>
-                            <h2 className="mt-3 text-xl font-semibold text-(--color-primary-strong)">
+                            <h2 className="gold-bar-title mt-3 text-xl font-semibold text-(--color-primary-strong)">
                                 {module.title}
                             </h2>
                             <p className="mt-3 text-sm leading-7 text-(--color-muted)">
@@ -218,14 +430,14 @@ export default function SaibaMaisPage() {
                                 const nextModule = modules[index + 1]
 
                                 return (
-                                    <div className="border-b border-(--color-border) bg-surface-soft/40 px-6 py-4 sm:px-8">
-                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="border-b border-(--color-border) bg-surface-soft/40 px-6 py-3 sm:px-8 sm:py-4">
+                                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                                             <p className="text-xs font-semibold tracking-[0.18em] text-(--color-primary) uppercase">
                                                 Navegação do módulo{' '}
                                                 {String(index + 1).padStart(2, '0')}
                                             </p>
 
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="hidden flex-wrap gap-2 sm:flex">
                                                 {previousModule ? (
                                                     <a
                                                         href={`#${previousModule.id}`}
@@ -251,20 +463,27 @@ export default function SaibaMaisPage() {
                                                     </a>
                                                 ) : null}
                                             </div>
+
+                                            <a
+                                                href="#topo"
+                                                className="inline-flex items-center justify-center rounded-full border border-(--color-border) bg-white px-3 py-2 text-xs font-semibold text-(--color-primary-strong) shadow-sm transition hover:border-(--color-primary-soft) hover:text-(--color-primary) sm:hidden"
+                                            >
+                                                Voltar ao início
+                                            </a>
                                         </div>
                                     </div>
                                 )
                             })()}
 
-                            <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
-                                <div className="bg-surface-soft/60 px-6 py-8 sm:px-8 sm:py-10">
+                            <div className="grid min-w-0 gap-0 lg:grid-cols-[0.72fr_1.28fr]">
+                                <div className="min-w-0 bg-surface-soft/60 px-6 py-6 sm:px-8 sm:py-10">
                                     <p className="text-xs font-semibold tracking-[0.18em] text-(--color-primary) uppercase">
                                         {String(index + 1).padStart(2, '0')} {module.eyebrow}
                                     </p>
-                                    <h3 className="mt-3 text-2xl font-semibold text-(--color-primary-strong) sm:text-3xl">
+                                    <h3 className="gold-bar-title mt-2 text-2xl font-semibold text-(--color-primary-strong) sm:mt-3 sm:text-3xl">
                                         {module.title}
                                     </h3>
-                                    <p className="mt-4 text-sm leading-7 text-(--color-muted) sm:text-base sm:leading-8">
+                                    <p className="mt-3 text-sm leading-7 text-(--color-muted) sm:mt-4 sm:text-base sm:leading-8">
                                         {module.summary}
                                     </p>
 
@@ -291,42 +510,80 @@ export default function SaibaMaisPage() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white px-6 py-8 sm:px-8 sm:py-10">
+                                <div className="min-w-0 bg-white px-6 py-6 sm:px-8 sm:py-10">
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
                                             <p className="gold-bar-title text-sm font-semibold text-(--color-primary-strong)">
                                                 Galeria do módulo
                                             </p>
-                                            <p className="mt-3 text-sm leading-7 text-(--color-muted)">
-                                                Estrutura pronta para incluir capturas das telas e,
-                                                quando existir, os relatórios em PDF
-                                                correspondentes.
-                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className="mt-6 flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-                                        {module.gallery.map((item) => (
-                                            <div
-                                                key={item}
-                                                className="min-w-65 flex-1 snap-start rounded-3xl border border-dashed border-(--color-border) bg-[linear-gradient(180deg,#ffffff_0%,#eef5fb_100%)] p-5 shadow-sm"
-                                            >
-                                                <div className="flex h-44 items-center justify-center rounded-2xl border border-(--color-border) bg-white/80 text-center text-sm font-medium text-(--color-primary-weak)">
-                                                    {item}
+                                    <div className="mt-6 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory lg:grid lg:grid-cols-1 lg:gap-6 lg:overflow-visible lg:pb-0 lg:snap-none">
+                                        {(module.gallery as readonly GalleryItem[]).map((item) => {
+                                            const galleryItem =
+                                                typeof item === 'string' ? null : item
+                                            const hasImage = Boolean(galleryItem?.src)
+                                            const title =
+                                                typeof item === 'string' ? item : item.title
+                                            const description =
+                                                typeof item === 'string'
+                                                    ? 'Assim que você gerar as imagens deste módulo, elas podem entrar aqui mantendo a navegação lateral por arraste no desktop e no mobile.'
+                                                    : item.description
+                                            const key =
+                                                typeof item === 'string'
+                                                    ? item
+                                                    : (item.src ?? item.href ?? item.title)
+
+                                            return (
+                                                <div
+                                                    key={key}
+                                                    className="min-w-[92%] flex-1 snap-start rounded-3xl border border-dashed border-(--color-border) bg-[linear-gradient(180deg,#ffffff_0%,#eef5fb_100%)] p-5 shadow-sm sm:min-w-120 lg:min-w-0"
+                                                >
+                                                    {hasImage ? (
+                                                        <div className="mt-3 bg-white/60 p-2.5 shadow-[0_24px_44px_-14px_rgba(10,26,47,0.28)] sm:p-3.5">
+                                                            <Image
+                                                                src={galleryItem?.src ?? ''}
+                                                                alt={galleryItem?.alt ?? title}
+                                                                width={1600}
+                                                                height={900}
+                                                                className="h-auto w-full"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="mt-3 flex min-h-44 flex-col items-center justify-center gap-3 bg-white/75 px-6 py-8 text-center shadow-[0_24px_44px_-14px_rgba(10,26,47,0.18)]">
+                                                            <div className="rounded-full border border-(--color-border) bg-white px-4 py-2 text-xs font-semibold tracking-[0.18em] text-(--color-primary) uppercase">
+                                                                Documento
+                                                            </div>
+                                                            <p className="max-w-sm text-sm font-medium text-(--color-primary-strong)">
+                                                                {title}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    <p className="mt-4 text-sm font-semibold text-(--color-primary-strong)">
+                                                        {title}
+                                                    </p>
+                                                    <p className="mt-2 text-sm leading-7 text-(--color-muted)">
+                                                        {description}
+                                                    </p>
+                                                    {galleryItem?.href ? (
+                                                        <a
+                                                            href={galleryItem.href}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="primary-button mt-4 inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+                                                        >
+                                                            {galleryItem.hrefLabel ??
+                                                                'Abrir arquivo'}
+                                                        </a>
+                                                    ) : null}
                                                 </div>
-                                                <p className="mt-4 text-sm font-semibold text-(--color-primary-strong)">
-                                                    Espaço reservado
-                                                </p>
-                                                <p className="mt-2 text-sm leading-7 text-(--color-muted)">
-                                                    Assim que você gerar as imagens deste módulo,
-                                                    elas podem entrar aqui mantendo a navegação
-                                                    lateral por arraste no desktop e no mobile.
-                                                </p>
-                                            </div>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
 
-                                    <div className="mt-6 flex flex-wrap gap-2">
+                                    <div className="mt-6 hidden flex-wrap gap-2 sm:flex">
                                         {modules[index - 1] ? (
                                             <a
                                                 href={`#${modules[index - 1].id}`}
@@ -372,6 +629,16 @@ export default function SaibaMaisPage() {
                                 Esta página já está pronta para receber as imagens reais de cada
                                 módulo. Quando você me passar os nomes dos arquivos, eu encaixo tudo
                                 aqui com a apresentação final.
+                            </p>
+
+                            <p className="mt-4 text-sm font-semibold text-(--color-primary-strong) sm:text-base">
+                                Contato:{' '}
+                                <a
+                                    href="mailto:contato@commission.com.br"
+                                    className="text-(--color-primary) underline decoration-(--color-accent) underline-offset-3"
+                                >
+                                    contato@commission.com.br
+                                </a>
                             </p>
                         </div>
 

@@ -47,6 +47,11 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
                 .reduce((sum, sector) => sum + sector.percentage, 0),
         [sectors],
     )
+    const activeSectorsCount = useMemo(
+        () => sectors.filter((sector) => sector.active).length,
+        [sectors],
+    )
+    const inactiveSectorsCount = sectors.length - activeSectorsCount
 
     const percentageStatus =
         totalPercentage === 100
@@ -176,200 +181,296 @@ export function SectorsClient({ userRole, initialSectors }: Props) {
     }
 
     return (
-        <section className="panel mx-auto w-full max-w-5xl p-6 sm:p-8">
-            <h1 className="gold-bar-title mt-2 text-3xl font-semibold text-(--color-primary-strong)">
-                Setores
-            </h1>
-            <p className="mt-3 text-sm leading-7 text-(--color-muted)">
-                Defina os percentuais dos setores. A soma dos setores ativos deve ser 100%.
-            </p>
+        <section className="mx-auto w-full max-w-6xl space-y-6">
+            <div className="panel p-6 sm:p-8">
+                <h1 className="gold-bar-title mt-2 text-3xl font-semibold text-(--color-primary-strong)">
+                    Setores
+                </h1>
+                <p className="mt-3 text-sm leading-7 text-(--color-muted)">
+                    Defina os percentuais da operacao. A soma dos setores ativos deve fechar em 100%
+                    para liberar os demais modulos.
+                </p>
 
-            <div
-                className={`mt-5 rounded-xl border px-4 py-3 text-sm font-semibold ${totalPercentage === 100 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
-            >
-                Soma dos percentuais ativos: {totalPercentage}%{' '}
-                {totalPercentage === 100 ? '(OK)' : `(${percentageStatus})`}
+                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-2xl border border-(--color-border) bg-white p-4 shadow-sm">
+                        <p className="text-xs font-semibold tracking-widest text-(--color-primary) uppercase">
+                            Total de setores
+                        </p>
+                        <p className="mt-2 text-2xl font-semibold text-(--color-primary-strong)">
+                            {sectors.length}
+                        </p>
+                    </div>
+                    <div className="rounded-2xl border border-(--color-border) bg-white p-4 shadow-sm">
+                        <p className="text-xs font-semibold tracking-widest text-(--color-primary) uppercase">
+                            Ativos
+                        </p>
+                        <p className="mt-2 text-2xl font-semibold text-emerald-700">
+                            {activeSectorsCount}
+                        </p>
+                    </div>
+                    <div className="rounded-2xl border border-(--color-border) bg-white p-4 shadow-sm">
+                        <p className="text-xs font-semibold tracking-widest text-(--color-primary) uppercase">
+                            Inativos
+                        </p>
+                        <p className="mt-2 text-2xl font-semibold text-amber-700">
+                            {inactiveSectorsCount}
+                        </p>
+                    </div>
+                    <div
+                        className={`rounded-2xl border p-4 shadow-sm ${
+                            totalPercentage === 100
+                                ? 'border-emerald-200 bg-emerald-50'
+                                : 'border-amber-200 bg-amber-50'
+                        }`}
+                    >
+                        <p className="text-xs font-semibold tracking-widest text-(--color-primary) uppercase">
+                            Soma ativa
+                        </p>
+                        <p
+                            className={`mt-2 text-2xl font-semibold ${
+                                totalPercentage === 100 ? 'text-emerald-700' : 'text-amber-900'
+                            }`}
+                        >
+                            {totalPercentage}%
+                        </p>
+                        <p
+                            className={`mt-1 text-xs font-semibold ${
+                                totalPercentage === 100 ? 'text-emerald-700' : 'text-amber-900'
+                            }`}
+                        >
+                            {totalPercentage === 100 ? 'OK' : percentageStatus}
+                        </p>
+                    </div>
+                </div>
+
+                {error ? (
+                    <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-(--color-danger)">
+                        {error}
+                    </p>
+                ) : null}
+
+                {success ? (
+                    <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {success}
+                    </p>
+                ) : null}
             </div>
 
-            {error ? (
-                <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-(--color-danger)">
-                    {error}
-                </p>
-            ) : null}
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+                <section className="panel p-5 sm:p-6">
+                    <h2 className="text-lg font-semibold text-(--color-primary-strong)">
+                        Cadastrar novo setor
+                    </h2>
+                    <p className="mt-2 text-sm leading-7 text-(--color-muted)">
+                        Informe nome e percentual para incluir o setor na distribuicao.
+                    </p>
 
-            {success ? (
-                <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                    {success}
-                </p>
-            ) : null}
+                    <form className="mt-5 space-y-3" onSubmit={handleCreateSector}>
+                        <input
+                            placeholder="Nome do setor"
+                            className="h-11 w-full rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                            value={name}
+                            onChange={(event) => setName(event.target.value)}
+                            required
+                            disabled={!canWrite}
+                        />
 
-            <form
-                className="mt-5 grid gap-3 sm:grid-cols-[1fr_180px_auto]"
-                onSubmit={handleCreateSector}
-            >
-                <input
-                    placeholder="Nome do setor"
-                    className="h-11 rounded-xl border border-(--color-border)  bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    required
-                    disabled={!canWrite}
-                />
-                <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    placeholder="Percentual"
-                    className="h-11 rounded-xl border border-(--color-border)  bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
-                    value={percentage}
-                    onChange={(event) => setPercentage(event.target.value)}
-                    required
-                    disabled={!canWrite}
-                />
-                <button
-                    type="submit"
-                    className="primary-button rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-70"
-                    disabled={!canWrite || isSubmitting}
-                >
-                    {isSubmitting ? 'Processando...' : 'Adicionar setor'}
-                </button>
-            </form>
-
-            <label className="mt-3 inline-flex items-center gap-2 text-sm text-(--color-primary-strong)">
-                <input
-                    type="checkbox"
-                    checked={isMeritocracia}
-                    onChange={(event) => {
-                        const checked = event.target.checked
-                        setIsMeritocracia(checked)
-                    }}
-                    disabled={!canWrite || hasMeritocraciaAssigned}
-                />
-                Criar como setor de meritocracia
-            </label>
-
-            {hasMeritocraciaAssigned ? (
-                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    Ja existe um setor marcado como meritocracia. Para transferir ou remover essa
-                    marcacao, edite o proprio setor.
-                </p>
-            ) : null}
-
-            <div className="mt-6 space-y-2">
-                {sectors.map((sector) => {
-                    const showEditMeritocraciaOption =
-                        !meritocraciaSectorId || meritocraciaSectorId === sector._id
-
-                    return (
-                        <div
-                            key={sector._id}
-                            className="gold-bar-title rounded-xl border border-(--color-border) bg-white px-4 py-3"
-                        >
-                            <div className="flex items-center justify-between gap-4">
-                                <div>
-                                    <p className="text-sm font-semibold text-(--color-primary-strong)">
-                                        {sector.name}
-                                    </p>
-                                    <p className="text-xs text-(--color-muted)">
-                                        Percentual: {sector.percentage}% | Status:{' '}
-                                        {sector.active ? 'Ativo' : 'Inativo'}
-                                    </p>
-                                    {sector.isMeritocracia ? (
-                                        <p className="mt-1 text-xs font-semibold text-amber-700">
-                                            Tipo: Meritocracia
-                                        </p>
-                                    ) : null}
-                                </div>
-
-                                {canWrite ? (
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold disabled:opacity-70"
-                                            onClick={() => {
-                                                setEditingSectorId(sector._id)
-                                                setEditName(sector.name)
-                                                setEditPercentage(String(sector.percentage))
-                                                setEditIsMeritocracia(sector.isMeritocracia)
-                                            }}
-                                            disabled={isSubmitting}
-                                        >
-                                            Editar
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            className="secondary-button rounded-lg px-3 py-1 text-xs font-semibold disabled:opacity-70"
-                                            onClick={() => handleToggleActive(sector)}
-                                            disabled={isSubmitting}
-                                        >
-                                            {sector.active ? 'Inativar' : 'Ativar'}
-                                        </button>
-                                    </div>
-                                ) : null}
-                            </div>
-
-                            {editingSectorId === sector._id ? (
-                                <div
-                                    className={`mt-3 grid gap-2 ${
-                                        showEditMeritocraciaOption
-                                            ? 'sm:grid-cols-[1fr_140px_auto_auto_auto]'
-                                            : 'sm:grid-cols-[1fr_140px_auto_auto]'
-                                    }`}
-                                >
-                                    <input
-                                        className="h-10 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none"
-                                        value={editName}
-                                        onChange={(event) => setEditName(event.target.value)}
-                                    />
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        className="h-10 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none"
-                                        value={editPercentage}
-                                        onChange={(event) => setEditPercentage(event.target.value)}
-                                    />
-                                    {showEditMeritocraciaOption ? (
-                                        <label className="flex items-center gap-2 rounded-lg border border-(--color-border) bg-white px-3 text-xs font-semibold text-(--color-primary-strong)">
-                                            <input
-                                                type="checkbox"
-                                                checked={editIsMeritocracia}
-                                                onChange={(event) => {
-                                                    const checked = event.target.checked
-                                                    setEditIsMeritocracia(checked)
-                                                }}
-                                            />
-                                            Meritocracia
-                                        </label>
-                                    ) : null}
-                                    <button
-                                        type="button"
-                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
-                                        onClick={() => handleSaveEdition(sector._id)}
-                                        disabled={isSubmitting}
-                                    >
-                                        {isSubmitting ? 'Processando...' : 'Salvar'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
-                                        onClick={() => {
-                                            setEditingSectorId(null)
-                                            setEditIsMeritocracia(false)
-                                            setEditName('')
-                                            setEditPercentage('')
-                                        }}
-                                        disabled={isSubmitting}
-                                    >
-                                        Cancelar
-                                    </button>
-                                </div>
-                            ) : null}
+                        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                            <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                placeholder="Percentual"
+                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
+                                value={percentage}
+                                onChange={(event) => setPercentage(event.target.value)}
+                                required
+                                disabled={!canWrite}
+                            />
+                            <button
+                                type="submit"
+                                className="primary-button rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-70"
+                                disabled={!canWrite || isSubmitting}
+                            >
+                                {isSubmitting ? 'Processando...' : 'Adicionar setor'}
+                            </button>
                         </div>
-                    )
-                })}
+
+                        <label className="mt-2 inline-flex items-center gap-2 text-sm text-(--color-primary-strong)">
+                            <input
+                                type="checkbox"
+                                checked={isMeritocracia}
+                                onChange={(event) => {
+                                    const checked = event.target.checked
+                                    setIsMeritocracia(checked)
+                                }}
+                                disabled={!canWrite || hasMeritocraciaAssigned}
+                            />
+                            Criar como setor de meritocracia
+                        </label>
+                    </form>
+
+                    {hasMeritocraciaAssigned ? (
+                        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            Ja existe um setor marcado como meritocracia. Para transferir ou remover
+                            essa marcacao, edite o proprio setor.
+                        </p>
+                    ) : null}
+                </section>
+
+                <section className="panel overflow-hidden">
+                    <div className="border-b border-(--color-border) bg-surface-soft/45 px-5 py-4 sm:px-6">
+                        <h2 className="text-lg font-semibold text-(--color-primary-strong)">
+                            Setores cadastrados
+                        </h2>
+                        <p className="mt-1 text-sm text-(--color-muted)">
+                            Edite dados e status de cada setor da empresa.
+                        </p>
+                    </div>
+
+                    {sectors.length === 0 ? (
+                        <div className="px-5 py-8 text-sm text-(--color-muted) sm:px-6">
+                            Nenhum setor cadastrado ainda.
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-(--color-border)">
+                            {sectors.map((sector) => {
+                                const showEditMeritocraciaOption =
+                                    !meritocraciaSectorId || meritocraciaSectorId === sector._id
+
+                                return (
+                                    <article key={sector._id} className="px-5 py-4 sm:px-6 sm:py-5">
+                                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                                            <div className="min-w-0">
+                                                <p className="text-base font-semibold text-(--color-primary-strong)">
+                                                    {sector.name}
+                                                </p>
+                                                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                                    <span className="rounded-full border border-(--color-border) bg-white px-2.5 py-1 font-semibold text-(--color-primary-strong)">
+                                                        {sector.percentage}%
+                                                    </span>
+                                                    <span
+                                                        className={`rounded-full px-2.5 py-1 font-semibold ${
+                                                            sector.active
+                                                                ? 'bg-emerald-100 text-emerald-700'
+                                                                : 'bg-slate-100 text-slate-600'
+                                                        }`}
+                                                    >
+                                                        {sector.active ? 'Ativo' : 'Inativo'}
+                                                    </span>
+                                                    {sector.isMeritocracia ? (
+                                                        <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-700">
+                                                            Meritocracia
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                            </div>
+
+                                            {canWrite ? (
+                                                <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+                                                    <button
+                                                        type="button"
+                                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
+                                                        onClick={() => {
+                                                            setEditingSectorId(sector._id)
+                                                            setEditName(sector.name)
+                                                            setEditPercentage(
+                                                                String(sector.percentage),
+                                                            )
+                                                            setEditIsMeritocracia(
+                                                                sector.isMeritocracia,
+                                                            )
+                                                        }}
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        Editar
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="secondary-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
+                                                        onClick={() => handleToggleActive(sector)}
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        {sector.active ? 'Inativar' : 'Ativar'}
+                                                    </button>
+                                                </div>
+                                            ) : null}
+                                        </div>
+
+                                        {editingSectorId === sector._id ? (
+                                            <div className="mt-4 rounded-xl border border-(--color-border) bg-surface-soft/45 p-3 sm:p-4">
+                                                <div
+                                                    className={`grid gap-2 ${
+                                                        showEditMeritocraciaOption
+                                                            ? 'lg:grid-cols-[minmax(0,1fr)_120px_auto_auto_auto]'
+                                                            : 'lg:grid-cols-[minmax(0,1fr)_120px_auto_auto]'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none"
+                                                        value={editName}
+                                                        onChange={(event) =>
+                                                            setEditName(event.target.value)
+                                                        }
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        max={100}
+                                                        className="h-10 rounded-lg border border-(--color-border) bg-white px-3 text-sm text-(--color-primary-strong) outline-none"
+                                                        value={editPercentage}
+                                                        onChange={(event) =>
+                                                            setEditPercentage(event.target.value)
+                                                        }
+                                                    />
+                                                    {showEditMeritocraciaOption ? (
+                                                        <label className="flex items-center gap-2 rounded-lg border border-(--color-border) bg-white px-3 text-xs font-semibold text-(--color-primary-strong)">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={editIsMeritocracia}
+                                                                onChange={(event) => {
+                                                                    const checked =
+                                                                        event.target.checked
+                                                                    setEditIsMeritocracia(checked)
+                                                                }}
+                                                            />
+                                                            Meritocracia
+                                                        </label>
+                                                    ) : null}
+                                                    <button
+                                                        type="button"
+                                                        className="primary-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
+                                                        onClick={() =>
+                                                            handleSaveEdition(sector._id)
+                                                        }
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        {isSubmitting ? 'Processando...' : 'Salvar'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="cancel-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-70"
+                                                        onClick={() => {
+                                                            setEditingSectorId(null)
+                                                            setEditIsMeritocracia(false)
+                                                            setEditName('')
+                                                            setEditPercentage('')
+                                                        }}
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </article>
+                                )
+                            })}
+                        </div>
+                    )}
+                </section>
             </div>
         </section>
     )

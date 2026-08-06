@@ -13,6 +13,7 @@
     --primary-soft: #4fa3d1;
     --accent: #d4af37;
     --accent-soft: #F2DBA5;
+    --accent-strong: #916307;
     --danger: #b22222;
     --danger-soft: #f08080;
     --border: #d7dee8;
@@ -126,8 +127,8 @@ textarea {
 
 .gold-button {
     background: var(--accent);
-    color: var(--primary);
-    font-size: 22px;
+    color: var(--surface);
+    font-size: 25px;
     font-weight: 700;
     transition:
         background-color 0.2s ease,
@@ -135,8 +136,9 @@ textarea {
 }
 
 .gold-button:hover {
-    background: var(--accent-soft);
-    color: var(--primary-strong);
+    background: var(--primary-soft);
+    color: var(--surface);
+    font-weight: 700;
 }
 
 .gold-button:active {

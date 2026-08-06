@@ -19,6 +19,10 @@ function isPublicPath(pathname: string): boolean {
         return true
     }
 
+    if (pathname.startsWith('/showcase')) {
+        return true
+    }
+
     if (pathname.startsWith('/pdf-templates')) {
         return true
     }
@@ -106,6 +110,6 @@ export default auth((req) => {
 
 export const config = {
     matcher: [
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|pdf)$).*)',
     ],
 }

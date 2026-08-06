@@ -63,6 +63,16 @@ export default function Home() {
                                 Saiba mais sobre cada módulo
                             </a>
                         </div>
+
+                        <p className="mt-4 text-center text-sm text-slate-200 sm:text-base">
+                            Contato:{' '}
+                            <a
+                                href="mailto:contato@commission.com.br"
+                                className="font-semibold text-(--color-accent) underline underline-offset-3"
+                            >
+                                contato@commission.com.br
+                            </a>
+                        </p>
                     </div>
 
                     <div className="flex flex-col justify-center gap-6 bg-(--color-surface) px-5 py-8 sm:px-8 sm:py-10 lg:gap-8 lg:px-12 lg:py-12">

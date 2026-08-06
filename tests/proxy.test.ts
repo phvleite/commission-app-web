@@ -32,6 +32,18 @@ describe('proxy middleware', () => {
         expect(response.headers.get('location')).toBeNull()
     })
 
+    it('allows access to showcase assets as a public route', () => {
+        const response = middleware(
+            buildRequest(
+                'http://localhost/showcase/situations/relatorio-situacoes-1785960660906.pdf',
+                null,
+            ),
+        )
+
+        expect(response.status).toBe(200)
+        expect(response.headers.get('location')).toBeNull()
+    })
+
     it('redirects unauthenticated user to login with callbackUrl on protected route', () => {
         const response = middleware(buildRequest('http://localhost/dashboard/sales', null))
 
@@ -95,7 +107,7 @@ describe('proxy middleware', () => {
 
     it('keeps expected matcher config', () => {
         expect(config.matcher).toEqual([
-            '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+            '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|pdf)$).*)',
         ])
     })
 })
