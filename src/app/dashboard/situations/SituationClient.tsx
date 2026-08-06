@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { withTimeZoneHeader } from '@/lib/api/time-zone-header'
 
 export interface SituationTypeItem {
     _id: string
@@ -12,6 +13,7 @@ export interface SituationItem {
     _id: string
     employeeId: string
     employeeName: string
+    employeeActive?: boolean
     typeId: string
     typeDescription: string
     startDate: string
@@ -31,11 +33,27 @@ export interface SectorItem {
     active: boolean
 }
 
+interface PaginatedSituationsResponse {
+    situations?: SituationItem[]
+    currentPage?: number
+    totalPages?: number
+    totalItems?: number
+    pageSize?: number
+}
+
+const PAGE_SIZE = 50
+
 interface SituationClientProps {
     initialTypes: SituationTypeItem[]
     initialSituations: SituationItem[]
     initialEmployees: EmployeeItem[]
     initialSectors: SectorItem[]
+    initialStartDate?: string
+    initialEndDate?: string
+    initialCurrentPage?: number
+    initialTotalPages?: number
+    initialTotalItems?: number
+    initialPageSize?: number
 }
 
 export function useSituationClient({
@@ -43,37 +61,62 @@ export function useSituationClient({
     initialSituations,
     initialEmployees,
     initialSectors,
+    initialStartDate = '',
+    initialEndDate = '',
+    initialCurrentPage = 1,
+    initialTotalPages = 1,
+    initialTotalItems = initialSituations.length,
+    initialPageSize = PAGE_SIZE,
 }: SituationClientProps) {
     const [types, setTypes] = useState(initialTypes)
     const [situations, setSituations] = useState(initialSituations)
+    const [currentPage, setCurrentPage] = useState(initialCurrentPage)
+    const [totalPages, setTotalPages] = useState(initialTotalPages)
+    const [totalItems, setTotalItems] = useState(initialTotalItems)
+    const [pageSize] = useState(initialPageSize)
     const [employees] = useState(initialEmployees)
     const [sectors] = useState(initialSectors)
 
     const [filterEmployee, setFilterEmployee] = useState('todos')
     const [filterType, setFilterType] = useState('todos')
     const [filterSector, setFilterSector] = useState('todos')
-    const [filterStart, setFilterStart] = useState('')
-    const [filterEnd, setFilterEnd] = useState('')
+    const [filterStart, setFilterStart] = useState(initialStartDate)
+    const [filterEnd, setFilterEnd] = useState(initialEndDate)
     const [filterMonth, setFilterMonth] = useState('')
     const [filterYear, setFilterYear] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isExportingPdf, setIsExportingPdf] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [feedback, setFeedback] = useState<{
+        type: 'info' | 'success' | 'error'
+        message: string
+    } | null>(null)
+
+    const resetToFirstPage = useCallback(() => setCurrentPage(1), [])
 
     function clearFilters() {
+        resetToFirstPage()
         setFilterEmployee('todos')
         setFilterType('todos')
         setFilterSector('todos')
-        setFilterStart('')
-        setFilterEnd('')
+        setFilterStart(initialStartDate)
+        setFilterEnd(initialEndDate)
         setFilterMonth('')
         setFilterYear('')
     }
 
     const loadTypes = useCallback(async () => {
-        const res = await fetch('/api/situation-types')
-        const json = await res.json()
-        setTypes(json.types)
+        try {
+            const res = await fetch('/api/situation-types')
+            const json = await res.json()
+            setTypes(json.types)
+        } catch {
+            setTypes([])
+        }
     }, [])
 
     const loadSituations = useCallback(async () => {
+        setIsLoading(true)
         const params = new URLSearchParams()
 
         if (filterEmployee !== 'todos') params.set('employeeId', filterEmployee)
@@ -87,21 +130,49 @@ export function useSituationClient({
 
         if (filterMonth) params.set('month', filterMonth)
         if (filterYear) params.set('year', filterYear)
+        params.set('page', String(currentPage))
+        params.set('pageSize', String(PAGE_SIZE))
 
-        const res = await fetch(`/api/situations?${params.toString()}`)
-        const json = await res.json()
-
-        setSituations(json.situations)
-    }, [filterEmployee, filterType, filterSector, filterStart, filterEnd, filterMonth, filterYear])
+        try {
+            const res = await fetch(`/api/situations?${params.toString()}`, withTimeZoneHeader())
+            const json = (await res.json()) as PaginatedSituationsResponse
+            setSituations(json.situations ?? [])
+            setCurrentPage(json.currentPage ?? 1)
+            setTotalPages(json.totalPages ?? 1)
+            setTotalItems(json.totalItems ?? 0)
+        } catch {
+            setSituations([])
+            setCurrentPage(1)
+            setTotalPages(1)
+            setTotalItems(0)
+        } finally {
+            setIsLoading(false)
+        }
+    }, [
+        filterEmployee,
+        filterType,
+        filterSector,
+        filterStart,
+        filterEnd,
+        filterMonth,
+        filterYear,
+        currentPage,
+    ])
 
     useEffect(() => {
-        loadTypes()
+        const timeoutId = window.setTimeout(() => {
+            void loadTypes()
+        }, 0)
 
-        loadSituations()
-    }, [loadTypes, loadSituations])
+        return () => window.clearTimeout(timeoutId)
+    }, [loadTypes])
 
     useEffect(() => {
-        loadSituations()
+        const timeoutId = window.setTimeout(() => {
+            void loadSituations()
+        }, 0)
+
+        return () => window.clearTimeout(timeoutId)
     }, [loadSituations])
 
     // ===========================
@@ -114,39 +185,107 @@ export function useSituationClient({
     // CRUD: TIPOS DE SITUAÇÃO
     // ===========================
     async function createType(descricao: string) {
-        const res = await fetch('/api/situation-types', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: descricao }),
-        })
-        if (res.ok) await loadTypes()
+        setIsSubmitting(true)
+        setFeedback({ type: 'info', message: 'Salvando tipo de situação...' })
+        try {
+            const res = await fetch('/api/situation-types', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: descricao }),
+            })
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao cadastrar tipo de situação.')
+            }
+            await loadTypes()
+            setFeedback({ type: 'success', message: 'Tipo de situação cadastrado com sucesso.' })
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message:
+                    error instanceof Error ? error.message : 'Erro ao cadastrar tipo de situação.',
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function editType(id: string, descricao: string) {
-        const res = await fetch(`/api/situation-types/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: descricao }),
-        })
-        if (res.ok) await loadTypes()
+        setIsSubmitting(true)
+        setFeedback({ type: 'info', message: 'Salvando alterações do tipo de situação...' })
+        try {
+            const res = await fetch(`/api/situation-types/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: descricao }),
+            })
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao editar tipo de situação.')
+            }
+            await loadTypes()
+            setFeedback({ type: 'success', message: 'Tipo de situação atualizado com sucesso.' })
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message:
+                    error instanceof Error ? error.message : 'Erro ao editar tipo de situação.',
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function activateType(id: string) {
-        const res = await fetch(`/api/situation-types/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: true }),
-        })
-        if (res.ok) await loadTypes()
+        setIsSubmitting(true)
+        setFeedback({ type: 'info', message: 'Atualizando status do tipo de situação...' })
+        try {
+            const res = await fetch(`/api/situation-types/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: true }),
+            })
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao ativar tipo de situação.')
+            }
+            await loadTypes()
+            setFeedback({ type: 'success', message: 'Tipo de situação ativado com sucesso.' })
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message:
+                    error instanceof Error ? error.message : 'Erro ao ativar tipo de situação.',
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function deactivateType(id: string) {
-        const res = await fetch(`/api/situation-types/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: false }),
-        })
-        if (res.ok) await loadTypes()
+        setIsSubmitting(true)
+        setFeedback({ type: 'info', message: 'Atualizando status do tipo de situação...' })
+        try {
+            const res = await fetch(`/api/situation-types/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: false }),
+            })
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao inativar tipo de situação.')
+            }
+            await loadTypes()
+            setFeedback({ type: 'success', message: 'Tipo de situação inativado com sucesso.' })
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message:
+                    error instanceof Error ? error.message : 'Erro ao inativar tipo de situação.',
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     // ===========================
@@ -158,17 +297,36 @@ export function useSituationClient({
         colaboradorId: string,
         tipoId: string,
     ) {
-        const res = await fetch('/api/situations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                startDate: dataInicial,
-                endDate: dataFinal,
-                employeeId: colaboradorId,
-                typeId: tipoId,
-            }),
-        })
-        if (res.ok) await loadSituations()
+        setIsSubmitting(true)
+        setFeedback({ type: 'info', message: 'Salvando nova situação...' })
+        try {
+            const res = await fetch(
+                '/api/situations',
+                withTimeZoneHeader({
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startDate: dataInicial,
+                        endDate: dataFinal,
+                        employeeId: colaboradorId,
+                        typeId: tipoId,
+                    }),
+                }),
+            )
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao cadastrar situação.')
+            }
+            await loadSituations()
+            setFeedback({ type: 'success', message: 'Situação cadastrada com sucesso.' })
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Erro ao cadastrar situação.',
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function editSituation(
@@ -178,35 +336,166 @@ export function useSituationClient({
         colaboradorId: string,
         tipoId: string,
     ) {
-        const res = await fetch(`/api/situations/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                startDate: dataInicial,
-                endDate: dataFinal,
-                employeeId: colaboradorId,
-                typeId: tipoId,
-            }),
-        })
-        if (res.ok) await loadSituations()
+        setIsSubmitting(true)
+        setFeedback({ type: 'info', message: 'Salvando alterações da situação...' })
+        try {
+            const res = await fetch(
+                `/api/situations/${id}`,
+                withTimeZoneHeader({
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startDate: dataInicial,
+                        endDate: dataFinal,
+                        employeeId: colaboradorId,
+                        typeId: tipoId,
+                    }),
+                }),
+            )
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao editar situação.')
+            }
+            await loadSituations()
+            setFeedback({ type: 'success', message: 'Situação atualizada com sucesso.' })
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Erro ao editar situação.',
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function activateSituation(id: string) {
-        const res = await fetch(`/api/situations/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: true }),
-        })
-        if (res.ok) await loadSituations()
+        setIsSubmitting(true)
+        setFeedback({ type: 'info', message: 'Atualizando status da situação...' })
+        try {
+            const res = await fetch(
+                `/api/situations/${id}`,
+                withTimeZoneHeader({
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active: true }),
+                }),
+            )
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao ativar situação.')
+            }
+            await loadSituations()
+            setFeedback({ type: 'success', message: 'Situação ativada com sucesso.' })
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Erro ao ativar situação.',
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     async function deactivateSituation(id: string) {
-        const res = await fetch(`/api/situations/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: false }),
-        })
-        if (res.ok) await loadSituations()
+        setIsSubmitting(true)
+        setFeedback({ type: 'info', message: 'Atualizando status da situação...' })
+        try {
+            const res = await fetch(
+                `/api/situations/${id}`,
+                withTimeZoneHeader({
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active: false }),
+                }),
+            )
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error ?? 'Erro ao inativar situação.')
+            }
+            await loadSituations()
+            setFeedback({ type: 'success', message: 'Situação inativada com sucesso.' })
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Erro ao inativar situação.',
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    async function exportSituationsPdf() {
+        if (situations.length === 0) {
+            setFeedback({
+                type: 'error',
+                message: 'Nao ha situacoes para exportar no momento.',
+            })
+            return
+        }
+
+        setIsExportingPdf(true)
+
+        try {
+            const employeeLabel =
+                filterEmployee === 'todos'
+                    ? 'Todos'
+                    : (employees.find((employee) => employee._id === filterEmployee)?.name ??
+                      'Todos')
+
+            const typeLabel =
+                filterType === 'todos'
+                    ? 'Todos'
+                    : (types.find((type) => type._id === filterType)?.description ?? 'Todos')
+
+            const sectorLabel =
+                filterSector === 'todos'
+                    ? 'Todos'
+                    : (sectors.find((sector) => sector._id === filterSector)?.name ?? 'Todos')
+
+            const payload = {
+                title: 'Relatorio de Situacoes',
+                generatedAt: new Date().toISOString(),
+                filters: {
+                    employee: employeeLabel,
+                    type: typeLabel,
+                    sector: sectorLabel,
+                    startDate: filterStart || 'Todos',
+                    endDate: filterEnd || 'Todos',
+                    month: filterMonth || 'Todos',
+                    year: filterYear || 'Todos',
+                },
+                situations,
+            }
+
+            const response = await fetch('/api/pdf/situations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+
+            if (!response.ok) {
+                throw new Error('Nao foi possivel gerar o PDF de situacoes.')
+            }
+
+            const blob = await response.blob()
+            const url = URL.createObjectURL(blob)
+
+            window.open(url, '_blank', 'noopener,noreferrer')
+
+            const anchor = document.createElement('a')
+            anchor.href = url
+            anchor.download = `relatorio-situacoes-${Date.now()}.pdf`
+            anchor.click()
+
+            window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+        } catch (error) {
+            setFeedback({
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Erro ao gerar PDF de situacoes.',
+            })
+        } finally {
+            setIsExportingPdf(false)
+        }
     }
 
     return {
@@ -223,13 +512,34 @@ export function useSituationClient({
         filterMonth,
         filterYear,
 
-        setFilterEmployee,
-        setFilterType,
-        setFilterSector,
-        setFilterStart,
-        setFilterEnd,
-        setFilterMonth,
-        setFilterYear,
+        setFilterEmployee: (value: string) => {
+            resetToFirstPage()
+            setFilterEmployee(value)
+        },
+        setFilterType: (value: string) => {
+            resetToFirstPage()
+            setFilterType(value)
+        },
+        setFilterSector: (value: string) => {
+            resetToFirstPage()
+            setFilterSector(value)
+        },
+        setFilterStart: (value: string) => {
+            resetToFirstPage()
+            setFilterStart(value)
+        },
+        setFilterEnd: (value: string) => {
+            resetToFirstPage()
+            setFilterEnd(value)
+        },
+        setFilterMonth: (value: string) => {
+            resetToFirstPage()
+            setFilterMonth(value)
+        },
+        setFilterYear: (value: string) => {
+            resetToFirstPage()
+            setFilterYear(value)
+        },
         clearFilters,
 
         createType,
@@ -241,10 +551,23 @@ export function useSituationClient({
         editSituation,
         activateSituation,
         deactivateSituation,
+        exportSituationsPdf,
 
         showTypes,
         setShowTypes,
         showCreate,
         setShowCreate,
+        isSubmitting,
+        isExportingPdf,
+        isLoading,
+        feedback,
+        currentPage,
+        totalPages,
+        totalItems,
+        pageSize,
+        canGoPrevious: currentPage > 1,
+        canGoNext: currentPage < totalPages,
+        goToPreviousPage: () => setCurrentPage((prev) => Math.max(1, prev - 1)),
+        goToNextPage: () => setCurrentPage((prev) => Math.min(totalPages, prev + 1)),
     }
 }

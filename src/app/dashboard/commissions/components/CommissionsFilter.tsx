@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type Dispatch, type SetStateAction } from 'react'
+import { toast } from 'sonner'
 import type { CommissionsResult, EmployeeOption } from '../CommissionsClient'
 
 interface CommissionsFilterProps {
@@ -9,11 +10,11 @@ interface CommissionsFilterProps {
     employeeId: string
     employees: EmployeeOption[]
     employeesLoading: boolean
-    showSituations: boolean
+    loading: boolean
+    apiError: string | null
     setStartDate: Dispatch<SetStateAction<string>>
     setEndDate: Dispatch<SetStateAction<string>>
     setEmployeeId: Dispatch<SetStateAction<string>>
-    setShowSituations: Dispatch<SetStateAction<boolean>>
     onClear: () => void
     onResult: Dispatch<SetStateAction<CommissionsResult>>
     listByPeriod: (
@@ -80,11 +81,11 @@ export default function CommissionsFilter({
     employeeId,
     employees,
     employeesLoading,
-    showSituations,
+    loading,
+    apiError,
     setStartDate,
     setEndDate,
     setEmployeeId,
-    setShowSituations,
     onClear,
     onResult,
     listByPeriod,
@@ -92,6 +93,13 @@ export default function CommissionsFilter({
     listSituations,
 }: CommissionsFilterProps) {
     const [error, setError] = useState('')
+    const [generatingAction, setGeneratingAction] = useState<'all' | 'employee' | null>(null)
+    const [statusMessage, setStatusMessage] = useState<string | null>(null)
+
+    function hasInvalidPeriod() {
+        if (!startDate || !endDate) return false
+        return startDate > endDate
+    }
 
     async function handleAll() {
         if (!startDate || !endDate) {
@@ -99,24 +107,45 @@ export default function CommissionsFilter({
             return
         }
 
-        setError('')
-        const periodResult = await listByPeriod(startDate, endDate)
-
-        if (!periodResult) {
+        if (hasInvalidPeriod()) {
+            setError('A data inicial nao pode ser maior que a data final.')
             return
         }
 
-        const situations = showSituations ? ((await listSituations(startDate, endDate)) ?? []) : []
+        setError('')
+        setGeneratingAction('all')
+        setStatusMessage('Gerando relatório de Gorjetas...')
+        try {
+            const periodResult = await listByPeriod(startDate, endDate)
 
-        onResult({
-            type: 'all',
-            startDate,
-            endDate,
-            data: periodResult.data,
-            sectorSummary: periodResult.sectorSummary,
-            salesSummary: periodResult.salesSummary,
-            situations,
-        })
+            if (!periodResult) {
+                return
+            }
+
+            if (periodResult.data.length === 0) {
+                const message = 'Não existem registros de Gorjetas para o período informado.'
+                setError(message)
+                onResult(null)
+                toast.warning(message)
+                return
+            }
+
+            const situations = (await listSituations(startDate, endDate)) ?? []
+
+            onResult({
+                type: 'all',
+                startDate,
+                endDate,
+                data: periodResult.data,
+                sectorSummary: periodResult.sectorSummary,
+                salesSummary: periodResult.salesSummary,
+                situations,
+            })
+            toast.success('Relatório de Gorjetas gerado.')
+        } finally {
+            setGeneratingAction(null)
+            setStatusMessage(null)
+        }
     }
 
     async function handleEmployee() {
@@ -125,20 +154,42 @@ export default function CommissionsFilter({
             return
         }
 
-        setError('')
-        const employeeResult = await listByPeriodEmployee(startDate, endDate, employeeId)
-
-        if (!employeeResult) {
+        if (hasInvalidPeriod()) {
+            setError('A data inicial nao pode ser maior que a data final.')
             return
         }
 
-        onResult({
-            type: 'employee',
-            startDate,
-            endDate,
-            data: employeeResult.data,
-            sectorSummary: employeeResult.sectorSummary,
-        })
+        setError('')
+        setGeneratingAction('employee')
+        setStatusMessage('Gerando relatório de Gorjetas por colaborador...')
+        try {
+            const employeeResult = await listByPeriodEmployee(startDate, endDate, employeeId)
+
+            if (!employeeResult) {
+                return
+            }
+
+            if (employeeResult.data.length === 0) {
+                const message =
+                    'Não existem registros de Gorjetas para o colaborador no período informado.'
+                setError(message)
+                onResult(null)
+                toast.warning(message)
+                return
+            }
+
+            onResult({
+                type: 'employee',
+                startDate,
+                endDate,
+                data: employeeResult.data,
+                sectorSummary: employeeResult.sectorSummary,
+            })
+            toast.success('Relatório de Gorjetas por colaborador gerado.')
+        } finally {
+            setGeneratingAction(null)
+            setStatusMessage(null)
+        }
     }
 
     function handleClear() {
@@ -191,34 +242,46 @@ export default function CommissionsFilter({
                 </select>
             </label>
 
-            <label className="flex items-center gap-2 text-sm text-(--color-muted)">
-                <input
-                    type="checkbox"
-                    checked={showSituations}
-                    onChange={(event) => setShowSituations(event.target.checked)}
-                />
-                Mostrar situações no relatório geral
-            </label>
+            {statusMessage ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+                    {statusMessage}
+                </p>
+            ) : null}
 
-            {error && <p className="text-sm text-(--color-danger)">{error}</p>}
+            {apiError ? (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-(--color-danger)">
+                    {apiError}
+                </p>
+            ) : null}
+
+            {error ? (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-(--color-danger)">
+                    {error}
+                </p>
+            ) : null}
 
             <div className="flex flex-wrap gap-2">
                 <button
                     type="button"
-                    className="primary-button rounded-lg px-4 py-2"
+                    className="primary-button rounded-lg px-4 py-2 disabled:opacity-70"
                     onClick={handleAll}
+                    disabled={generatingAction !== null || loading}
                 >
-                    Gerar relatório geral
+                    {generatingAction === 'all' ? 'Processando...' : 'Gerar relatório de Gorjetas'}
                 </button>
 
                 <button
                     type="button"
                     className="primary-button rounded-lg border border-(--color-border) px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleEmployee}
-                    disabled={!employeeId || employeesLoading}
+                    disabled={
+                        !employeeId || employeesLoading || generatingAction !== null || loading
+                    }
                     title={!employeeId ? 'Selecione um colaborador para gerar o relatório.' : ''}
                 >
-                    Gerar por colaborador
+                    {generatingAction === 'employee'
+                        ? 'Processando...'
+                        : 'Gerar Gorjetas por colaborador'}
                 </button>
 
                 <button

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { formatCurrencyFromDatabase } from '@/utils/formatCurrency'
 import type { CommissionsAllResult } from '../CommissionsClient'
 import { useCommissions } from '../hooks/useCommissions'
@@ -21,6 +22,7 @@ function getFilenameTimestamp(date = new Date()): string {
 
 export default function CommissionsReportAll({ result }: CommissionsReportAllProps) {
     const { getPeriodTitle, groupByEmployee, calculateTotal } = useCommissions()
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
     const title = getPeriodTitle(result.startDate, result.endDate)
 
@@ -40,30 +42,40 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
         .reduce((acc, s) => acc + s.sectorValue, 0)
 
     async function handleGeneratePdf() {
-        const res = await fetch('/api/pdf/commissions/all', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(result),
-        })
-
-        if (!res.ok) {
+        if (isGeneratingPdf) {
             return
         }
 
-        const blob = await res.blob()
-        const url = URL.createObjectURL(blob)
+        setIsGeneratingPdf(true)
 
-        window.open(url, '_blank', 'noopener,noreferrer')
+        try {
+            const res = await fetch('/api/pdf/commissions/all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(result),
+            })
 
-        const a = document.createElement('a')
-        a.href = url
-        const timestamp = getFilenameTimestamp()
-        a.download = `relatorio-geral-${timestamp}.pdf`
-        a.click()
+            if (!res.ok) {
+                return
+            }
 
-        window.setTimeout(() => {
-            URL.revokeObjectURL(url)
-        }, 60_000)
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+
+            window.open(url, '_blank', 'noopener,noreferrer')
+
+            const a = document.createElement('a')
+            a.href = url
+            const timestamp = getFilenameTimestamp()
+            a.download = `relatorio-geral-Gorjetas-${timestamp}.pdf`
+            a.click()
+
+            window.setTimeout(() => {
+                URL.revokeObjectURL(url)
+            }, 60_000)
+        } finally {
+            setIsGeneratingPdf(false)
+        }
     }
 
     return (
@@ -81,7 +93,7 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <strong>Comissão total do período:</strong>
+                    <strong>Gorjetas total do período:</strong>
                     <span>R$ {formatCurrencyFromDatabase(totalSalesCommission)}</span>
                 </div>
             </div>
@@ -89,7 +101,7 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
             <hr className="my-6 border-(--color-border)" />
 
             {/* RESUMO POR SETOR */}
-            <h4 className="text-md font-semibold mb-3">Resumo por Setor</h4>
+            <h4 className="gold-bar-title text-md font-semibold mb-3">Resumo por Setor</h4>
 
             <div className="overflow-x-auto">
                 <table className="min-w-150 w-full text-sm">
@@ -101,10 +113,10 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
                     </thead>
 
                     <tbody>
-                        {result.sectorSummary.map((s) => (
+                        {result.sectorSummary.map((s, index) => (
                             <tr
                                 key={s.sectorName}
-                                className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
+                                className={`${index % 2 === 0 ? 'bg-[#f5f9ff]' : 'bg-white'} transition-colors hover:bg-surface-soft`}
                             >
                                 <td className="py-3 px-2">{s.sectorName}</td>
                                 <td className="py-3 px-2 text-right">
@@ -114,7 +126,7 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
                         ))}
 
                         {/* TOTAL DOS SETORES */}
-                        <tr className="font-semibold">
+                        <tr className="bg-[#d2e2f6] font-semibold text-(--color-primary-strong)">
                             <td className="py-3 px-2">Total dos Setores</td>
                             <td className="py-3 px-2 text-right">
                                 R$ {formatCurrencyFromDatabase(totalSectors)}
@@ -122,7 +134,7 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
                         </tr>
 
                         {/* TOTAL SEM MERITOCRACIA */}
-                        <tr className="font-semibold">
+                        <tr className="bg-[#d2e2f6] font-semibold text-(--color-primary-strong)">
                             <td className="py-3 px-2">Total dos Setores (sem meritocracia)</td>
                             <td className="py-3 px-2 text-right">
                                 R$ {formatCurrencyFromDatabase(totalSectorsWithoutMerit)}
@@ -134,8 +146,8 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
 
             <hr className="my-6 border-(--color-border)" />
 
-            {/* COMISSÕES POR COLABORADOR */}
-            <h4 className="text-md font-semibold mb-3">Comissões por Colaborador</h4>
+            {/* Gorjetas POR COLABORADOR */}
+            <h4 className="gold-bar-title text-md font-semibold mb-3">Gorjetas por Colaborador</h4>
 
             <div className="overflow-x-auto">
                 <table className="min-w-150 w-full text-sm">
@@ -148,10 +160,10 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
                     </thead>
 
                     <tbody>
-                        {groupedEmployees.map((emp) => (
+                        {groupedEmployees.map((emp, index) => (
                             <tr
                                 key={`${emp.employeeName}-${emp.sectorName}`}
-                                className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
+                                className={`${index % 2 === 0 ? 'bg-[#f5f9ff]' : 'bg-white'} transition-colors hover:bg-surface-soft`}
                             >
                                 <td className="py-3 px-2">{emp.employeeName}</td>
                                 <td className="py-3 px-2">{emp.sectorName}</td>
@@ -171,8 +183,12 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
 
             {/* BOTÃO PDF */}
             <div className="mt-6">
-                <button className="primary-button px-5 py-2 rounded-xl" onClick={handleGeneratePdf}>
-                    Gerar PDF
+                <button
+                    className="primary-button px-5 py-2 rounded-xl disabled:opacity-70"
+                    onClick={handleGeneratePdf}
+                    disabled={isGeneratingPdf}
+                >
+                    {isGeneratingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
                 </button>
             </div>
         </div>

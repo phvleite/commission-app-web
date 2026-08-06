@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -16,7 +17,7 @@ const MENU_ITEMS = [
     { href: '/dashboard/employees', label: 'Colaboradores', requiresSectorsOk: true },
     { href: '/dashboard/situations', label: 'Situações', requiresSectorsOk: true },
     { href: '/dashboard/sales', label: 'Vendas', requiresSectorsOk: true },
-    { href: '/dashboard/commissions', label: 'Comissões', requiresSectorsOk: true },
+    { href: '/dashboard/commissions', label: 'Gorjetas', requiresSectorsOk: true },
     { href: '/dashboard/company-users', label: 'Empresa/Usuários' },
 ]
 
@@ -77,7 +78,20 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
 
             <aside className="sidebar hidden lg:block">
                 <div className="flex h-full flex-col">
-                    <h2 className="sidebar-title">Commission App</h2>
+                    <Link
+                        href="/dashboard"
+                        aria-label="Ir para a página inicial"
+                        className="mb-6 inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent)"
+                    >
+                        <Image
+                            src="/logo-commission-star-name-gold.svg"
+                            alt="Commission App"
+                            width={240}
+                            height={62}
+                            priority
+                            className="h-auto w-60"
+                        />
+                    </Link>
 
                     <nav>
                         <ul>
@@ -93,7 +107,18 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
                         </ul>
                     </nav>
 
-                    <div className="mt-auto rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-xs text-slate-200">
+                    <div className="mt-auto flex justify-center">
+                        <Image
+                            src="/logo-commission-star-ball-white.svg"
+                            alt="Logo Commission Star"
+                            width={200}
+                            height={200}
+                            className="opacity-90"
+                            style={{ width: '200px', height: '200px' }}
+                        />
+                    </div>
+
+                    <div className="mt-4 rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-xs text-slate-200">
                         <p className="font-semibold text-white">{userName ?? 'Usuario'}</p>
                         <p className="mt-1 uppercase">Perfil: {role ?? '-'}</p>
                     </div>
@@ -108,8 +133,22 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
                         className="absolute inset-0 bg-black/30"
                         onClick={() => setOpen(false)}
                     />
-                    <div className="sidebar relative h-full w-60 border-r border-white/20">
-                        <h2 className="sidebar-title">Commission App</h2>
+                    <div className="sidebar relative h-full w-72 border-r border-white/20">
+                        <Link
+                            href="/dashboard"
+                            aria-label="Ir para a página inicial"
+                            className="mb-6 inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent)"
+                            onClick={() => setOpen(false)}
+                        >
+                            <Image
+                                src="/logo-commission-star-name-white.svg"
+                                alt="Commission App"
+                                width={210}
+                                height={55}
+                                priority
+                                className="h-auto w-52"
+                            />
+                        </Link>
 
                         <nav>
                             <ul>
@@ -126,9 +165,25 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
                             </ul>
                         </nav>
 
+                        <div className="mt-auto mb-4 flex justify-center">
+                            <Image
+                                src="/logo-commission-star-ball-white.svg"
+                                alt="Logo Commission Star"
+                                width={200}
+                                height={200}
+                                className="opacity-90"
+                                style={{ width: '62vw', maxWidth: '200px', height: 'auto' }}
+                            />
+                        </div>
+
+                        <div className="mb-4 rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-xs text-slate-200">
+                            <p className="font-semibold text-white">{userName ?? 'Usuario'}</p>
+                            <p className="mt-1 uppercase">Perfil: {role ?? '-'}</p>
+                        </div>
+
                         <button
                             type="button"
-                            className="mt-6 rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold text-white"
+                            className="rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold text-white"
                             onClick={() => setOpen(false)}
                         >
                             Fechar

@@ -56,8 +56,23 @@ function normalizeDateForReport(value: string): string {
     return formatDateFromDatabase(baseDate)
 }
 
-function getDateSortKey(value: string): string {
-    return value.includes('T') ? value.split('T')[0] : value
+function toDateSortKey(value: string): number {
+    if (!value) return Number.POSITIVE_INFINITY
+
+    const base = value.includes('T') ? value.split('T')[0] : value
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(base)) {
+        const [year, month, day] = base.split('-').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(base)) {
+        const [day, month, year] = base.split('/').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
 }
 
 function renderReportEmployeeHtml(params: {
@@ -68,8 +83,8 @@ function renderReportEmployeeHtml(params: {
 }): string {
     const sectorRows = params.sectorSummary
         .map(
-            (sector) => `
-            <tr>
+            (sector, index) => `
+            <tr class="report-row-${index % 2 === 0 ? 'even' : 'odd'}">
                 <td>${escapeHtml(sector.sectorName)}</td>
                 <td class="right">R$ ${formatCurrencyFromDatabase(sector.sectorValue)}</td>
                 <td class="right">R$ ${formatCurrencyFromDatabase(sector.employeeValue)}</td>
@@ -78,10 +93,8 @@ function renderReportEmployeeHtml(params: {
         .join('')
 
     const sortedData = [...params.data].sort((a, b) => {
-        const dateA = getDateSortKey(a.date)
-        const dateB = getDateSortKey(b.date)
-
-        if (dateA !== dateB) return dateA.localeCompare(dateB, 'pt-BR')
+        const dateCompare = toDateSortKey(a.date) - toDateSortKey(b.date)
+        if (dateCompare !== 0) return dateCompare
 
         const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
         if (sectorCompare !== 0) return sectorCompare
@@ -91,8 +104,8 @@ function renderReportEmployeeHtml(params: {
 
     const detailRows = sortedData
         .map(
-            (row) => `
-            <tr>
+            (row, index) => `
+            <tr class="report-row-${index % 2 === 0 ? 'even' : 'odd'}">
                 <td class="center">${escapeHtml(normalizeDateForReport(row.date))}</td>
                 <td class="center">${escapeHtml(row.situation)}</td>
                 <td class="center">${row.totalCount}</td>
@@ -108,7 +121,7 @@ function renderReportEmployeeHtml(params: {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Relatorio de Comissoes - Colaborador</title>
+    <title>Relatorio de Gorjetas - Colaborador</title>
     <style>
         @page {
             size: A4;
@@ -159,6 +172,8 @@ function renderReportEmployeeHtml(params: {
         }
         .right { text-align: right; }
         .center { text-align: center; }
+        .report-row-even td { background: #f5f9ff; }
+        .report-row-odd td { background: #ffffff; }
     </style>
 </head>
 <body>
@@ -180,7 +195,7 @@ function renderReportEmployeeHtml(params: {
         </tbody>
     </table>
 
-    <h2>Detalhamento das Comissoes</h2>
+    <h2>Detalhamento das Gorjetas</h2>
     <table>
         <thead>
             <tr>
@@ -188,8 +203,8 @@ function renderReportEmployeeHtml(params: {
                 <th class="center">Situacao</th>
                 <th class="center">Qtde Colab.</th>
                 <th class="center">Qtde Aptos</th>
-                <th class="right">Comissao Setor</th>
-                <th class="right">Comissao Colaborador</th>
+                <th class="right">Gorjetas Setor</th>
+                <th class="right">Gorjetas Colaborador</th>
             </tr>
         </thead>
         <tbody>

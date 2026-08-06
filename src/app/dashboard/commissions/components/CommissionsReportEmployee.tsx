@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { formatCurrencyFromDatabase } from '@/utils/formatCurrency'
 import { formatDateFromDatabase } from '@/utils/formatDate'
 import type { CommissionsEmployeeResult } from '../CommissionsClient'
@@ -7,6 +8,25 @@ import { useCommissions } from '../hooks/useCommissions'
 
 interface CommissionsReportEmployeeProps {
     result: CommissionsEmployeeResult
+}
+
+function toDateSortKey(value: string): number {
+    if (!value) return Number.POSITIVE_INFINITY
+
+    const base = value.includes('T') ? value.split('T')[0] : value
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(base)) {
+        const [year, month, day] = base.split('-').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(base)) {
+        const [day, month, year] = base.split('/').map(Number)
+        return new Date(year, month - 1, day).getTime()
+    }
+
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
 }
 
 function getFilenameTimestamp(date = new Date()): string {
@@ -22,6 +42,7 @@ function getFilenameTimestamp(date = new Date()): string {
 
 export default function CommissionsReportEmployee({ result }: CommissionsReportEmployeeProps) {
     const { getEmployeePeriodTitle } = useCommissions()
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
     const employeeName =
         result.data.length > 0 ? result.data[0].employeeName.toUpperCase() : 'COLABORADOR'
@@ -31,10 +52,8 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
     const totalGeneral = result.data.reduce((acc, row) => acc + row.employeeValue, 0)
 
     const sortedData = [...result.data].sort((a, b) => {
-        const dateA = a.date.includes('T') ? a.date.split('T')[0] : a.date
-        const dateB = b.date.includes('T') ? b.date.split('T')[0] : b.date
-
-        if (dateA !== dateB) return dateA.localeCompare(dateB, 'pt-BR')
+        const dateCompare = toDateSortKey(a.date) - toDateSortKey(b.date)
+        if (dateCompare !== 0) return dateCompare
 
         const sectorCompare = a.sectorName.localeCompare(b.sectorName, 'pt-BR')
         if (sectorCompare !== 0) return sectorCompare
@@ -43,30 +62,40 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
     })
 
     async function handleGeneratePdf() {
-        const res = await fetch('/api/pdf/commissions/employee', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(result),
-        })
-
-        if (!res.ok) {
+        if (isGeneratingPdf) {
             return
         }
 
-        const blob = await res.blob()
-        const url = URL.createObjectURL(blob)
+        setIsGeneratingPdf(true)
 
-        window.open(url, '_blank', 'noopener,noreferrer')
+        try {
+            const res = await fetch('/api/pdf/commissions/employee', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(result),
+            })
 
-        const a = document.createElement('a')
-        a.href = url
-        const timestamp = getFilenameTimestamp()
-        a.download = `relatorio-${employeeName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.pdf`
-        a.click()
+            if (!res.ok) {
+                return
+            }
 
-        window.setTimeout(() => {
-            URL.revokeObjectURL(url)
-        }, 60_000)
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+
+            window.open(url, '_blank', 'noopener,noreferrer')
+
+            const a = document.createElement('a')
+            a.href = url
+            const timestamp = getFilenameTimestamp()
+            a.download = `relatorio-Gorjetas-${employeeName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.pdf`
+            a.click()
+
+            window.setTimeout(() => {
+                URL.revokeObjectURL(url)
+            }, 60_000)
+        } finally {
+            setIsGeneratingPdf(false)
+        }
     }
 
     return (
@@ -90,10 +119,10 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
                     </thead>
 
                     <tbody>
-                        {result.sectorSummary.map((s) => (
+                        {result.sectorSummary.map((s, index) => (
                             <tr
                                 key={s.sectorName}
-                                className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
+                                className={`${index % 2 === 0 ? 'bg-[#f5f9ff]' : 'bg-white'} transition-colors hover:bg-surface-soft`}
                             >
                                 <td className="py-3 px-2">{s.sectorName}</td>
                                 <td className="py-3 px-2 text-right">
@@ -109,7 +138,7 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
             </div>
 
             {/* DETALHAMENTO */}
-            <h4 className="text-md font-semibold mt-10 mb-3">Detalhamento das Comissões</h4>
+            <h4 className="text-md font-semibold mt-10 mb-3">Detalhamento das Gorjetas</h4>
 
             <div className="overflow-x-auto">
                 <table className="min-w-225 w-full text-sm">
@@ -119,16 +148,16 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
                             <th className="py-3 px-2 text-center">Situação</th>
                             <th className="py-3 px-2 text-center">Qtde Total</th>
                             <th className="py-3 px-2 text-center">Qtde Aptos</th>
-                            <th className="py-3 px-2 text-right">Comissão Setor</th>
-                            <th className="py-3 px-2 text-right">Comissão Colaborador</th>
+                            <th className="py-3 px-2 text-right">Gorjetas Setor</th>
+                            <th className="py-3 px-2 text-right">Gorjetas Colaborador</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        {sortedData.map((d) => (
+                        {sortedData.map((d, index) => (
                             <tr
                                 key={`${String(d.date)}-${d.sectorName}`}
-                                className="border-b border-(--color-border) transition-colors hover:bg-surface-soft"
+                                className={`${index % 2 === 0 ? 'bg-[#f5f9ff]' : 'bg-white'} transition-colors hover:bg-surface-soft`}
                             >
                                 <td className="py-3 px-2 text-center">
                                     {formatDateFromDatabase(d.date)}
@@ -160,8 +189,12 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
 
             {/* BOTÃO PDF */}
             <div className="mt-6">
-                <button className="primary-button px-5 py-2 rounded-xl" onClick={handleGeneratePdf}>
-                    Gerar PDF
+                <button
+                    className="primary-button px-5 py-2 rounded-xl disabled:opacity-70"
+                    onClick={handleGeneratePdf}
+                    disabled={isGeneratingPdf}
+                >
+                    {isGeneratingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
                 </button>
             </div>
         </div>

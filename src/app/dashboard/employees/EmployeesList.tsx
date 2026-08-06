@@ -19,6 +19,7 @@ interface Props {
     editDismissalDate: string
 
     canWrite: boolean
+    isSubmitting?: boolean
 
     startEdit: (employee: EmployeeItem) => void
     cancelEdit: () => void
@@ -55,6 +56,7 @@ export function EmployeesList({
     setEditSectorId,
     setEditAdmissionDate,
     setEditDismissalDate,
+    isSubmitting = false,
 }: Props) {
     function formatDateBr(value: string | null): string {
         if (!value) return ''
@@ -112,6 +114,14 @@ export function EmployeesList({
     // ===========================
     // RENDERIZAÇÃO
     // ===========================
+    if (filteredEmployees.length === 0) {
+        return (
+            <div className="mt-6 rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                Nenhum colaborador encontrado para os filtros aplicados.
+            </div>
+        )
+    }
+
     return (
         <div className="mt-6 space-y-2">
             {filteredEmployees.map((employee) => {
@@ -152,8 +162,9 @@ export function EmployeesList({
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
-                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold"
+                                            className="primary-button rounded-lg px-3 py-1 text-xs font-semibold disabled:opacity-70"
                                             onClick={() => startEdit(employee)}
+                                            disabled={isSubmitting}
                                         >
                                             Editar
                                         </button>
@@ -167,10 +178,8 @@ export function EmployeesList({
                         ============================ */}
                         {isEditing ? (
                             <div className="mt-3 space-y-3">
-
                                 {/* GRID RESPONSIVO COM LABELS */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-
                                     {/* Nome */}
                                     <div className="flex flex-col">
                                         <label className="text-sm font-semibold text-(--color-muted)">
@@ -232,16 +241,18 @@ export function EmployeesList({
                                 <div className="flex flex-col sm:flex-row justify-end gap-2">
                                     <button
                                         type="button"
-                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                        className="primary-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={() => handleSaveEdition(employee._id)}
+                                        disabled={isSubmitting}
                                     >
-                                        Salvar
+                                        {isSubmitting ? 'Processando...' : 'Salvar'}
                                     </button>
 
                                     <button
                                         type="button"
-                                        className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold"
+                                        className="cancel-button w-full sm:w-auto rounded-lg px-4 py-2 text-xs font-semibold disabled:opacity-70"
                                         onClick={cancelEdit}
+                                        disabled={isSubmitting}
                                     >
                                         Cancelar
                                     </button>

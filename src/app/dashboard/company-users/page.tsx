@@ -20,12 +20,29 @@ export default async function CompanyUsersPage() {
         .select('-passwordHash')
         .lean()
 
+    const responsibleUser = tenant?.responsibleUserId
+        ? users.find((user) => user._id.toString() === tenant.responsibleUserId?.toString())
+        : null
+
     const initialCompany = tenant
         ? {
               _id: tenant._id.toString(),
               name: tenant.name,
               legalName: tenant.legalName,
               slug: tenant.slug,
+              cnpj: tenant.cnpj,
+              phone: tenant.phone,
+              email: tenant.email,
+              maxUsers: tenant.maxUsers ?? 3,
+              responsible: responsibleUser
+                  ? {
+                        _id: responsibleUser._id.toString(),
+                        name: responsibleUser.name,
+                        email: responsibleUser.email,
+                        cpf: responsibleUser.cpf,
+                        phone: responsibleUser.phone,
+                    }
+                  : null,
               address: tenant.address
                   ? {
                         street: tenant.address.street,
@@ -43,6 +60,8 @@ export default async function CompanyUsersPage() {
         _id: user._id.toString(),
         name: user.name,
         email: user.email,
+        cpf: user.cpf,
+        phone: user.phone,
         role: user.role,
         active: user.active,
     }))

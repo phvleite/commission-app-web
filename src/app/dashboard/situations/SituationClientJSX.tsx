@@ -19,17 +19,35 @@ export default function SituationClientJSX({
     initialSituations,
     initialEmployees,
     initialSectors,
+    initialStartDate,
+    initialEndDate,
+    initialCurrentPage,
+    initialTotalPages,
+    initialTotalItems,
+    initialPageSize,
 }: {
     initialTypes: SituationTypeItem[]
     initialSituations: SituationItem[]
     initialEmployees: EmployeeItem[]
     initialSectors: SectorItem[]
+    initialStartDate?: string
+    initialEndDate?: string
+    initialCurrentPage?: number
+    initialTotalPages?: number
+    initialTotalItems?: number
+    initialPageSize?: number
 }) {
     const client = useSituationClient({
         initialTypes,
         initialSituations,
         initialEmployees,
         initialSectors,
+        initialStartDate,
+        initialEndDate,
+        initialCurrentPage,
+        initialTotalPages,
+        initialTotalItems,
+        initialPageSize,
     })
 
     const {
@@ -64,12 +82,30 @@ export default function SituationClientJSX({
         editSituation,
         activateSituation,
         deactivateSituation,
+        exportSituationsPdf,
 
         showTypes,
         setShowTypes,
         showCreate,
         setShowCreate,
+        isSubmitting,
+        isExportingPdf,
+        isLoading,
+        feedback,
+        currentPage,
+        totalPages,
+        totalItems,
+        pageSize,
+        canGoPrevious,
+        canGoNext,
+        goToPreviousPage,
+        goToNextPage,
     } = client
+
+    const formatPageNumber = (value: number) => String(value).padStart(2, '0')
+    const pageIndicator = `${formatPageNumber(currentPage)}/${formatPageNumber(totalPages)}`
+    const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
+    const endItem = Math.min(currentPage * pageSize, totalItems)
 
     return (
         <section className="panel mx-auto w-full max-w-5xl p-4 sm:p-8 space-y-8">
@@ -83,18 +119,34 @@ export default function SituationClientJSX({
                 edite conforme necessário.
             </p>
 
+            {feedback ? (
+                <p
+                    className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
+                        feedback.type === 'success'
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : feedback.type === 'error'
+                              ? 'border-red-200 bg-red-50 text-(--color-danger)'
+                              : 'border-amber-200 bg-amber-50 text-amber-900'
+                    }`}
+                >
+                    {feedback.message}
+                </p>
+            ) : null}
+
             {/* Botões principais */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <button
-                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold"
+                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-70"
                     onClick={() => setShowTypes(!showTypes)}
+                    disabled={isSubmitting}
                 >
                     Tipos de Situação
                 </button>
 
                 <button
-                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold"
+                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-70"
                     onClick={() => setShowCreate(!showCreate)}
+                    disabled={isSubmitting}
                 >
                     Cadastro de Situação
                 </button>
@@ -113,7 +165,7 @@ export default function SituationClientJSX({
                                 Novo Tipo de Situação
                             </h3>
 
-                            <SituationTypeForm onSubmit={createType} />
+                            <SituationTypeForm onSubmit={createType} isSubmitting={isSubmitting} />
                         </div>
 
                         <div className="rounded-xl border border-(--color-border) bg-white p-4 space-y-4">
@@ -126,6 +178,7 @@ export default function SituationClientJSX({
                                 onEditar={editType}
                                 onAtivar={activateType}
                                 onInativar={deactivateType}
+                                isSubmitting={isSubmitting}
                             />
                         </div>
                     </div>
@@ -151,6 +204,7 @@ export default function SituationClientJSX({
                             colaboradores={employees}
                             tipos={types.filter((t) => t.active)}
                             onSubmit={createSituation}
+                            isSubmitting={isSubmitting}
                         />
                     )}
                 </section>
@@ -178,15 +232,71 @@ export default function SituationClientJSX({
                 limparFiltros={clearFilters}
             />
 
+            <div className="flex justify-end">
+                <button
+                    type="button"
+                    className="primary-button w-full sm:w-auto rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-70"
+                    onClick={exportSituationsPdf}
+                    disabled={isExportingPdf || isLoading || situations.length === 0}
+                >
+                    {isExportingPdf ? 'Gerando PDF...' : 'Gerar PDF das situacoes exibidas'}
+                </button>
+            </div>
+
+            {totalItems > 0 ? (
+                <div className="rounded-2xl border border-(--color-border) bg-white px-4 py-3 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs font-medium text-(--color-primary-weak)">
+                            Exibindo {startItem}-{endItem} de {totalItems} situações
+                        </p>
+
+                        <div className="flex items-center justify-between gap-3 sm:justify-end">
+                            <button
+                                type="button"
+                                className="h-9 min-w-9 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-(--color-primary-strong) hover:text-white disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-(--color-muted) disabled:hover:bg-surface-soft"
+                                onClick={goToPreviousPage}
+                                disabled={!canGoPrevious}
+                            >
+                                {'<'}
+                            </button>
+
+                            <p className="min-w-18 rounded-lg border border-(--color-border) bg-surface-soft px-3 py-1.5 text-center text-sm font-semibold tracking-widest text-(--color-primary-strong)">
+                                {pageIndicator}
+                            </p>
+
+                            <button
+                                type="button"
+                                className="h-9 min-w-9 rounded-lg border border-(--color-border) bg-surface-soft px-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-(--color-primary-strong) hover:text-white disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-(--color-muted) disabled:hover:bg-surface-soft"
+                                onClick={goToNextPage}
+                                disabled={!canGoNext}
+                            >
+                                {'>'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             {/* LISTA */}
-            <SituationList
-                situacoes={situations}
-                colaboradores={employees}
-                tipos={types}
-                onEditar={editSituation}
-                onAtivar={activateSituation}
-                onInativar={deactivateSituation}
-            />
+            {isLoading ? (
+                <div className="rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                    Carregando situações...
+                </div>
+            ) : situations.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-(--color-border) bg-surface-soft p-6 text-center text-sm text-(--color-primary-weak)">
+                    Nenhuma situação encontrada para os filtros aplicados.
+                </div>
+            ) : (
+                <SituationList
+                    situacoes={situations}
+                    colaboradores={employees}
+                    tipos={types}
+                    onEditar={editSituation}
+                    onAtivar={activateSituation}
+                    onInativar={deactivateSituation}
+                    isSubmitting={isSubmitting}
+                />
+            )}
         </section>
     )
 }

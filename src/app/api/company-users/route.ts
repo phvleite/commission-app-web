@@ -2,8 +2,14 @@ import { connectDB } from '@/lib/db'
 import { getRouteSessionUser } from '@/lib/api/route-auth'
 import { hashPassword } from '@/lib/password'
 import { User, type UserRole } from '@/models/User'
+import { isValidCpf, normalizeCpf } from '@/lib/validators/cpf'
 
 const ALLOWED_ROLES: UserRole[] = ['admin', 'manager', 'seller']
+
+function toExactCaseInsensitiveEmailRegex(value: string): RegExp {
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^${escaped}$`, 'i')
+}
 
 function canManageUsers(role: UserRole): boolean {
     return role === 'admin'
@@ -40,13 +46,19 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
         name?: string
         email?: string
+        cpf?: string
+        phone?: string
         password?: string
+        passwordConfirmation?: string
         role?: UserRole
     }
 
     const name = body.name?.trim()
     const email = body.email?.trim().toLowerCase()
+    const cpf = body.cpf?.trim() ? normalizeCpf(body.cpf) : undefined
+    const phone = body.phone?.trim() || undefined
     const password = body.password
+    const passwordConfirmation = body.passwordConfirmation
     const role = body.role
 
     if (!name || !email || !password || !role) {
@@ -67,12 +79,33 @@ export async function POST(request: Request) {
         )
     }
 
+    if (!passwordConfirmation) {
+        return Response.json({ error: 'Confirme a senha informada.' }, { status: 400 })
+    }
+
+    if (password !== passwordConfirmation) {
+        return Response.json({ error: 'A confirmacao de senha nao confere.' }, { status: 400 })
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
         return Response.json({ error: 'Informe um email valido.' }, { status: 400 })
     }
 
+    if (cpf && !isValidCpf(cpf)) {
+        return Response.json({ error: 'Informe um CPF valido.' }, { status: 400 })
+    }
+
     await connectDB()
+
+    const existingUserEmail = await User.findOne({
+        email: toExactCaseInsensitiveEmailRegex(email),
+    })
+        .select('_id')
+        .lean()
+    if (existingUserEmail) {
+        return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
+    }
 
     try {
         const passwordHash = await hashPassword(password)
@@ -81,6 +114,8 @@ export async function POST(request: Request) {
             tenantId: user.tenantId,
             name,
             email,
+            cpf,
+            phone,
             passwordHash,
             role,
             active: true,
@@ -95,14 +130,11 @@ export async function POST(request: Request) {
             'code' in error &&
             (error as { code?: number }).code === 11000
         ) {
-            return Response.json(
-                { error: 'Ja existe usuario com este email neste tenant.' },
-                { status: 409 },
-            )
+            return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
         }
 
         const message = error instanceof Error ? error.message : ''
-        if (message.includes('Limite de 2 usuarios por tenant')) {
+        if (message.includes('Limite de ') && message.includes('usuarios por tenant')) {
             return Response.json({ error: message }, { status: 400 })
         }
 

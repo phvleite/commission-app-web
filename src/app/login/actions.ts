@@ -8,6 +8,7 @@ export interface LoginFormState {
 }
 
 const INITIAL_STATE: LoginFormState = {}
+const PLATFORM_ADMIN_EMAIL_DOMAIN = '@commission.com.br'
 
 export async function authenticate(
     _prevState: LoginFormState = INITIAL_STATE,
@@ -17,6 +18,9 @@ export async function authenticate(
 
     const email = formData.get('email')?.toString().trim().toLowerCase()
     const password = formData.get('password')?.toString()
+    const redirectTo = email?.endsWith(PLATFORM_ADMIN_EMAIL_DOMAIN)
+        ? '/platform-admin'
+        : '/dashboard'
 
     if (!email || !password) {
         return { error: 'Preencha email e senha.' }
@@ -26,7 +30,7 @@ export async function authenticate(
         await signIn('credentials', {
             email,
             password,
-            redirectTo: '/dashboard',
+            redirectTo,
         })
 
         return INITIAL_STATE
