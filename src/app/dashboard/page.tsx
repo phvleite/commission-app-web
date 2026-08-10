@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { auth, signOut } from '@/auth'
+import NoticiasCarousel from './NoticiasCarrousel'
 
 export default async function DashboardPage() {
     const session = await auth()
@@ -9,39 +10,47 @@ export default async function DashboardPage() {
     }
 
     return (
-        <section className="panel mx-auto w-full max-w-3xl p-6 sm:p-8">
-            <p className="text-xs tracking-widest text-(--color-primary) uppercase">
-                Area autenticada
-            </p>
-            <h1 className="gold-bar-title mt-3 text-3xl font-semibold text-(--color-primary-strong)">
-                Bem-vindo, {session.user.name}
-            </h1>
-            <p className="mt-3 text-sm leading-7 text-(--color-muted)">
-                Empresa: {session.user.tenantName} • Perfil: {session.user.role}
-            </p>
+        <div className="mx-auto w-full max-w-6xl p-4 sm:p-6 lg:p-8">
+            <section className="panel overflow-hidden">
+                <header className="flex flex-col gap-4 border-b border-(--color-border) bg-surface-soft/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div>
+                        <p className="text-xs font-semibold tracking-widest text-(--color-primary) uppercase">
+                            Visão geral
+                        </p>
+                        <h1 className="gold-bar-title mt-2 text-2xl font-semibold text-(--color-primary-strong)">
+                            Bem-vindo, {session.user.name}
+                        </h1>
+                        <p className="mt-2 text-sm text-(--color-muted)">
+                            {session.user.tenantName} • {session.user.role}
+                        </p>
+                    </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                    className="primary-button rounded-xl border border-(--color-border) bg-white px-5 py-3 text-sm font-semibold text-(--color-primary-strong) transition hover:bg-slate-100"
-                    href="/dashboard/company-users"
-                >
-                    Empresa e usuarios
-                </a>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                        <a
+                            className="primary-button rounded-xl px-4 py-2.5 text-sm font-semibold"
+                            href="/dashboard/company-users"
+                        >
+                            Empresa e usuários
+                        </a>
 
-                <form
-                    action={async () => {
-                        'use server'
-                        await signOut({ redirectTo: '/login' })
-                    }}
-                >
-                    <button
-                        className="cancel-button rounded-xl px-5 py-3 text-sm font-semibold"
-                        type="submit"
-                    >
-                        Sair
-                    </button>
-                </form>
-            </div>
-        </section>
+                        <form
+                            action={async () => {
+                                'use server'
+                                await signOut({ redirectTo: '/login' })
+                            }}
+                        >
+                            <button
+                                className="cancel-button rounded-xl px-4 py-2.5 text-sm font-semibold"
+                                type="submit"
+                            >
+                                Sair
+                            </button>
+                        </form>
+                    </div>
+                </header>
+
+                <NoticiasCarousel />
+            </section>
+        </div>
     )
 }
