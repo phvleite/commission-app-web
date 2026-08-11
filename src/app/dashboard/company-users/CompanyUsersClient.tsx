@@ -29,6 +29,7 @@ interface CompanyData {
     email?: string
     maxUsers: number
     effectiveMonthlyPriceCents?: number
+    planCode?: string
     responsible?: {
         _id: string
         name: string
@@ -62,7 +63,6 @@ interface CompanyFormState {
     phoneCommercial: string
     phoneMobile: string
     email: string
-    maxUsers: number
     responsible: {
         name: string
         email: string
@@ -176,7 +176,6 @@ function getCompanyFormFromCompany(company: CompanyData | null): CompanyFormStat
         ),
         phoneMobile: formatMobilePhoneInput(company?.phoneMobile ?? ''),
         email: company?.email ?? '',
-        maxUsers: company?.maxUsers ?? getResolvedServicePlan().maxUsers,
         responsible: {
             name: company?.responsible?.name ?? '',
             email: company?.responsible?.email ?? '',
@@ -900,23 +899,6 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                     )}
                                 </div>
                             ) : null}
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            <input
-                                type="number"
-                                min={1}
-                                placeholder="Limite de usuarios"
-                                className="h-11 rounded-xl border border-(--color-border) bg-surface-soft px-3 text-sm text-(--color-primary-strong) outline-none transition focus:border-(--color-primary-soft) focus:ring-2 focus:ring-primary-soft/25"
-                                value={companyForm.maxUsers}
-                                onChange={(event) =>
-                                    setCompanyForm((prev) => ({
-                                        ...prev,
-                                        maxUsers: Number(event.target.value || 0),
-                                    }))
-                                }
-                                disabled={!canEditCompany || !isCompanyEditing}
-                            />
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-2">

@@ -102,7 +102,6 @@ describe('API company route', () => {
                     cnpj: '12.ABC.345/01DE-35',
                     phone: '(11) 97777-6666',
                     email: 'contato@empresa-a.com',
-                    maxUsers: 3,
                     responsible: {
                         name: 'Ana Gestora',
                         email: 'ana@empresa-a.com',
@@ -169,7 +168,6 @@ describe('API company route', () => {
                     name: 'Empresa A',
                     legalName: 'Empresa A LTDA',
                     cnpj: '12.ABC.345/01DE-00',
-                    maxUsers: 3,
                     responsible: {
                         name: 'Ana Gestora',
                         email: 'ana@empresa-a.com',
@@ -211,7 +209,6 @@ describe('API company route', () => {
                     name: 'Empresa B',
                     legalName: 'Empresa B LTDA',
                     cnpj: '12.ABC.345/01DE-35',
-                    maxUsers: 3,
                     responsible: {
                         name: 'Ana Gestora',
                         email: 'ana@empresa-b.com',
@@ -247,7 +244,6 @@ describe('API company route', () => {
                     name: 'Empresa A',
                     legalName: 'Empresa A LTDA',
                     cnpj: '1',
-                    maxUsers: 3,
                     responsible: {
                         name: 'Ana Gestora',
                         email: 'ana@empresa-a.com',
@@ -265,7 +261,7 @@ describe('API company route', () => {
         expect(payload.error).toBe('Informe um CNPJ valido.')
     })
 
-    it('PATCH ignora maxUsers manual e preserva o limite derivado do plano', async () => {
+    it('PATCH preserva o limite de maxUsers derivado do plano mesmo sem o campo no payload', async () => {
         const tenant = await Tenant.create({
             name: 'Empresa A',
             legalName: 'Empresa A LTDA',
@@ -281,7 +277,6 @@ describe('API company route', () => {
                 body: JSON.stringify({
                     name: 'Empresa Atualizada',
                     legalName: 'Empresa Atualizada LTDA',
-                    maxUsers: 0,
                     responsible: {
                         name: 'Ana Gestora',
                         email: 'ana@empresa-a.com',
@@ -315,7 +310,6 @@ describe('API company route', () => {
                 body: JSON.stringify({
                     name: 'Empresa A',
                     legalName: 'Empresa A LTDA',
-                    maxUsers: 3,
                     responsible: {
                         name: 'Ana Gestora',
                         email: 'ana@empresa-a.com',

@@ -25,7 +25,6 @@ interface CompanyUpdateBody {
     phoneMobile?: string
     phone?: string
     email?: string
-    maxUsers?: number
     address?: CompanyAddressInput
     responsible?: {
         name?: string
