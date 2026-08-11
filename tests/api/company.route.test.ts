@@ -1,5 +1,6 @@
 import { Types } from 'mongoose'
 import { connectTestDB, disconnectTestDB, clearTestDB } from '@/lib/test-db'
+import { getEffectiveMonthlyPriceCents, getServicePlan } from '@/lib/service-plans'
 import { Tenant } from '@/models/Tenant'
 import { User } from '@/models/User'
 
@@ -52,9 +53,14 @@ describe('API company route', () => {
         const res = await GET()
         expect(res.status).toBe(200)
 
-        const payload = (await res.json()) as { data: { _id: string; slug: string } }
+        const payload = (await res.json()) as {
+            data: { _id: string; slug: string; effectiveMonthlyPriceCents: number }
+        }
         expect(payload.data._id.toString()).toBe(tenant._id.toString())
         expect(payload.data.slug).toBe('empresa-a')
+        expect(payload.data.effectiveMonthlyPriceCents).toBe(
+            getEffectiveMonthlyPriceCents('plan_20'),
+        )
     })
 
     it('PATCH bloqueia seller para editar empresa', async () => {
@@ -119,6 +125,10 @@ describe('API company route', () => {
 
         expect(res.status).toBe(200)
 
+        const payload = (await res.json()) as {
+            data: { effectiveMonthlyPriceCents: number }
+        }
+
         const updated = await Tenant.findById(tenant._id).lean()
         expect(updated?.name).toBe('Empresa Atualizada')
         expect(updated?.legalName).toBe('Empresa Atualizada LTDA')
@@ -126,8 +136,11 @@ describe('API company route', () => {
         expect(updated?.responsibleUserId).toBeDefined()
         expect(updated?.phone).toBe('(11) 97777-6666')
         expect(updated?.email).toBe('contato@empresa-a.com')
-        expect(updated?.maxUsers).toBe(3)
+        expect(updated?.maxUsers).toBe(getServicePlan('plan_20').maxUsers)
         expect(updated?.address?.city).toBe('Sao Paulo')
+        expect(payload.data.effectiveMonthlyPriceCents).toBe(
+            getEffectiveMonthlyPriceCents(updated?.planCode, updated?.monthlyPriceOverrideCents),
+        )
 
         const responsible = await User.findOne({
             _id: updated?.responsibleUserId,
@@ -252,7 +265,7 @@ describe('API company route', () => {
         expect(payload.error).toBe('Informe um CNPJ valido.')
     })
 
-    it('PATCH rejeita maxUsers menor que 1', async () => {
+    it('PATCH ignora maxUsers manual e preserva o limite derivado do plano', async () => {
         const tenant = await Tenant.create({
             name: 'Empresa A',
             legalName: 'Empresa A LTDA',
@@ -266,8 +279,8 @@ describe('API company route', () => {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name: 'Empresa A',
-                    legalName: 'Empresa A LTDA',
+                    name: 'Empresa Atualizada',
+                    legalName: 'Empresa Atualizada LTDA',
                     maxUsers: 0,
                     responsible: {
                         name: 'Ana Gestora',
@@ -281,9 +294,9 @@ describe('API company route', () => {
             }),
         )
 
-        expect(res.status).toBe(400)
-        const payload = (await res.json()) as { error: string }
-        expect(payload.error).toBe('maxUsers deve ser um numero inteiro maior que zero.')
+        expect(res.status).toBe(200)
+        const updated = await Tenant.findById(tenant._id).lean()
+        expect(updated?.maxUsers).toBe(getServicePlan('plan_20').maxUsers)
     })
 
     it('PATCH exige senha do responsavel no primeiro cadastro', async () => {

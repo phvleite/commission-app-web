@@ -3,6 +3,8 @@ import type { WithTimestamps } from '@/types'
 import {
     DEFAULT_SERVICE_PLAN_CODE,
     getServicePlan,
+    getResolvedServicePlan,
+    isServicePlanCode,
     SERVICE_PLAN_ORDER,
     type ServicePlanCode,
 } from '@/lib/service-plans'
@@ -51,6 +53,7 @@ export interface ITenant extends WithTimestamps {
     discounts: ITenantDiscount[]
     billingStatus: TenantBillingStatus
     nextBillingAt?: Date
+    monthlyPriceOverrideCents?: number
     maxUsers: number
     timeZone?: string
     address?: IAddress
@@ -79,6 +82,14 @@ const tenantDiscountSchema = new Schema<ITenantDiscount>(
     },
     { _id: false },
 )
+
+function applyPlanDerivedValues(target: { planCode?: unknown; maxUsers?: unknown }) {
+    if (typeof target.planCode !== 'string' || !isServicePlanCode(target.planCode)) {
+        return
+    }
+
+    target.maxUsers = getServicePlan(target.planCode).maxUsers
+}
 
 const tenantSchema = new Schema<TenantDocument>(
     {
@@ -110,6 +121,7 @@ const tenantSchema = new Schema<TenantDocument>(
             trim: true,
         },
         nextBillingAt: { type: Date },
+        monthlyPriceOverrideCents: { type: Number, min: 0 },
         maxUsers: {
             type: Number,
             default: getServicePlan(DEFAULT_SERVICE_PLAN_CODE).maxUsers,
@@ -121,6 +133,47 @@ const tenantSchema = new Schema<TenantDocument>(
     },
     { timestamps: true },
 )
+
+tenantSchema.pre('validate', function syncPlanDerivedValuesOnValidate() {
+    applyPlanDerivedValues(this)
+})
+
+tenantSchema.pre('findOneAndUpdate', async function syncPlanDerivedValuesOnUpdate() {
+    const currentUpdate = this.getUpdate()
+
+    if (!currentUpdate || Array.isArray(currentUpdate)) {
+        return
+    }
+
+    const update = currentUpdate as {
+        planCode?: unknown
+        maxUsers?: unknown
+        $set?: { planCode?: unknown; maxUsers?: unknown }
+    }
+
+    const setData = update.$set ?? update
+    const currentTenant = await this.model
+        .findOne(this.getQuery())
+        .select('planCode')
+        .lean<{ planCode?: string }>()
+
+    setData.planCode =
+        typeof setData.planCode === 'string'
+            ? setData.planCode
+            : typeof update.planCode === 'string'
+              ? update.planCode
+              : (currentTenant?.planCode ?? DEFAULT_SERVICE_PLAN_CODE)
+
+    setData.maxUsers = getResolvedServicePlan(
+        typeof setData.planCode === 'string' ? setData.planCode : null,
+    ).maxUsers
+
+    if (update.$set) {
+        update.$set = setData
+    }
+
+    this.setUpdate(update)
+})
 
 tenantSchema.index(
     { cnpj: 1 },

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { getResolvedServicePlan } from '@/lib/service-plans'
 import { isValidCnpj } from '@/lib/validators/cnpj'
 import { isValidCpf } from '@/lib/validators/cpf'
 
@@ -27,6 +28,7 @@ interface CompanyData {
     phone?: string
     email?: string
     maxUsers: number
+    effectiveMonthlyPriceCents?: number
     responsible?: {
         _id: string
         name: string
@@ -174,7 +176,7 @@ function getCompanyFormFromCompany(company: CompanyData | null): CompanyFormStat
         ),
         phoneMobile: formatMobilePhoneInput(company?.phoneMobile ?? ''),
         email: company?.email ?? '',
-        maxUsers: company?.maxUsers ?? 3,
+        maxUsers: company?.maxUsers ?? getResolvedServicePlan().maxUsers,
         responsible: {
             name: company?.responsible?.name ?? '',
             email: company?.responsible?.email ?? '',
@@ -241,7 +243,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
     const canEditCompany = userRole === 'admin' || userRole === 'manager'
 
     const totalUsers = useMemo(() => users.length, [users])
-    const companyUserLimit = company?.maxUsers ?? 3
+    const companyUserLimit = company?.maxUsers ?? getResolvedServicePlan().maxUsers
     const isUserLimitReached = totalUsers >= companyUserLimit
 
     function startCompanyEdit() {

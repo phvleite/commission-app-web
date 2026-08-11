@@ -53,6 +53,28 @@ export function getServicePlan(code: ServicePlanCode): ServicePlanDefinition {
     return SERVICE_PLANS[code]
 }
 
+export function getResolvedServicePlan(code?: string | null): ServicePlanDefinition {
+    if (code && isServicePlanCode(code)) {
+        return getServicePlan(code)
+    }
+
+    return getServicePlan(DEFAULT_SERVICE_PLAN_CODE)
+}
+
+export function getEffectiveMonthlyPriceCents(
+    planCode?: string | null,
+    monthlyPriceOverrideCents?: number | null,
+): number {
+    if (
+        typeof monthlyPriceOverrideCents === 'number' &&
+        Number.isInteger(monthlyPriceOverrideCents)
+    ) {
+        return monthlyPriceOverrideCents
+    }
+
+    return getResolvedServicePlan(planCode).monthlyPriceCents
+}
+
 export function listServicePlans(): ServicePlanDefinition[] {
     return SERVICE_PLAN_ORDER.map((code) => SERVICE_PLANS[code])
 }

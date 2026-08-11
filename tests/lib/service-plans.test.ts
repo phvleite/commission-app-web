@@ -1,6 +1,8 @@
 import {
     ABRASEL_DISCOUNT_PERCENTAGE,
     DEFAULT_SERVICE_PLAN_CODE,
+    getEffectiveMonthlyPriceCents,
+    getResolvedServicePlan,
     getServicePlan,
     isServicePlanCode,
     listServicePlans,
@@ -54,6 +56,17 @@ describe('service plan catalog', () => {
             maxUsers: 5,
             monthlyPriceCents: 22500,
         })
+    })
+
+    it('falls back to the default plan when resolving an unknown code', () => {
+        expect(getResolvedServicePlan('plano_invalido')).toEqual(getServicePlan('plan_20'))
+        expect(getResolvedServicePlan()).toEqual(getServicePlan('plan_20'))
+    })
+
+    it('resolves tenant-specific monthly price override without changing plan rights', () => {
+        expect(getEffectiveMonthlyPriceCents('plan_50')).toBe(22500)
+        expect(getEffectiveMonthlyPriceCents('plan_50', 19990)).toBe(19990)
+        expect(getEffectiveMonthlyPriceCents('plano_invalido', 18990)).toBe(18990)
     })
 
     it('exposes the ABRASEL discount percentage', () => {
