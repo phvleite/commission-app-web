@@ -83,6 +83,39 @@ describe('API company route', () => {
         expect(res.status).toBe(403)
     })
 
+    it('PATCH rejeita corpo com tipos invalidos em campos de texto', async () => {
+        const tenant = await Tenant.create({
+            name: 'Empresa A',
+            legalName: 'Empresa A LTDA',
+            slug: 'empresa-a',
+        })
+
+        setSession(tenant._id.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request('http://localhost/api/company', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 123,
+                    legalName: 'Empresa A LTDA',
+                    responsible: {
+                        name: 'Ana Gestora',
+                        email: 'ana@empresa-a.com',
+                        cpf: '529.982.247-25',
+                        phone: '(11) 98888-7777',
+                        password: 'Senha@123',
+                        passwordConfirmation: 'Senha@123',
+                    },
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(400)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe('name deve ser uma string valida.')
+    })
+
     it('PATCH atualiza empresa e endereco', async () => {
         const tenant = await Tenant.create({
             name: 'Empresa A',

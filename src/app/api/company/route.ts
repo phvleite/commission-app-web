@@ -37,8 +37,25 @@ interface CompanyUpdateBody {
 }
 
 function normalizeOptionalString(value?: string): string | undefined {
-    const normalized = value?.trim()
+    if (typeof value !== 'string') {
+        return undefined
+    }
+
+    const normalized = value.trim()
     return normalized ? normalized : undefined
+}
+
+function normalizeRequiredString(value: unknown, fieldName: string): string {
+    if (typeof value !== 'string') {
+        throw new Error(`${fieldName} deve ser uma string valida.`)
+    }
+
+    const normalized = value.trim()
+    if (!normalized) {
+        throw new Error(`${fieldName} deve ser uma string valida.`)
+    }
+
+    return normalized
 }
 
 function normalizeAddress(address?: CompanyAddressInput) {
@@ -145,8 +162,18 @@ export async function PATCH(request: Request) {
 
     const body = (await request.json()) as CompanyUpdateBody
 
-    const name = body.name?.trim()
-    const legalName = body.legalName?.trim()
+    let name: string
+    let legalName: string
+    try {
+        name = normalizeRequiredString(body.name, 'name')
+        legalName = normalizeRequiredString(body.legalName, 'legalName')
+    } catch (error) {
+        return Response.json(
+            { error: error instanceof Error ? error.message : 'Campos obrigatorios invalidos.' },
+            { status: 400 },
+        )
+    }
+
     const cnpjRaw = normalizeOptionalString(body.cnpj)
     const companyPhoneCommercial = normalizeOptionalString(body.phoneCommercial)
     const companyPhoneMobile = normalizeOptionalString(body.phoneMobile)
