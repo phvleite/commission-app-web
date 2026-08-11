@@ -1,6 +1,10 @@
 import { Tenant } from '@/models/Tenant'
 import { connectTestDB, disconnectTestDB, clearTestDB } from '@/lib/test-db'
-import { DEFAULT_SERVICE_PLAN_CODE, getServicePlan } from '@/lib/service-plans'
+import {
+    DEFAULT_SERVICE_PLAN_CODE,
+    getEffectiveMonthlyPriceCents,
+    getServicePlan,
+} from '@/lib/service-plans'
 
 const validData = {
     name: 'Empresa ABC',
@@ -31,6 +35,7 @@ describe('Tenant model', () => {
         expect(doc.discounts).toEqual([])
         expect(doc.billingStatus).toBe('pending')
         expect(doc.nextBillingAt).toBeUndefined()
+        expect(doc.monthlyPriceOverrideCents).toBeUndefined()
         expect(doc.address).toBeUndefined()
     })
 
@@ -46,7 +51,8 @@ describe('Tenant model', () => {
             discounts: [{ code: 'abrasel', percentage: 5, isAbrasel: true }],
             billingStatus: 'active',
             nextBillingAt,
-            maxUsers: 5,
+            monthlyPriceOverrideCents: 19990,
+            maxUsers: 999,
         })
 
         expect(doc.cnpj).toBe('12ABC34501DE35')
@@ -58,7 +64,55 @@ describe('Tenant model', () => {
         ])
         expect(doc.billingStatus).toBe('active')
         expect(doc.nextBillingAt?.toISOString()).toBe(nextBillingAt.toISOString())
+        expect(doc.monthlyPriceOverrideCents).toBe(19990)
+        expect(getEffectiveMonthlyPriceCents(doc.planCode, doc.monthlyPriceOverrideCents)).toBe(
+            19990,
+        )
         expect(doc.maxUsers).toBe(5)
+    })
+
+    it('sincroniza maxUsers ao trocar o planCode em update', async () => {
+        const tenant = await Tenant.create(validData)
+
+        const updated = await Tenant.findByIdAndUpdate(
+            tenant._id,
+            {
+                $set: {
+                    planCode: 'plan_100_plus',
+                    maxUsers: 1,
+                },
+            },
+            { returnDocument: 'after' },
+        ).lean()
+
+        expect(updated?.planCode).toBe('plan_100_plus')
+        expect(updated?.maxUsers).toBe(getServicePlan('plan_100_plus').maxUsers)
+    })
+
+    it('mantem mensalidade customizada ao trocar o planCode', async () => {
+        const tenant = await Tenant.create({
+            ...validData,
+            slug: 'empresa-price-override',
+            planCode: 'plan_50',
+            monthlyPriceOverrideCents: 18990,
+        })
+
+        const updated = await Tenant.findByIdAndUpdate(
+            tenant._id,
+            {
+                $set: {
+                    planCode: 'plan_100',
+                },
+            },
+            { returnDocument: 'after' },
+        ).lean()
+
+        expect(updated?.planCode).toBe('plan_100')
+        expect(updated?.maxUsers).toBe(getServicePlan('plan_100').maxUsers)
+        expect(updated?.monthlyPriceOverrideCents).toBe(18990)
+        expect(
+            getEffectiveMonthlyPriceCents(updated?.planCode, updated?.monthlyPriceOverrideCents),
+        ).toBe(18990)
     })
 
     it('cria um tenant com endereço completo', async () => {

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { connectDB } from '@/lib/db'
+import { getEffectiveMonthlyPriceCents, getResolvedServicePlan } from '@/lib/service-plans'
 import { Tenant } from '@/models/Tenant'
 import { User } from '@/models/User'
 import { CompanyUsersClient } from './CompanyUsersClient'
@@ -33,7 +34,11 @@ export default async function CompanyUsersPage() {
               cnpj: tenant.cnpj,
               phone: tenant.phone,
               email: tenant.email,
-              maxUsers: tenant.maxUsers ?? 3,
+              maxUsers: getResolvedServicePlan(tenant.planCode).maxUsers,
+              effectiveMonthlyPriceCents: getEffectiveMonthlyPriceCents(
+                  tenant.planCode,
+                  tenant.monthlyPriceOverrideCents,
+              ),
               responsible: responsibleUser
                   ? {
                         _id: responsibleUser._id.toString(),

@@ -1,5 +1,6 @@
 import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
+import { getEffectiveMonthlyPriceCents, getResolvedServicePlan } from '@/lib/service-plans'
 import { Tenant } from '@/models/Tenant'
 import { User } from '@/models/User'
 import { hashPassword } from '@/lib/password'
@@ -122,6 +123,11 @@ export async function GET() {
     return Response.json({
         data: {
             ...tenant,
+            maxUsers: getResolvedServicePlan(tenant.planCode).maxUsers,
+            effectiveMonthlyPriceCents: getEffectiveMonthlyPriceCents(
+                tenant.planCode,
+                tenant.monthlyPriceOverrideCents,
+            ),
             responsible,
         },
     })
@@ -147,8 +153,6 @@ export async function PATCH(request: Request) {
     const companyPhoneMobile = normalizeOptionalString(body.phoneMobile)
     const companyPhoneLegacy = normalizeOptionalString(body.phone)
     const companyEmail = normalizeOptionalString(body.email)?.toLowerCase()
-
-    const maxUsers = typeof body.maxUsers === 'number' ? Math.trunc(body.maxUsers) : Number.NaN
 
     const responsibleName = normalizeOptionalString(body.responsible?.name)
     const responsibleEmail = normalizeOptionalString(body.responsible?.email)?.toLowerCase()
@@ -220,13 +224,6 @@ export async function PATCH(request: Request) {
                 { status: 400 },
             )
         }
-    }
-
-    if (!Number.isInteger(maxUsers) || maxUsers < 1) {
-        return Response.json(
-            { error: 'maxUsers deve ser um numero inteiro maior que zero.' },
-            { status: 400 },
-        )
     }
 
     let address: ReturnType<typeof normalizeAddress>
@@ -344,7 +341,6 @@ export async function PATCH(request: Request) {
     const setData: Record<string, unknown> = {
         name,
         legalName,
-        maxUsers,
         responsibleUserId,
     }
     const unsetData: Record<string, 1> = {}
@@ -433,6 +429,11 @@ export async function PATCH(request: Request) {
     return Response.json({
         data: {
             ...tenant,
+            maxUsers: getResolvedServicePlan(tenant.planCode).maxUsers,
+            effectiveMonthlyPriceCents: getEffectiveMonthlyPriceCents(
+                tenant.planCode,
+                tenant.monthlyPriceOverrideCents,
+            ),
             responsible: responsibleUser
                 ? {
                       _id: responsibleUser._id.toString(),

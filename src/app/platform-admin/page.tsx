@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation'
 import { connectDB } from '@/lib/db'
+import { getEffectiveMonthlyPriceCents, getResolvedServicePlan } from '@/lib/service-plans'
 import { auth, signOut } from '@/auth'
+import { Tenant } from '@/models/Tenant'
 import { User } from '@/models/User'
+import { PlatformTenantsClient, type PlatformTenant } from './PlatformTenantsClient'
 import { PlatformUsersClient, type PlatformUser } from './PlatformUsersClient'
 
 export default async function PlatformAdminPage() {
@@ -24,6 +27,8 @@ export default async function PlatformAdminPage() {
         .select('-passwordHash')
         .lean()
 
+    const tenants = await Tenant.find({}).sort({ name: 1 }).lean()
+
     const initialUsers: PlatformUser[] = platformUsers
         .filter((user) => Boolean(user.platformRole))
         .map((user) => ({
@@ -35,6 +40,30 @@ export default async function PlatformAdminPage() {
             active: user.active,
             createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : undefined,
         }))
+
+    const initialTenants: PlatformTenant[] = tenants.map((tenant) => {
+        const resolvedPlan = getResolvedServicePlan(tenant.planCode)
+
+        return {
+            _id: tenant._id.toString(),
+            name: tenant.name,
+            slug: tenant.slug,
+            planCode: resolvedPlan.code,
+            billingStatus: tenant.billingStatus,
+            nextBillingAt:
+                tenant.nextBillingAt instanceof Date
+                    ? tenant.nextBillingAt.toISOString()
+                    : undefined,
+            monthlyPriceOverrideCents: tenant.monthlyPriceOverrideCents,
+            effectiveMonthlyPriceCents: getEffectiveMonthlyPriceCents(
+                resolvedPlan.code,
+                tenant.monthlyPriceOverrideCents,
+            ),
+            maxUsers: resolvedPlan.maxUsers,
+            active: tenant.active,
+            discounts: tenant.discounts ?? [],
+        }
+    })
 
     return (
         <section className="panel mx-auto w-full max-w-5xl p-6 sm:p-8">
@@ -73,6 +102,10 @@ export default async function PlatformAdminPage() {
                         Trilha de acoes de login, alteracoes e operacoes criticas.
                     </p>
                 </div>
+            </div>
+
+            <div className="mt-8">
+                <PlatformTenantsClient initialTenants={initialTenants} />
             </div>
 
             <div className="mt-8">
