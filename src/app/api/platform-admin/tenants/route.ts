@@ -21,6 +21,19 @@ function isTenantBillingStatus(value?: string | null): value is TenantBillingSta
     return TENANT_BILLING_STATUS.includes(value as TenantBillingStatus)
 }
 
+function normalizeRequiredString(value: unknown, fieldName: string): string {
+    if (typeof value !== 'string') {
+        throw new Error(`${fieldName} deve ser uma string valida.`)
+    }
+
+    const normalized = value.trim()
+    if (!normalized) {
+        throw new Error(`${fieldName} deve ser uma string valida.`)
+    }
+
+    return normalized
+}
+
 function normalizeDiscounts(value: unknown): ITenantDiscount[] {
     if (!Array.isArray(value)) {
         throw new Error('discounts deve ser um array.')
@@ -139,13 +152,17 @@ export async function PUT(request: Request) {
         discounts?: unknown
     }
 
-    const id = body.id?.trim()
-    const planCode = body.planCode?.trim()
-    const billingStatus = body.billingStatus?.trim()
+    let id: string
+    let planCode: string
+    let billingStatus: string
 
-    if (!id || !planCode || !billingStatus) {
+    try {
+        id = normalizeRequiredString(body.id, 'id')
+        planCode = normalizeRequiredString(body.planCode, 'planCode')
+        billingStatus = normalizeRequiredString(body.billingStatus, 'billingStatus')
+    } catch (error) {
         return Response.json(
-            { error: 'id, planCode e billingStatus sao obrigatorios.' },
+            { error: error instanceof Error ? error.message : 'Campos obrigatorios invalidos.' },
             { status: 400 },
         )
     }

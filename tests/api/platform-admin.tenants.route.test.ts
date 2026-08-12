@@ -129,6 +129,33 @@ describe('API platform-admin tenants route', () => {
         ).toBe(19990)
     })
 
+    it('PUT rejeita corpo com tipos invalidos para campos obrigatorios', async () => {
+        const tenant = await Tenant.create({
+            name: 'Empresa A',
+            legalName: 'Empresa A LTDA',
+            slug: 'empresa-a',
+        })
+
+        setPlatformSession('platform_admin')
+
+        const res = await PUT(
+            new Request('http://localhost/api/platform-admin/tenants', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: tenant._id.toString(),
+                    planCode: 123,
+                    billingStatus: 'active',
+                    discounts: [],
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(400)
+        const payload = (await res.json()) as { error: string }
+        expect(payload.error).toBe('planCode deve ser uma string valida.')
+    })
+
     it('PUT bloqueia platform_auditor', async () => {
         const tenant = await Tenant.create({
             name: 'Empresa A',
