@@ -57,6 +57,39 @@ describe('API employees routes', () => {
         expect(created?.tenantId.toString()).toBe(tenantId.toString())
     })
 
+    it('POST cria colaborador e alerta quando ultrapassa a faixa do plano', async () => {
+        const tenantId = new Types.ObjectId()
+        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
+        await Employee.insertMany(
+            Array.from({ length: 20 }, (_, index) => ({
+                tenantId,
+                name: `Colaborador ${index + 1}`,
+                sectorId: sector._id,
+                admissionDate: new Date('2024-01-01'),
+                active: true,
+            })),
+        )
+
+        setSession(tenantId.toString(), 'admin')
+
+        const res = await POST(
+            new Request('http://localhost/api/employees', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Colaborador 21',
+                    sectorId: sector._id.toString(),
+                    admissionDate: '2024-01-15',
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(201)
+        const payload = (await res.json()) as { warning?: string }
+        expect(payload.warning).toContain('ultrapassou a faixa de até 20 colaboradores')
+        await expect(Employee.countDocuments({ tenantId })).resolves.toBe(21)
+    })
+
     it('POST rejeita setor de outro tenant', async () => {
         const tenantA = new Types.ObjectId()
         const tenantB = new Types.ObjectId()
@@ -162,6 +195,43 @@ describe('API employees routes', () => {
         const dbEmployee = await Employee.findById(employee._id).lean()
         expect(dbEmployee?.dismissalDate).toBeUndefined()
         expect(dbEmployee?.active).toBe(true)
+    })
+
+    it('PATCH alerta ao reativar colaborador acima da faixa do plano', async () => {
+        const tenantId = new Types.ObjectId()
+        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
+        await Employee.insertMany(
+            Array.from({ length: 20 }, (_, index) => ({
+                tenantId,
+                name: `Ativo ${index + 1}`,
+                sectorId: sector._id,
+                admissionDate: new Date('2024-01-01'),
+                active: true,
+            })),
+        )
+        const employee = await Employee.create({
+            tenantId,
+            name: 'Reativar',
+            sectorId: sector._id,
+            admissionDate: new Date('2024-01-01'),
+            dismissalDate: new Date('2024-02-10'),
+            active: false,
+        })
+
+        setSession(tenantId.toString(), 'admin')
+
+        const res = await PATCH(
+            new Request(`http://localhost/api/employees/${employee._id.toString()}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dismissalDate: null }),
+            }),
+            { params: Promise.resolve({ id: employee._id.toString() }) },
+        )
+
+        expect(res.status).toBe(200)
+        const payload = (await res.json()) as { warning?: string }
+        expect(payload.warning).toContain('ultrapassou a faixa de até 20 colaboradores')
     })
 
     it('DELETE inativa colaborador (soft delete)', async () => {

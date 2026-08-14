@@ -18,8 +18,8 @@ function buildRequest(url: string, authValue: unknown, cookies?: Record<string, 
 }
 
 describe('proxy middleware', () => {
-    it('allows access to public routes', () => {
-        const response = middleware(buildRequest('http://localhost/login', null))
+    it.each(['/login', '/planos'])('allows access to public route %s', (pathname) => {
+        const response = middleware(buildRequest(`http://localhost${pathname}`, null))
 
         expect(response.status).toBe(200)
         expect(response.headers.get('location')).toBeNull()

@@ -10,11 +10,16 @@
  */
 
 import mongoose from 'mongoose'
+import { config } from 'dotenv'
 import { getServicePlan, type ServicePlanCode } from '@/lib/service-plans'
 
 const MIGRATION_ID = '001-backfill-tenant-plan'
 
 async function run(dryRun: boolean) {
+    if (!process.env.MONGODB_URI) {
+        config({ path: '.env.local' })
+    }
+
     const uri = process.env.MONGODB_URI
     if (!uri) {
         throw new Error('MONGODB_URI nao definida.')
@@ -103,8 +108,6 @@ export function resolvePlanCodeFromMaxUsers(maxUsers?: number): ServicePlanCode 
 
 // Executa apenas quando chamado diretamente via tsx/node, não em testes.
 if (require.main === module) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('dotenv/config')
     const dryRun = !process.argv.includes('--apply')
     run(dryRun).catch((error: unknown) => {
         console.error(`[${MIGRATION_ID}] Erro:`, error)

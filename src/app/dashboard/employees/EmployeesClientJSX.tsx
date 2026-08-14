@@ -12,6 +12,7 @@ export function EmployeesClientJSX(
         sectors,
         error,
         success,
+        planRangeWarning,
         canWrite,
         isSubmitting,
         submittingMessage,
@@ -69,6 +70,16 @@ export function EmployeesClientJSX(
                 Gerencie os colaboradores da empresa. Você pode filtrar, adicionar, editar ou
                 inativar colaboradores conforme necessário.
             </p>
+
+            {planRangeWarning ? (
+                <div
+                    className="mt-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+                    role="alert"
+                >
+                    <p className="font-semibold">Faixa de colaboradores ultrapassada</p>
+                    <p className="mt-1 leading-6">{planRangeWarning}</p>
+                </div>
+            ) : null}
 
             {/* Botão Novo Colaborador */}
             {canWrite ? (

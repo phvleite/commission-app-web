@@ -1,16 +1,6 @@
 import Image from 'next/image'
-import { listServicePlans } from '@/lib/service-plans'
-
-function formatCurrencyFromCents(value: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value / 100)
-}
 
 export default function Home() {
-    const plans = listServicePlans()
-
     return (
         <main className="app-shell flex flex-1 items-start justify-center px-4 pt-3 pb-6 sm:px-6 sm:pt-4 sm:pb-8 lg:px-6 lg:pt-6 lg:pb-12">
             <section className="panel w-full max-w-6xl overflow-hidden">
@@ -137,74 +127,12 @@ export default function Home() {
                             </a>
                             <a
                                 className="secondary-button inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold sm:text-base"
-                                href="/signup"
+                                href="/planos"
                             >
                                 Cadastrar empresa
                             </a>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <section className="panel mt-8 w-full max-w-6xl p-5 sm:p-8">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-xs tracking-widest text-(--color-primary) uppercase">
-                            Planos e valores
-                        </p>
-                        <h2 className="mt-2 text-2xl font-semibold text-(--color-primary-strong) sm:text-3xl">
-                            Escolha a estrutura ideal para sua operação.
-                        </h2>
-                    </div>
-                    <p className="text-sm text-(--color-muted)">
-                        Sem taxas ocultas. Cobrança mensal simples e previsível.
-                    </p>
-                </div>
-
-                <div className="mt-6 grid gap-4 lg:grid-cols-4">
-                    {plans.map((plan) => {
-                        const isFeatured = plan.code === 'plan_100_plus'
-
-                        return (
-                            <article
-                                key={plan.code}
-                                className={`rounded-2xl border p-5 shadow-sm ${
-                                    isFeatured
-                                        ? 'border-(--color-primary) bg-(--color-primary-soft)'
-                                        : 'border-(--color-border) bg-(--color-surface)'
-                                }`}
-                            >
-                                <p className="text-sm font-semibold text-(--color-primary-strong)">
-                                    {plan.name}
-                                </p>
-                                <div className="mt-4 flex items-end gap-1">
-                                    <span className="text-3xl font-semibold text-(--color-primary-strong)">
-                                        {formatCurrencyFromCents(plan.monthlyPriceCents)}
-                                    </span>
-                                    <span className="pb-1 text-xs text-(--color-muted)">/ mês</span>
-                                </div>
-                                <ul className="mt-4 space-y-2 text-sm text-(--color-muted)">
-                                    <li>Até {plan.maxUsers} usuários administrativos</li>
-                                    <li>
-                                        {plan.maxEmployees
-                                            ? `Até ${plan.maxEmployees} colaboradores`
-                                            : 'Sem limite por quantidade de colaboradores'}
-                                    </li>
-                                    <li>Gestão de setores, situações e vendas</li>
-                                </ul>
-                                <a
-                                    className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold ${
-                                        isFeatured
-                                            ? 'bg-(--color-primary) text-white'
-                                            : 'border border-(--color-border) bg-white text-(--color-primary-strong)'
-                                    }`}
-                                    href="/signup"
-                                >
-                                    Solicitar acesso
-                                </a>
-                            </article>
-                        )
-                    })}
                 </div>
             </section>
         </main>

@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
+import { getEmployeePlanRangeWarning } from '@/services/employees/getEmployeePlanRangeWarning'
 
 export async function GET(request: Request) {
     const user = await getRouteSessionUser()
@@ -96,5 +97,7 @@ export async function POST(request: Request) {
         active: dismissalDateParsed ? false : true,
     })
 
-    return Response.json({ data: employee }, { status: 201 })
+    const warning = await getEmployeePlanRangeWarning(user.tenantId)
+
+    return Response.json({ data: employee, warning }, { status: 201 })
 }

@@ -1,14 +1,28 @@
 import Image from 'next/image'
 import { auth } from '@/auth'
+import { getServicePlan, isServicePlanCode } from '@/lib/service-plans'
 import { redirect } from 'next/navigation'
 import { SignupForm } from './SignupForm'
 
-export default async function SignupPage() {
+interface SignupPageProps {
+    searchParams: Promise<{ plan?: string | string[] }>
+}
+
+export default async function SignupPage({ searchParams }: SignupPageProps) {
     const session = await auth()
 
     if (session?.user) {
         redirect('/dashboard')
     }
+
+    const { plan: planParam } = await searchParams
+    const planCode = Array.isArray(planParam) ? planParam[0] : planParam
+
+    if (!planCode || !isServicePlanCode(planCode)) {
+        redirect('/planos')
+    }
+
+    const selectedPlan = getServicePlan(planCode)
 
     return (
         <main className="app-shell flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
@@ -60,7 +74,24 @@ export default async function SignupPage() {
                         Crie sua conta
                     </h2>
 
-                    <SignupForm />
+                    <div className="mt-5 rounded-xl border border-(--color-border) bg-(--color-surface-soft) px-4 py-3">
+                        <p className="text-xs font-semibold tracking-widest text-(--color-muted) uppercase">
+                            Plano selecionado
+                        </p>
+                        <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-semibold text-(--color-primary-strong)">
+                                {selectedPlan.name}
+                            </p>
+                            <a
+                                className="text-sm font-semibold text-(--color-primary)"
+                                href="/planos"
+                            >
+                                Alterar plano
+                            </a>
+                        </div>
+                    </div>
+
+                    <SignupForm planCode={planCode} />
                 </div>
             </section>
         </main>

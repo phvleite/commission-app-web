@@ -652,7 +652,7 @@ export default function SaibaMaisPage() {
                                 </a>
                                 <a
                                     className="inline-flex items-center justify-center rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white/90 transition hover:bg-white/10"
-                                    href="/signup"
+                                    href="/planos"
                                 >
                                     Cadastrar empresa
                                 </a>

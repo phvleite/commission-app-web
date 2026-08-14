@@ -153,7 +153,11 @@ function SubmitButton() {
     )
 }
 
-export function SignupForm() {
+interface SignupFormProps {
+    planCode: string
+}
+
+export function SignupForm({ planCode }: SignupFormProps) {
     const [state, formAction] = useActionState(registerTenantAndAdmin, INITIAL_STATE)
     const [confirmationState, confirmFormAction] = useActionState(
         confirmTenantAndAdminSignup,
@@ -356,6 +360,8 @@ export function SignupForm() {
                 onSubmit={handleRequiredValidation}
                 onInput={handleRequiredInput}
             >
+                <input type="hidden" name="planCode" value={planCode} />
+
                 <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
                     <span className="font-semibold text-red-600">*</span> Campos obrigatórios.
                 </p>

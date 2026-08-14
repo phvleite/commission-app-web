@@ -95,4 +95,42 @@ describe('EmployeesClient', () => {
         expect(result.current.employees[0].sectorName).toBe('Setor A')
         expect(refreshMock).toHaveBeenCalled()
     })
+
+    it('exposes the plan range warning returned after creation', async () => {
+        const warning =
+            'Sua empresa possui 21 colaboradores ativos e ultrapassou a faixa de até 20 colaboradores do plano atual. Revise seu plano.'
+        const fetchMock = global.fetch as jest.MockedFunction<typeof fetch>
+        fetchMock.mockResolvedValueOnce(
+            createJsonResponse({
+                data: {
+                    _id: 'emp-21',
+                    name: 'Alice',
+                    sectorId: 'sec-1',
+                    admissionDate: '2026-07-01T00:00:00.000Z',
+                    active: true,
+                },
+                warning,
+            }),
+        )
+
+        const { result } = renderHook(() =>
+            EmployeesClient({
+                userRole: 'admin',
+                initialEmployees: [],
+                initialSectors: [{ _id: 'sec-1', name: 'Setor A' }],
+            }),
+        )
+
+        await act(async () => {
+            result.current.setName('Alice')
+            result.current.setSectorId('sec-1')
+            result.current.setAdmissionDate('2026-07-01')
+        })
+
+        await act(async () => {
+            await result.current.handleCreateEmployee()
+        })
+
+        expect(result.current.planRangeWarning).toBe(warning)
+    })
 })
