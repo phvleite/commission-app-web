@@ -37,6 +37,7 @@ function requiredSignupFields(overrides: Record<string, string> = {}): Record<st
         companyEmail: 'contato@alpha.com',
         companyPhoneCommercial: '(11) 3333-4444',
         companyPhoneMobile: '(11) 98888-7777',
+        planCode: 'plan_20',
         adminName: 'Admin Alpha',
         adminEmail: 'admin@alpha.com',
         adminCpf: '529.982.247-25',
@@ -67,6 +68,7 @@ describe('signup action', () => {
             {},
             form(
                 requiredSignupFields({
+                    planCode: 'plan_100_plus',
                     street: 'Rua A',
                     number: '10',
                     neighborhood: 'Centro',
@@ -110,6 +112,8 @@ describe('signup action', () => {
         expect(tenant?.phoneCommercial).toBe('(11) 3333-4444')
         expect(tenant?.phoneMobile).toBe('(11) 98888-7777')
         expect(tenant?.email).toBe('contato@alpha.com')
+        expect(tenant?.planCode).toBe('plan_100_plus')
+        expect(tenant?.maxUsers).toBe(8)
         expect(user?.cpf).toBe('52998224725')
         expect(user?.phone).toBe('(11) 98765-4321')
     })
