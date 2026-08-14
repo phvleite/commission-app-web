@@ -111,8 +111,8 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
                         <Image
                             src="/logo-commission-star-ball-white.svg"
                             alt="Logo Commission Star"
-                            width={200}
-                            height={200}
+                            width={150}
+                            height={150}
                             className="opacity-90"
                             style={{ width: '200px', height: '200px' }}
                         />

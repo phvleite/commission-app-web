@@ -22,9 +22,15 @@ interface Props {
     userRole: 'admin' | 'manager' | 'seller'
     initialEmployees: EmployeeItem[]
     initialSectors: SectorItem[]
+    initialPlanRangeWarning?: string
 }
 
-export function EmployeesClient({ userRole, initialEmployees, initialSectors }: Props) {
+export function EmployeesClient({
+    userRole,
+    initialEmployees,
+    initialSectors,
+    initialPlanRangeWarning,
+}: Props) {
     const router = useRouter()
 
     // ===========================
@@ -35,6 +41,9 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
 
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [planRangeWarning, setPlanRangeWarning] = useState<string | null>(
+        initialPlanRangeWarning ?? null,
+    )
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submittingMessage, setSubmittingMessage] = useState<string | null>(null)
 
@@ -178,6 +187,7 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
             }
 
             const newEmployee = normalizeEmployee(payload.data)
+            setPlanRangeWarning(payload.warning ?? null)
 
             setEmployees((prev) =>
                 [...prev, newEmployee].sort((a, b) => a.name.localeCompare(b.name)),
@@ -278,6 +288,7 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
             }
 
             const updated = normalizeEmployee(payload.data)
+            setPlanRangeWarning(payload.warning ?? null)
 
             setEmployees((prev) =>
                 prev
@@ -304,6 +315,7 @@ export function EmployeesClient({ userRole, initialEmployees, initialSectors }: 
         sectors,
         error,
         success,
+        planRangeWarning,
         canWrite,
         isSubmitting,
         submittingMessage,

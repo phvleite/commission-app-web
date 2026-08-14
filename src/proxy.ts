@@ -6,7 +6,7 @@ import {
     isInactivityExpired,
 } from '@/lib/auth/inactivity'
 
-const PUBLIC_ROUTES = ['/', '/login', '/signup', '/saiba-mais']
+const PUBLIC_ROUTES = ['/', '/login', '/signup', '/planos', '/saiba-mais']
 const AUTH_SESSION_COOKIES = [
     'authjs.session-token',
     '__Secure-authjs.session-token',

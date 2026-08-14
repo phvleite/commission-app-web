@@ -1,5 +1,10 @@
 import { Tenant } from '@/models/Tenant'
 import { connectTestDB, disconnectTestDB, clearTestDB } from '@/lib/test-db'
+import {
+    DEFAULT_SERVICE_PLAN_CODE,
+    getEffectiveMonthlyPriceCents,
+    getServicePlan,
+} from '@/lib/service-plans'
 
 const validData = {
     name: 'Empresa ABC',
@@ -25,24 +30,89 @@ describe('Tenant model', () => {
         const doc = await Tenant.create(validData)
         expect(doc._id).toBeDefined()
         expect(doc.active).toBe(true)
-        expect(doc.maxUsers).toBe(3)
+        expect(doc.planCode).toBe(DEFAULT_SERVICE_PLAN_CODE)
+        expect(doc.maxUsers).toBe(getServicePlan(DEFAULT_SERVICE_PLAN_CODE).maxUsers)
+        expect(doc.discounts).toEqual([])
+        expect(doc.billingStatus).toBe('pending')
+        expect(doc.nextBillingAt).toBeUndefined()
+        expect(doc.monthlyPriceOverrideCents).toBeUndefined()
         expect(doc.address).toBeUndefined()
     })
 
     it('cria tenant com novos dados de cadastro da empresa', async () => {
+        const nextBillingAt = new Date('2026-09-05T00:00:00.000Z')
         const doc = await Tenant.create({
             ...validData,
             slug: 'empresa-xyz',
             cnpj: '12ABC34501DE35',
             phone: '(11) 99999-0000',
             email: 'contato@empresa.com',
-            maxUsers: 5,
+            planCode: 'plan_50',
+            discounts: [{ code: 'abrasel', percentage: 5, isAbrasel: true }],
+            billingStatus: 'active',
+            nextBillingAt,
+            monthlyPriceOverrideCents: 19990,
+            maxUsers: 999,
         })
 
         expect(doc.cnpj).toBe('12ABC34501DE35')
         expect(doc.phone).toBe('(11) 99999-0000')
         expect(doc.email).toBe('contato@empresa.com')
+        expect(doc.planCode).toBe('plan_50')
+        expect(doc.discounts.map((discount) => discount.toObject())).toEqual([
+            { code: 'abrasel', percentage: 5, isAbrasel: true },
+        ])
+        expect(doc.billingStatus).toBe('active')
+        expect(doc.nextBillingAt?.toISOString()).toBe(nextBillingAt.toISOString())
+        expect(doc.monthlyPriceOverrideCents).toBe(19990)
+        expect(getEffectiveMonthlyPriceCents(doc.planCode, doc.monthlyPriceOverrideCents)).toBe(
+            19990,
+        )
         expect(doc.maxUsers).toBe(5)
+    })
+
+    it('sincroniza maxUsers ao trocar o planCode em update', async () => {
+        const tenant = await Tenant.create(validData)
+
+        const updated = await Tenant.findByIdAndUpdate(
+            tenant._id,
+            {
+                $set: {
+                    planCode: 'plan_100_plus',
+                    maxUsers: 1,
+                },
+            },
+            { returnDocument: 'after' },
+        ).lean()
+
+        expect(updated?.planCode).toBe('plan_100_plus')
+        expect(updated?.maxUsers).toBe(getServicePlan('plan_100_plus').maxUsers)
+    })
+
+    it('mantem mensalidade customizada ao trocar o planCode', async () => {
+        const tenant = await Tenant.create({
+            ...validData,
+            slug: 'empresa-price-override',
+            planCode: 'plan_50',
+            monthlyPriceOverrideCents: 18990,
+        })
+
+        const updated = await Tenant.findByIdAndUpdate(
+            tenant._id,
+            {
+                $set: {
+                    planCode: 'plan_100',
+                },
+            },
+            { returnDocument: 'after' },
+        ).lean()
+
+        expect(updated?.planCode).toBe('plan_100')
+        expect(updated?.maxUsers).toBe(getServicePlan('plan_100').maxUsers)
+        expect(updated?.monthlyPriceOverrideCents).toBe(18990)
+        expect(
+            getEffectiveMonthlyPriceCents(updated?.planCode, updated?.monthlyPriceOverrideCents),
+        ).toBe(18990)
     })
 
     it('cria um tenant com endereço completo', async () => {
@@ -52,23 +122,42 @@ describe('Tenant model', () => {
     })
 
     it('rejeita quando name está ausente', async () => {
-        const { name: _, ...sem } = validData
+        const sem = { ...validData }
+        delete sem.name
         await expect(Tenant.create(sem)).rejects.toThrow()
     })
 
     it('rejeita quando legalName está ausente', async () => {
-        const { legalName: _, ...sem } = validData
+        const sem = { ...validData }
+        delete sem.legalName
         await expect(Tenant.create(sem)).rejects.toThrow()
     })
 
     it('rejeita quando slug está ausente', async () => {
-        const { slug: _, ...sem } = validData
+        const sem = { ...validData }
+        delete sem.slug
         await expect(Tenant.create(sem)).rejects.toThrow()
     })
 
     it('rejeita slug duplicado', async () => {
         await Tenant.create(validData)
         await expect(Tenant.create({ ...validData, legalName: 'Outra Razão' })).rejects.toThrow()
+    })
+
+    it('rejeita planCode invalido', async () => {
+        await expect(
+            Tenant.create({ ...validData, slug: 'empresa-plan', planCode: 'plano_invalido' }),
+        ).rejects.toThrow()
+    })
+
+    it('rejeita desconto com percentual invalido', async () => {
+        await expect(
+            Tenant.create({
+                ...validData,
+                slug: 'empresa-desc',
+                discounts: [{ code: 'abrasel', percentage: 101, isAbrasel: true }],
+            }),
+        ).rejects.toThrow()
     })
 
     it('rejeita estado com mais de 2 caracteres', async () => {

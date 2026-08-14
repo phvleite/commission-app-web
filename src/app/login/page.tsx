@@ -65,7 +65,7 @@ export default async function LoginPage() {
 
                     <p className="mb-6 text-sm leading-7 text-(--color-muted)">
                         Não possui cadastro?{' '}
-                        <a className="font-semibold text-(--color-primary)" href="/signup">
+                        <a className="font-semibold text-(--color-primary)" href="/planos">
                             Cadastre sua empresa
                         </a>
                     </p>

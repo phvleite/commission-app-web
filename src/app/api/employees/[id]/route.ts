@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
+import { getEmployeePlanRangeWarning } from '@/services/employees/getEmployeePlanRangeWarning'
 
 interface RouteContext {
     params: Promise<{ id: string }>
@@ -104,7 +105,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     Object.assign(employee, update)
     await employee.save()
 
-    return Response.json({ data: employee })
+    const warning = await getEmployeePlanRangeWarning(user.tenantId)
+
+    return Response.json({ data: employee, warning })
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {

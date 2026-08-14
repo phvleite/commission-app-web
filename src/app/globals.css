@@ -12,7 +12,7 @@
     --primary-strong: #0a1a2f;
     --primary-soft: #4fa3d1;
     --accent: #d4af37;
-    --accent-soft: #F2DBA5;
+    --accent-soft: #f2dba5;
     --accent-strong: #916307;
     --danger: #b22222;
     --danger-soft: #f08080;
@@ -247,4 +247,47 @@ textarea {
 .sidebar-disabled {
     opacity: 0.4;
     pointer-events: none;
+}
+
+.commission-wallpaper {
+    background: linear-gradient(to top, #4fa3d1 0%, #0a1a2f 40%, #0a1a2f 100%);
+    position: relative;
+}
+
+.commission-wallpaper::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0; /* gruda na base */
+    height: 220px;
+    background-image: url('/commission-image.svg');
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size: 130%; /* reduz, mas deixa extrapolar as margens */
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.news-carousel {
+    position: relative;
+    isolation: isolate;
+}
+
+.news-carousel-slide {
+    animation: news-carousel-fade 0.45s ease;
+}
+
+.news-carousel-dot {
+    min-height: 72px;
+}
+
+@keyframes news-carousel-fade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
