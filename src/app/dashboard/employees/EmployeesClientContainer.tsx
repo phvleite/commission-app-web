@@ -8,9 +8,20 @@ interface Props {
     userRole: 'admin' | 'manager' | 'seller'
     initialEmployees: EmployeeItem[]
     initialSectors: SectorItem[]
+    initialPlanRangeWarning?: string
 }
 
-export function EmployeesClientContainer({ userRole, initialEmployees, initialSectors }: Props) {
-    const client = EmployeesClient({ userRole, initialEmployees, initialSectors })
+export function EmployeesClientContainer({
+    userRole,
+    initialEmployees,
+    initialSectors,
+    initialPlanRangeWarning,
+}: Props) {
+    const client = EmployeesClient({
+        userRole,
+        initialEmployees,
+        initialSectors,
+        initialPlanRangeWarning,
+    })
     return <EmployeesClientJSX {...client} />
 }

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
+import { getEmployeePlanRangeWarning } from '@/services/employees/getEmployeePlanRangeWarning'
 import { EmployeesClientContainer } from './EmployeesClientContainer'
 
 export default async function EmployeesPage() {
@@ -49,11 +50,14 @@ export default async function EmployeesPage() {
         active: e.active,
     }))
 
+    const initialPlanRangeWarning = await getEmployeePlanRangeWarning(tenantId)
+
     return (
         <EmployeesClientContainer
             userRole={session.user.role}
             initialEmployees={initialEmployees}
             initialSectors={initialSectors}
+            initialPlanRangeWarning={initialPlanRangeWarning}
         />
     )
 }

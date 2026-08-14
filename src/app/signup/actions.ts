@@ -4,6 +4,7 @@ import { randomInt } from 'crypto'
 import { connectDB } from '@/lib/db'
 import { hashPassword, verifyPassword } from '@/lib/password'
 import { sendSignupConfirmationEmail } from '@/lib/email'
+import { isServicePlanCode } from '@/lib/service-plans'
 import { isValidCnpj, normalizeCnpj } from '@/lib/validators/cnpj'
 import { isValidCpf, normalizeCpf } from '@/lib/validators/cpf'
 import { Tenant } from '@/models/Tenant'
@@ -76,6 +77,7 @@ function buildSignupVerificationPayload(formData: FormData) {
     const companyEmail = formData.get('companyEmail')?.toString().trim().toLowerCase()
     const companyPhoneCommercial = formData.get('companyPhoneCommercial')?.toString().trim()
     const companyPhoneMobile = formData.get('companyPhoneMobile')?.toString().trim()
+    const planCode = formData.get('planCode')?.toString().trim()
 
     const adminName = formData.get('adminName')?.toString().trim()
     const adminEmail = formData.get('adminEmail')?.toString().trim().toLowerCase()
@@ -98,6 +100,7 @@ function buildSignupVerificationPayload(formData: FormData) {
         companyEmail,
         companyPhoneCommercial,
         companyPhoneMobile,
+        planCode,
         adminName,
         adminEmail,
         adminCpfRaw,
@@ -133,6 +136,7 @@ export async function registerTenantAndAdmin(
         companyEmail,
         companyPhoneCommercial,
         companyPhoneMobile,
+        planCode,
         adminName,
         adminEmail,
         adminCpfRaw,
@@ -160,6 +164,10 @@ export async function registerTenantAndAdmin(
         !passwordConfirm
     ) {
         return { error: 'Preencha todos os campos obrigatorios.' }
+    }
+
+    if (!planCode || !isServicePlanCode(planCode)) {
+        return { error: 'Selecione um plano valido.' }
     }
 
     if (password.length < 8) {
@@ -257,6 +265,7 @@ export async function registerTenantAndAdmin(
             companyEmail,
             companyPhoneCommercial: companyPhoneCommercial || undefined,
             companyPhoneMobile: companyPhoneMobile || undefined,
+            planCode,
             address: hasAddressFields
                 ? {
                       street,
@@ -390,6 +399,7 @@ export async function confirmTenantAndAdminSignup(
         phoneMobile: signupRequest.companyPhoneMobile || undefined,
         phone: signupRequest.companyPhoneCommercial || undefined,
         email: signupRequest.companyEmail,
+        planCode: signupRequest.planCode,
         address: signupRequest.address,
     })
 

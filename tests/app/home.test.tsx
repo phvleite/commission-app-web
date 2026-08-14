@@ -4,13 +4,13 @@ import { render, screen } from '@testing-library/react'
 import Home from '@/app/page'
 
 describe('Home page', () => {
-    it('exibe os planos disponiveis no site publico', () => {
+    it('direciona o cadastro para a escolha de planos sem exibir os valores', () => {
         render(<Home />)
 
-        expect(screen.getByText('Planos e valores')).toBeInTheDocument()
-        expect(screen.getByText('Ate 20 colaboradores')).toBeInTheDocument()
-        expect(screen.getByText(/R\$\s*150,00/)).toBeInTheDocument()
-        expect(screen.getByText('Mais de 100 colaboradores')).toBeInTheDocument()
-        expect(screen.getByText(/R\$\s*375,00/)).toBeInTheDocument()
+        expect(screen.queryByText('Planos e valores')).not.toBeInTheDocument()
+        expect(screen.getByRole('link', { name: 'Cadastrar empresa' })).toHaveAttribute(
+            'href',
+            '/planos',
+        )
     })
 })

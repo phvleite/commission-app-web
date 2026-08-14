@@ -1,4 +1,5 @@
 import { Schema, model, models, Types, Document } from 'mongoose'
+import { SERVICE_PLAN_ORDER, type ServicePlanCode } from '@/lib/service-plans'
 
 export interface ISignupVerificationAddress {
     street?: string
@@ -18,6 +19,7 @@ export interface ISignupVerification extends Document {
     companyEmail: string
     companyPhoneCommercial?: string
     companyPhoneMobile?: string
+    planCode: ServicePlanCode
     address?: ISignupVerificationAddress
     adminName: string
     adminEmail: string
@@ -51,6 +53,7 @@ const signupVerificationSchema = new Schema<ISignupVerification>(
         companyEmail: { type: String, required: true, trim: true, lowercase: true },
         companyPhoneCommercial: { type: String, trim: true },
         companyPhoneMobile: { type: String, trim: true },
+        planCode: { type: String, enum: [...SERVICE_PLAN_ORDER], required: true, trim: true },
         address: { type: addressSchema },
         adminName: { type: String, required: true, trim: true },
         adminEmail: { type: String, required: true, trim: true, lowercase: true },
