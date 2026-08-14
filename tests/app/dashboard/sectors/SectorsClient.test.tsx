@@ -107,6 +107,6 @@ describe('SectorsClient', () => {
             '/api/sectors/sec-1',
             expect.objectContaining({ method: 'PATCH' }),
         )
-        expect(screen.getByText(/Status: Inativo/)).toBeInTheDocument()
+        expect(screen.getByText('Inativo')).toBeInTheDocument()
     })
 })

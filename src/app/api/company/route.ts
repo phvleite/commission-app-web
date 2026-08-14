@@ -1,5 +1,6 @@
 import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
+import { getEffectiveMonthlyPriceCents, getResolvedServicePlan } from '@/lib/service-plans'
 import { Tenant } from '@/models/Tenant'
 import { User } from '@/models/User'
 import { hashPassword } from '@/lib/password'
@@ -24,7 +25,6 @@ interface CompanyUpdateBody {
     phoneMobile?: string
     phone?: string
     email?: string
-    maxUsers?: number
     address?: CompanyAddressInput
     responsible?: {
         name?: string
@@ -37,8 +37,25 @@ interface CompanyUpdateBody {
 }
 
 function normalizeOptionalString(value?: string): string | undefined {
-    const normalized = value?.trim()
+    if (typeof value !== 'string') {
+        return undefined
+    }
+
+    const normalized = value.trim()
     return normalized ? normalized : undefined
+}
+
+function normalizeRequiredString(value: unknown, fieldName: string): string {
+    if (typeof value !== 'string') {
+        throw new Error(`${fieldName} deve ser uma string valida.`)
+    }
+
+    const normalized = value.trim()
+    if (!normalized) {
+        throw new Error(`${fieldName} deve ser uma string valida.`)
+    }
+
+    return normalized
 }
 
 function normalizeAddress(address?: CompanyAddressInput) {
@@ -122,6 +139,11 @@ export async function GET() {
     return Response.json({
         data: {
             ...tenant,
+            maxUsers: getResolvedServicePlan(tenant.planCode).maxUsers,
+            effectiveMonthlyPriceCents: getEffectiveMonthlyPriceCents(
+                tenant.planCode,
+                tenant.monthlyPriceOverrideCents,
+            ),
             responsible,
         },
     })
@@ -140,15 +162,23 @@ export async function PATCH(request: Request) {
 
     const body = (await request.json()) as CompanyUpdateBody
 
-    const name = body.name?.trim()
-    const legalName = body.legalName?.trim()
+    let name: string
+    let legalName: string
+    try {
+        name = normalizeRequiredString(body.name, 'name')
+        legalName = normalizeRequiredString(body.legalName, 'legalName')
+    } catch (error) {
+        return Response.json(
+            { error: error instanceof Error ? error.message : 'Campos obrigatorios invalidos.' },
+            { status: 400 },
+        )
+    }
+
     const cnpjRaw = normalizeOptionalString(body.cnpj)
     const companyPhoneCommercial = normalizeOptionalString(body.phoneCommercial)
     const companyPhoneMobile = normalizeOptionalString(body.phoneMobile)
     const companyPhoneLegacy = normalizeOptionalString(body.phone)
     const companyEmail = normalizeOptionalString(body.email)?.toLowerCase()
-
-    const maxUsers = typeof body.maxUsers === 'number' ? Math.trunc(body.maxUsers) : Number.NaN
 
     const responsibleName = normalizeOptionalString(body.responsible?.name)
     const responsibleEmail = normalizeOptionalString(body.responsible?.email)?.toLowerCase()
@@ -220,13 +250,6 @@ export async function PATCH(request: Request) {
                 { status: 400 },
             )
         }
-    }
-
-    if (!Number.isInteger(maxUsers) || maxUsers < 1) {
-        return Response.json(
-            { error: 'maxUsers deve ser um numero inteiro maior que zero.' },
-            { status: 400 },
-        )
     }
 
     let address: ReturnType<typeof normalizeAddress>
@@ -344,7 +367,6 @@ export async function PATCH(request: Request) {
     const setData: Record<string, unknown> = {
         name,
         legalName,
-        maxUsers,
         responsibleUserId,
     }
     const unsetData: Record<string, 1> = {}
@@ -433,6 +455,11 @@ export async function PATCH(request: Request) {
     return Response.json({
         data: {
             ...tenant,
+            maxUsers: getResolvedServicePlan(tenant.planCode).maxUsers,
+            effectiveMonthlyPriceCents: getEffectiveMonthlyPriceCents(
+                tenant.planCode,
+                tenant.monthlyPriceOverrideCents,
+            ),
             responsible: responsibleUser
                 ? {
                       _id: responsibleUser._id.toString(),

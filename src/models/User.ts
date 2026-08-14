@@ -1,10 +1,10 @@
 import { Schema, model, models, Types, Document } from 'mongoose'
 import type { WithTenant, WithTimestamps } from '@/types'
+import { getResolvedServicePlan } from '@/lib/service-plans'
 import { Tenant } from './Tenant'
 
 export type UserRole = 'admin' | 'manager' | 'seller'
 export type PlatformRole = 'platform_owner' | 'platform_admin' | 'platform_auditor'
-const DEFAULT_MAX_USERS_PER_TENANT = 3
 
 export interface IUser extends WithTenant, WithTimestamps {
     _id: Types.ObjectId
@@ -46,8 +46,8 @@ userSchema.pre('save', async function preSaveUserLimit() {
         return
     }
 
-    const tenant = await Tenant.findById(this.tenantId).select('maxUsers').lean()
-    const maxUsers = tenant?.maxUsers ?? DEFAULT_MAX_USERS_PER_TENANT
+    const tenant = await Tenant.findById(this.tenantId).select('planCode').lean()
+    const maxUsers = getResolvedServicePlan(tenant?.planCode).maxUsers
 
     const userModel = models.User as
         | {
@@ -64,7 +64,7 @@ userSchema.pre('save', async function preSaveUserLimit() {
     })
 
     if (totalUsers >= maxUsers) {
-        throw new Error(`Limite de ${maxUsers} usuarios por tenant no pacote basico.`)
+        throw new Error(`Limite de ${maxUsers} usuarios por tenant para o plano atual.`)
     }
 })
 

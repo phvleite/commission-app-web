@@ -127,7 +127,7 @@ export default function Home() {
                             </a>
                             <a
                                 className="secondary-button inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold sm:text-base"
-                                href="/signup"
+                                href="/planos"
                             >
                                 Cadastrar empresa
                             </a>
