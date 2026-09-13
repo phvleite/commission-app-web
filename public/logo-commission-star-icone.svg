@@ -1,23 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Creator: CorelDRAW -->
-<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="12.6997mm" height="12.6998mm" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
-viewBox="0 0 1268.92 1268.93"
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="93.5296mm" height="90.0198mm" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+viewBox="0 0 9351.9 9000.96"
  xmlns:xlink="http://www.w3.org/1999/xlink"
  xmlns:xodm="http://www.corel.com/coreldraw/odm/2003">
  <defs>
   <style type="text/css">
    <![CDATA[
-    .fil0 {fill:#12395B}
-    .fil1 {fill:#4FA3D1}
-    .fil2 {fill:#D4AF37}
+    .str1 {stroke:#12395B;stroke-width:20;stroke-miterlimit:22.9256}
+    .str2 {stroke:#4FA3D1;stroke-width:20;stroke-miterlimit:22.9256}
+    .str0 {stroke:#D4AF37;stroke-width:20;stroke-miterlimit:22.9256}
+    .fil1 {fill:#12395B}
+    .fil0 {fill:#D4AF37}
+    .fil2 {fill:#4FA3D1;fill-rule:nonzero}
    ]]>
   </style>
  </defs>
  <g id="Camada_x0020_1">
   <metadata id="CorelCorpID_0Corel-Layer"/>
-  <circle class="fil0" cx="634.46" cy="634.46" r="634.46"/>
-  <circle class="fil1" cx="634.46" cy="634.47" r="507.59"/>
-  <circle class="fil2" cx="634.46" cy="634.46" r="422.99"/>
+  <g id="_1879069875664">
+   <circle class="fil0 str0" transform="matrix(0.820203 -0.266053 0.266053 0.820202 4675.45 4862.72)" r="1957.01"/>
+   <path class="fil1 str1" d="M2116.86 6930.46c554.08,-179.72 1148.92,123.75 1328.64,677.78 179.73,554.08 -123.74,1148.92 -677.79,1328.65 -554.06,179.73 -1148.91,-123.74 -1328.63,-677.8 -179.73,-554.06 123.74,-1148.9 677.78,-1328.63z"/>
+   <path class="fil1 str1" d="M6581.17 6932.87c554.08,-179.72 1148.92,123.73 1328.64,677.8 179.73,554.05 -123.74,1148.91 -677.79,1328.62 -554.06,179.72 -1148.91,-123.73 -1328.63,-677.78 -179.73,-554.08 123.74,-1148.92 677.78,-1328.64z"/>
+   <path class="fil1 str1" d="M7961.61 2688c554.06,-179.73 1148.9,123.74 1328.63,677.8 179.72,554.06 -123.73,1148.9 -677.8,1328.63 -554.06,179.72 -1148.9,-123.75 -1328.63,-677.79 -179.72,-554.07 123.74,-1148.91 677.8,-1328.64z"/>
+   <path class="fil1 str1" d="M4352.33 61.66c554.06,-179.72 1148.9,123.73 1328.63,677.8 179.72,554.06 -123.75,1148.9 -677.79,1328.62 -554.07,179.72 -1148.91,-123.73 -1328.64,-677.79 -179.73,-554.06 123.74,-1148.9 677.8,-1328.63z"/>
+   <path class="fil1 str1" d="M739.45 2684.12c554.07,-179.73 1148.92,123.73 1328.65,677.78 179.72,554.08 -123.74,1148.92 -677.8,1328.63 -554.06,179.73 -1148.92,-123.73 -1328.63,-677.78 -179.72,-554.06 123.73,-1148.91 677.78,-1328.63z"/>
+   <path class="fil2 str2" d="M4423.93 2980.76l0.54 -892.01c161.61,40.14 334.42,42.47 505.3,0.24l-0.54 891.92c-165.24,-22.4 -335.01,-23.1 -505.3,-0.15z"/>
+   <path class="fil2 str2" d="M6387.12 4041.39l847.74 -274.99c6.03,83.3 22.02,167.21 48.94,250.23 26.93,83 63.23,160.34 107.27,231.31l-847.74 274.98c-15.07,-82.18 -35.61,-164.31 -62.08,-245.96 -26.49,-81.64 -58.08,-160.2 -94.13,-235.57z"/>
+   <path class="fil2 str2" d="M5985.51 6237.26l523.99 721.77c-163.15,66.1 -301.68,169.44 -408.95,296.8l-524.03 -721.86c151.33,-81.36 288.36,-181.58 408.99,-296.71z"/>
+   <path class="fil2 str2" d="M3768.28 6530.3l-524.63 717.35c-111.75,-130.41 -253.14,-230.58 -410.26,-293.43l527.59 -721.39c122.45,117.26 259.61,217.15 407.3,297.47z"/>
+   <path class="fil2 str2" d="M2116.94 3764.1l847.63 275.92c-73.06,151.86 -126.02,313.47 -156.77,480.58l-847.62 -275.9c89.51,-143.98 144.18,-308.85 156.76,-480.6z"/>
+  </g>
  </g>
 </svg>
