@@ -76,6 +76,10 @@ export function useSalesClient(
     const [modalDate, setModalDate] = useState<string | null>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [operationStatus, setOperationStatus] = useState<{
+        status: 'idle' | 'processing' | 'success' | 'error' | 'offline'
+        message: string
+    }>({ status: 'idle', message: '' })
 
     const fetchSales = useCallback(
         async (pageToLoad: number) => {
@@ -143,10 +147,28 @@ export function useSalesClient(
     return {
         sales,
         editId,
+        operationStatus,
         beginEdit: setEditId,
-        cancelEdit: () => setEditId(null),
+        cancelEdit: () => {
+            setEditId(null)
+            setOperationStatus({ status: 'idle', message: '' })
+        },
         saveSale: async (date: string, value: number) => {
+            const offlineMessage =
+                'Sem conexão. A operação foi cancelada e os dados não foram salvos.'
+
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                const error = new Error(offlineMessage)
+                setOperationStatus({ status: 'offline', message: offlineMessage })
+                setIsSaving(false)
+                throw error
+            }
+
             setIsSaving(true)
+            setOperationStatus({
+                status: 'processing',
+                message: editId ? 'Salvando alterações da venda...' : 'Salvando nova venda...',
+            })
             const body = JSON.stringify({ date, value })
             let res
 
@@ -175,13 +197,36 @@ export function useSalesClient(
                     res,
                     'Erro ao salvar venda.',
                 )
-                if (!res.ok) throw new Error(json.error)
+
+                if (!res.ok) {
+                    const message = json.error ?? 'Erro ao salvar venda.'
+                    setOperationStatus({ status: 'error', message })
+                    throw new Error(message)
+                }
+
+                const successMessage = editId
+                    ? 'Venda atualizada com sucesso.'
+                    : 'Venda lançada com sucesso.'
+
                 setEditId(null)
+                setOperationStatus({ status: 'success', message: successMessage })
                 const nextPayload = await fetchSales(currentPage)
                 setSales(nextPayload.sales)
                 setCurrentPage(nextPayload.currentPage)
                 setTotalPages(nextPayload.totalPages)
                 setTotalItems(nextPayload.totalItems)
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Erro ao salvar venda.'
+
+                const isNetworkFailure =
+                    !navigator.onLine ||
+                    /falha de rede|failed to fetch|network|offline|load failed/i.test(message)
+
+                setOperationStatus({
+                    status: isNetworkFailure ? 'offline' : 'error',
+                    message: isNetworkFailure ? offlineMessage : message,
+                })
+                throw error
             } finally {
                 setIsSaving(false)
             }

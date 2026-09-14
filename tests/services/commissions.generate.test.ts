@@ -7,6 +7,7 @@ import { Employee } from '@/models/Employee'
 import { SituationType } from '@/models/SituationType'
 import { Situation } from '@/models/Situation'
 import { Commission } from '@/models/Commission'
+import { CommissionProcess } from '@/models/CommissionProcess'
 import { SaleCommissionSector } from '@/models/SaleCommissionSector'
 
 describe('generateCommissionsForDate', () => {
@@ -123,9 +124,33 @@ describe('generateCommissionsForDate', () => {
         })
     })
 
-    it('regenerates snapshots without duplicating records for the same day', async () => {
+    it('marks the process as network_lost when the database connection fails during generation', async () => {
         const tenantId = new Types.ObjectId().toString()
         const date = new Date('2026-07-11T00:00:00.000Z')
+
+        const saleExistsSpy = jest.spyOn(Sale, 'exists').mockRejectedValueOnce(
+            Object.assign(new Error('MongoDB connection lost'), {
+                name: 'MongoNetworkError',
+                code: 'ECONNRESET',
+            }),
+        )
+
+        await expect(generateCommissionsForDate(tenantId, date)).rejects.toThrow(
+            'MongoDB connection lost',
+        )
+
+        const process = await CommissionProcess.findOne({ tenantId, date }).lean()
+        expect(process).toMatchObject({
+            status: 'network_lost',
+            errorCode: 'database_connection_lost',
+        })
+
+        saleExistsSpy.mockRestore()
+    })
+
+    it('regenerates snapshots without duplicating records for the same day', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        const date = new Date('2026-07-12T00:00:00.000Z')
 
         const sector = await Sector.create({
             tenantId,

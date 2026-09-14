@@ -3,11 +3,11 @@ import { auth } from '@/auth'
 import { connectDB } from '@/lib/db'
 import { Situation } from '@/models/Situation'
 import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
+import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 
 interface Params {
     params: Promise<{ id: string }>
 }
-
 export async function PUT(req: Request, context: Params) {
     const session = await auth()
     const tenantId = session?.user?.tenantId
@@ -39,20 +39,34 @@ export async function PUT(req: Request, context: Params) {
         )
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const updated = await Situation.findOneAndUpdate(
-        { _id: id, tenantId },
-        {
-            startDate: startRange.start,
-            endDate: endRange.end,
-            employeeId,
-            typeId,
-        },
-        { returnDocument: 'after' },
-    )
+        const updated = await Situation.findOneAndUpdate(
+            { _id: id, tenantId },
+            {
+                startDate: startRange.start,
+                endDate: endRange.end,
+                employeeId,
+                typeId,
+            },
+            { returnDocument: 'after' },
+        )
 
-    return NextResponse.json(updated)
+        return NextResponse.json(updated)
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao atualizar situação.' }, { status: 500 })
+    }
 }
 
 export async function PATCH(req: Request, context: Params) {
@@ -67,13 +81,27 @@ export async function PATCH(req: Request, context: Params) {
 
     const { active } = await req.json()
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const updated = await Situation.findOneAndUpdate(
-        { _id: id, tenantId },
-        { active: Boolean(active) },
-        { returnDocument: 'after' },
-    )
+        const updated = await Situation.findOneAndUpdate(
+            { _id: id, tenantId },
+            { active: Boolean(active) },
+            { returnDocument: 'after' },
+        )
 
-    return NextResponse.json(updated)
+        return NextResponse.json(updated)
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao atualizar situação.' }, { status: 500 })
+    }
 }
