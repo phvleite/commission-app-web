@@ -1,6 +1,7 @@
 import { connectDB } from '@/lib/db'
 import { Commission } from '@/models/Commission'
 import { CommissionProcess } from '@/models/CommissionProcess'
+import { CommissionProcess } from '@/models/CommissionProcess'
 import { Employee } from '@/models/Employee'
 import { Sale } from '@/models/Sale'
 import { SaleCommissionSector } from '@/models/SaleCommissionSector'
