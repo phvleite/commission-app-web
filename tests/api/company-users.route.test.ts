@@ -98,6 +98,39 @@ describe('API company users routes', () => {
         expect(user?.cpf).toBe('52998224725')
     })
 
+    it('POST retorna 503 quando a conexão com o banco cai ao criar usuario', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId, 'admin')
+
+        const createSpy = jest.spyOn(User, 'create').mockRejectedValueOnce(
+            Object.assign(new Error('MongoDB connection lost'), {
+                name: 'MongoNetworkError',
+                code: 'ECONNRESET',
+            }),
+        )
+
+        const res = await POST(
+            new Request('http://localhost/api/company-users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Usuario Offline',
+                    email: 'offline@company.com',
+                    password: 'Senha@123',
+                    passwordConfirmation: 'Senha@123',
+                    role: 'seller',
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(503)
+        await expect(res.json()).resolves.toMatchObject({
+            errorCode: 'database_connection_lost',
+        })
+
+        createSpy.mockRestore()
+    })
+
     it('POST bloqueia email ja existente na base, mesmo em outro tenant', async () => {
         const tenantA = new Types.ObjectId()
         const tenantB = new Types.ObjectId()

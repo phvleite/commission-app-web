@@ -3,6 +3,7 @@ import { getRouteSessionUser } from '@/lib/api/route-auth'
 import { hashPassword } from '@/lib/password'
 import { User, type UserRole } from '@/models/User'
 import { isValidCpf, normalizeCpf } from '@/lib/validators/cpf'
+import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 
 const ALLOWED_ROLES: UserRole[] = ['admin', 'manager', 'seller']
 
@@ -14,7 +15,6 @@ function toExactCaseInsensitiveEmailRegex(value: string): RegExp {
 function canManageUsers(role: UserRole): boolean {
     return role === 'admin'
 }
-
 export async function GET() {
     const user = await getRouteSessionUser()
 
@@ -22,14 +22,28 @@ export async function GET() {
         return Response.json({ error: 'Nao autenticado.' }, { status: 401 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const users = await User.find({ tenantId: user.tenantId })
-        .sort({ name: 1 })
-        .select('-passwordHash')
-        .lean()
+        const users = await User.find({ tenantId: user.tenantId })
+            .sort({ name: 1 })
+            .select('-passwordHash')
+            .lean()
 
-    return Response.json({ data: users })
+        return Response.json({ data: users })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Erro ao consultar usuarios.' }, { status: 500 })
+    }
 }
 
 export async function POST(request: Request) {
@@ -96,46 +110,73 @@ export async function POST(request: Request) {
         return Response.json({ error: 'Informe um CPF valido.' }, { status: 400 })
     }
 
-    await connectDB()
-
-    const existingUserEmail = await User.findOne({
-        email: toExactCaseInsensitiveEmailRegex(email),
-    })
-        .select('_id')
-        .lean()
-    if (existingUserEmail) {
-        return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
-    }
-
     try {
-        const passwordHash = await hashPassword(password)
+        await connectDB()
 
-        const newUser = await User.create({
-            tenantId: user.tenantId,
-            name,
-            email,
-            cpf,
-            phone,
-            passwordHash,
-            role,
-            active: true,
+        const existingUserEmail = await User.findOne({
+            email: toExactCaseInsensitiveEmailRegex(email),
         })
-
-        const safeUser = await User.findById(newUser._id).select('-passwordHash').lean()
-        return Response.json({ data: safeUser }, { status: 201 })
-    } catch (error) {
-        if (
-            typeof error === 'object' &&
-            error !== null &&
-            'code' in error &&
-            (error as { code?: number }).code === 11000
-        ) {
+            .select('_id')
+            .lean()
+        if (existingUserEmail) {
             return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
         }
 
-        const message = error instanceof Error ? error.message : ''
-        if (message.includes('Limite de ') && message.includes('usuarios por tenant')) {
-            return Response.json({ error: message }, { status: 400 })
+        try {
+            const passwordHash = await hashPassword(password)
+
+            const newUser = await User.create({
+                tenantId: user.tenantId,
+                name,
+                email,
+                cpf,
+                phone,
+                passwordHash,
+                role,
+                active: true,
+            })
+
+            const safeUser = await User.findById(newUser._id).select('-passwordHash').lean()
+            return Response.json({ data: safeUser }, { status: 201 })
+        } catch (error) {
+            if (
+                typeof error === 'object' &&
+                error !== null &&
+                'code' in error &&
+                (error as { code?: number }).code === 11000
+            ) {
+                return Response.json(
+                    { error: 'Ja existe usuario com este email.' },
+                    { status: 409 },
+                )
+            }
+
+            const message = error instanceof Error ? error.message : ''
+            if (message.includes('Limite de ') && message.includes('usuarios por tenant')) {
+                return Response.json({ error: message }, { status: 400 })
+            }
+
+            if (isDatabaseConnectionError(error)) {
+                return Response.json(
+                    {
+                        error: 'Falha de conexão com o banco de dados.',
+                        errorCode: 'database_connection_lost',
+                    },
+                    { status: 503 },
+                )
+            }
+
+            return Response.json({ error: 'Nao foi possivel criar o usuario.' }, { status: 500 })
+        }
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
         }
 
         return Response.json({ error: 'Nao foi possivel criar o usuario.' }, { status: 500 })

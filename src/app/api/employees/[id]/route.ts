@@ -4,7 +4,7 @@ import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 import { getEmployeePlanRangeWarning } from '@/services/employees/getEmployeePlanRangeWarning'
-
+import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 interface RouteContext {
     params: Promise<{ id: string }>
 }
@@ -73,41 +73,55 @@ export async function PATCH(request: Request, context: RouteContext) {
         }
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    if (update.sectorId) {
-        const sector = await Sector.findOne({
-            _id: update.sectorId,
-            tenantId: user.tenantId,
-        }).lean()
+        if (update.sectorId) {
+            const sector = await Sector.findOne({
+                _id: update.sectorId,
+                tenantId: user.tenantId,
+            }).lean()
 
-        if (!sector) {
+            if (!sector) {
+                return Response.json(
+                    { error: 'Setor nao encontrado para este tenant.' },
+                    { status: 404 },
+                )
+            }
+
+            if (sector.isMeritocracia) {
+                return Response.json(
+                    { error: 'Setor de meritocracia nao pode ser vinculado a colaborador.' },
+                    { status: 400 },
+                )
+            }
+        }
+
+        const employee = await Employee.findOne({ _id: id, tenantId: user.tenantId })
+
+        if (!employee) {
+            return Response.json({ error: 'Colaborador nao encontrado.' }, { status: 404 })
+        }
+
+        Object.assign(employee, update)
+        await employee.save()
+
+        const warning = await getEmployeePlanRangeWarning(user.tenantId)
+
+        return Response.json({ data: employee, warning })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
             return Response.json(
-                { error: 'Setor nao encontrado para este tenant.' },
-                { status: 404 },
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
             )
         }
 
-        if (sector.isMeritocracia) {
-            return Response.json(
-                { error: 'Setor de meritocracia nao pode ser vinculado a colaborador.' },
-                { status: 400 },
-            )
-        }
+        return Response.json({ error: 'Erro ao editar colaborador.' }, { status: 500 })
     }
-
-    const employee = await Employee.findOne({ _id: id, tenantId: user.tenantId })
-
-    if (!employee) {
-        return Response.json({ error: 'Colaborador nao encontrado.' }, { status: 404 })
-    }
-
-    Object.assign(employee, update)
-    await employee.save()
-
-    const warning = await getEmployeePlanRangeWarning(user.tenantId)
-
-    return Response.json({ data: employee, warning })
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -127,16 +141,30 @@ export async function DELETE(_request: Request, context: RouteContext) {
         return Response.json({ error: 'ID invalido.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const employee = await Employee.findOne({ _id: id, tenantId: user.tenantId })
+        const employee = await Employee.findOne({ _id: id, tenantId: user.tenantId })
 
-    if (!employee) {
-        return Response.json({ error: 'Colaborador nao encontrado.' }, { status: 404 })
+        if (!employee) {
+            return Response.json({ error: 'Colaborador nao encontrado.' }, { status: 404 })
+        }
+
+        employee.active = false
+        await employee.save()
+
+        return Response.json({ data: employee })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Erro ao inativar colaborador.' }, { status: 500 })
     }
-
-    employee.active = false
-    await employee.save()
-
-    return Response.json({ data: employee })
 }
