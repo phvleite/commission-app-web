@@ -3,6 +3,27 @@ import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
 import { Sector } from '@/models/Sector'
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 interface RouteContext {
     params: Promise<{ id: string }>
 }
@@ -56,45 +77,69 @@ export async function PATCH(request: Request, context: RouteContext) {
         update.isMeritocracia = Boolean(body.isMeritocracia)
     }
 
-    await connectDB()
-
-    const sector = await Sector.findOne({ _id: id, tenantId: user.tenantId })
-
-    if (!sector) {
-        return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
-    }
-
-    if (update.isMeritocracia === true) {
-        const existingMeritocracia = await Sector.findOne({
-            tenantId: user.tenantId,
-            isMeritocracia: true,
-            _id: { $ne: sector._id },
-        })
-            .select('_id')
-            .lean()
-
-        if (existingMeritocracia) {
-            return Response.json(
-                { error: 'Ja existe um setor marcado como meritocracia para esta empresa.' },
-                { status: 409 },
-            )
-        }
-    }
-
     try {
-        Object.assign(sector, update)
-        await sector.save()
-        return Response.json({ data: sector })
+        await connectDB()
+
+        const sector = await Sector.findOne({ _id: id, tenantId: user.tenantId })
+
+        if (!sector) {
+            return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
+        }
+
+        if (update.isMeritocracia === true) {
+            const existingMeritocracia = await Sector.findOne({
+                tenantId: user.tenantId,
+                isMeritocracia: true,
+                _id: { $ne: sector._id },
+            })
+                .select('_id')
+                .lean()
+
+            if (existingMeritocracia) {
+                return Response.json(
+                    { error: 'Ja existe um setor marcado como meritocracia para esta empresa.' },
+                    { status: 409 },
+                )
+            }
+        }
+
+        try {
+            Object.assign(sector, update)
+            await sector.save()
+            return Response.json({ data: sector })
+        } catch (error) {
+            if (
+                typeof error === 'object' &&
+                error !== null &&
+                'code' in error &&
+                (error as { code?: number }).code === 11000
+            ) {
+                return Response.json(
+                    { error: 'Setor com este nome ja existe no tenant.' },
+                    { status: 409 },
+                )
+            }
+
+            if (isDatabaseConnectionError(error)) {
+                return Response.json(
+                    {
+                        error: 'Falha de conexão com o banco de dados.',
+                        errorCode: 'database_connection_lost',
+                    },
+                    { status: 503 },
+                )
+            }
+
+            return Response.json({ error: 'Nao foi possivel atualizar o setor.' }, { status: 500 })
+        }
     } catch (error) {
-        if (
-            typeof error === 'object' &&
-            error !== null &&
-            'code' in error &&
-            (error as { code?: number }).code === 11000
-        ) {
+        if (isDatabaseConnectionError(error)) {
             return Response.json(
-                { error: 'Setor com este nome ja existe no tenant.' },
-                { status: 409 },
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
             )
         }
 
@@ -119,16 +164,30 @@ export async function DELETE(_request: Request, context: RouteContext) {
         return Response.json({ error: 'ID invalido.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const sector = await Sector.findOne({ _id: id, tenantId: user.tenantId })
+        const sector = await Sector.findOne({ _id: id, tenantId: user.tenantId })
 
-    if (!sector) {
-        return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
+        if (!sector) {
+            return Response.json({ error: 'Setor nao encontrado.' }, { status: 404 })
+        }
+
+        sector.active = false
+        await sector.save()
+
+        return Response.json({ data: sector })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Nao foi possivel inativar o setor.' }, { status: 500 })
     }
-
-    sector.active = false
-    await sector.save()
-
-    return Response.json({ data: sector })
 }

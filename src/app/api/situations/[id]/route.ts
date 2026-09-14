@@ -8,6 +8,27 @@ interface Params {
     params: Promise<{ id: string }>
 }
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 export async function PUT(req: Request, context: Params) {
     const session = await auth()
     const tenantId = session?.user?.tenantId
@@ -39,20 +60,34 @@ export async function PUT(req: Request, context: Params) {
         )
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const updated = await Situation.findOneAndUpdate(
-        { _id: id, tenantId },
-        {
-            startDate: startRange.start,
-            endDate: endRange.end,
-            employeeId,
-            typeId,
-        },
-        { returnDocument: 'after' },
-    )
+        const updated = await Situation.findOneAndUpdate(
+            { _id: id, tenantId },
+            {
+                startDate: startRange.start,
+                endDate: endRange.end,
+                employeeId,
+                typeId,
+            },
+            { returnDocument: 'after' },
+        )
 
-    return NextResponse.json(updated)
+        return NextResponse.json(updated)
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao atualizar situação.' }, { status: 500 })
+    }
 }
 
 export async function PATCH(req: Request, context: Params) {
@@ -67,13 +102,27 @@ export async function PATCH(req: Request, context: Params) {
 
     const { active } = await req.json()
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const updated = await Situation.findOneAndUpdate(
-        { _id: id, tenantId },
-        { active: Boolean(active) },
-        { returnDocument: 'after' },
-    )
+        const updated = await Situation.findOneAndUpdate(
+            { _id: id, tenantId },
+            { active: Boolean(active) },
+            { returnDocument: 'after' },
+        )
 
-    return NextResponse.json(updated)
+        return NextResponse.json(updated)
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao atualizar situação.' }, { status: 500 })
+    }
 }

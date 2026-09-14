@@ -12,6 +12,27 @@ function canManageUsers(role: 'admin' | 'manager' | 'seller'): boolean {
     return role === 'admin'
 }
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 export async function POST(request: Request, context: RouteContext) {
     const sessionUser = await getRouteSessionUser()
 
@@ -57,21 +78,38 @@ export async function POST(request: Request, context: RouteContext) {
         return Response.json({ error: 'A confirmacao da nova senha nao confere.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const targetUser = await User.findOne({ _id: id, tenantId: sessionUser.tenantId })
+        const targetUser = await User.findOne({ _id: id, tenantId: sessionUser.tenantId })
 
-    if (!targetUser) {
-        return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
+        if (!targetUser) {
+            return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
+        }
+
+        const isCurrentPasswordValid = await verifyPassword(
+            currentPassword,
+            targetUser.passwordHash,
+        )
+        if (!isCurrentPasswordValid) {
+            return Response.json({ error: 'Senha atual invalida.' }, { status: 400 })
+        }
+
+        targetUser.passwordHash = await hashPassword(newPassword)
+        await targetUser.save()
+
+        return Response.json({ ok: true })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Nao foi possivel alterar a senha.' }, { status: 500 })
     }
-
-    const isCurrentPasswordValid = await verifyPassword(currentPassword, targetUser.passwordHash)
-    if (!isCurrentPasswordValid) {
-        return Response.json({ error: 'Senha atual invalida.' }, { status: 400 })
-    }
-
-    targetUser.passwordHash = await hashPassword(newPassword)
-    await targetUser.save()
-
-    return Response.json({ ok: true })
 }

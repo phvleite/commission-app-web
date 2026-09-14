@@ -12,6 +12,27 @@ function isMongoDuplicateKeyError(error: unknown): error is { code: number } {
     )
 }
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 interface Params {
     params: Promise<{ id: string }>
 }
@@ -27,9 +48,9 @@ export async function PUT(req: Request, context: Params) {
         return NextResponse.json({ error: 'Descrição obrigatória.' }, { status: 400 })
     }
 
-    await connectDB()
-
     try {
+        await connectDB()
+
         const updated = await SituationType.findOneAndUpdate(
             { _id: id, tenantId },
             { description: description.trim() },
@@ -45,6 +66,16 @@ export async function PUT(req: Request, context: Params) {
             )
         }
 
+        if (isDatabaseConnectionError(err)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
         return NextResponse.json({ error: 'Erro ao editar tipo.' }, { status: 500 })
     }
 }
@@ -56,13 +87,27 @@ export async function PATCH(req: Request, context: Params) {
     const { id } = await context.params
     const { active } = await req.json()
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const updated = await SituationType.findOneAndUpdate(
-        { _id: id, tenantId },
-        { active: Boolean(active) },
-        { returnDocument: 'after' },
-    )
+        const updated = await SituationType.findOneAndUpdate(
+            { _id: id, tenantId },
+            { active: Boolean(active) },
+            { returnDocument: 'after' },
+        )
 
-    return NextResponse.json(updated)
+        return NextResponse.json(updated)
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao atualizar tipo.' }, { status: 500 })
+    }
 }

@@ -57,6 +57,39 @@ describe('API employees routes', () => {
         expect(created?.tenantId.toString()).toBe(tenantId.toString())
     })
 
+    it('POST retorna erro de banco quando a conexão cai ao criar colaborador', async () => {
+        const tenantId = new Types.ObjectId()
+        const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })
+
+        setSession(tenantId.toString(), 'admin')
+
+        const createSpy = jest.spyOn(Employee, 'create').mockRejectedValueOnce(
+            Object.assign(new Error('MongoDB connection lost'), {
+                name: 'MongoNetworkError',
+                code: 'ECONNRESET',
+            }),
+        )
+
+        const res = await POST(
+            new Request('http://localhost/api/employees', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Sem Banco',
+                    sectorId: sector._id.toString(),
+                    admissionDate: '2024-01-15',
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(503)
+        await expect(res.json()).resolves.toMatchObject({
+            errorCode: 'database_connection_lost',
+        })
+
+        createSpy.mockRestore()
+    })
+
     it('POST cria colaborador e alerta quando ultrapassa a faixa do plano', async () => {
         const tenantId = new Types.ObjectId()
         const sector = await Sector.create({ tenantId, name: 'Vendas', percentage: 100 })

@@ -8,6 +8,27 @@ import { SaleCommissionSector } from '@/models/SaleCommissionSector'
 import { Sector } from '@/models/Sector'
 import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 export async function GET(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -31,69 +52,84 @@ export async function GET(req: Request) {
     const startDate = startRange.start
     const endDate = endRange.end
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const commissions = await Commission.find({
-        tenantId: session.user.tenantId,
-        date: { $gte: startDate, $lte: endDate },
-    }).lean()
+        const commissions = await Commission.find({
+            tenantId: session.user.tenantId,
+            date: { $gte: startDate, $lte: endDate },
+        }).lean()
 
-    // Enriquecer com nomes
-    const enriched = await Promise.all(
-        commissions.map(async (c) => {
-            const employee = await Employee.findById(c.employeeId).lean()
-            const sector = await Sector.findById(c.sectorId).lean()
+        const enriched = await Promise.all(
+            commissions.map(async (c) => {
+                const employee = await Employee.findById(c.employeeId).lean()
+                const sector = await Sector.findById(c.sectorId).lean()
 
-            return {
-                ...c,
-                employeeName: employee?.name ?? 'Colaborador',
-                sectorName: sector?.name ?? 'Setor',
-            }
-        }),
-    )
+                return {
+                    ...c,
+                    employeeName: employee?.name ?? 'Colaborador',
+                    sectorName: sector?.name ?? 'Setor',
+                }
+            }),
+        )
 
-    // Resumo por setor (inclui meritocracia via snapshot diário de setor)
-    const sectorCommissions = await SaleCommissionSector.find({
-        tenantId: session.user.tenantId,
-        date: { $gte: startDate, $lte: endDate },
-    }).lean()
+        const sectorCommissions = await SaleCommissionSector.find({
+            tenantId: session.user.tenantId,
+            date: { $gte: startDate, $lte: endDate },
+        }).lean()
 
-    const sectorSummaryMap = new Map<string, { sectorName: string; sectorValue: number }>()
+        const sectorSummaryMap = new Map<string, { sectorName: string; sectorValue: number }>()
 
-    await Promise.all(
-        sectorCommissions.map(async (entry) => {
-            const sector = await Sector.findById(entry.sectorId).select('name').lean()
-            const sectorName = sector?.name ?? 'Setor'
+        await Promise.all(
+            sectorCommissions.map(async (entry) => {
+                const sector = await Sector.findById(entry.sectorId).select('name').lean()
+                const sectorName = sector?.name ?? 'Setor'
 
-            const current = sectorSummaryMap.get(sectorName) ?? {
-                sectorName,
-                sectorValue: 0,
-            }
+                const current = sectorSummaryMap.get(sectorName) ?? {
+                    sectorName,
+                    sectorValue: 0,
+                }
 
-            current.sectorValue += entry.totalSectorValue
-            sectorSummaryMap.set(sectorName, current)
-        }),
-    )
+                current.sectorValue += entry.totalSectorValue
+                sectorSummaryMap.set(sectorName, current)
+            }),
+        )
 
-    const sectorSummary = Array.from(sectorSummaryMap.values()).sort((a, b) =>
-        a.sectorName.localeCompare(b.sectorName, 'pt-BR'),
-    )
+        const sectorSummary = Array.from(sectorSummaryMap.values()).sort((a, b) =>
+            a.sectorName.localeCompare(b.sectorName, 'pt-BR'),
+        )
 
-    const sales = await Sale.find({
-        tenantId: session.user.tenantId,
-        date: { $gte: startDate, $lte: endDate },
-    })
-        .select('value totalCommissionValue')
-        .lean()
+        const sales = await Sale.find({
+            tenantId: session.user.tenantId,
+            date: { $gte: startDate, $lte: endDate },
+        })
+            .select('value totalCommissionValue')
+            .lean()
 
-    const salesSummary = sales.map((sale) => ({
-        value: sale.value,
-        totalCommissionValue: sale.totalCommissionValue,
-    }))
+        const salesSummary = sales.map((sale) => ({
+            value: sale.value,
+            totalCommissionValue: sale.totalCommissionValue,
+        }))
 
-    return NextResponse.json({
-        data: enriched,
-        sectorSummary,
-        salesSummary,
-    })
+        return NextResponse.json({
+            data: enriched,
+            sectorSummary,
+            salesSummary,
+        })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json(
+            { error: 'Erro ao consultar comissões do período.' },
+            { status: 500 },
+        )
+    }
 }

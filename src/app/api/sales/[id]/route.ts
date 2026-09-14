@@ -31,6 +31,27 @@ function serializeSale(sale: {
     }
 }
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 export async function GET(_req: NextRequest, context: RouteContext) {
     const session = await auth()
     if (!session) {
@@ -43,20 +64,44 @@ export async function GET(_req: NextRequest, context: RouteContext) {
         return NextResponse.json({ error: 'ID de venda inválido.' }, { status: 400 })
     }
 
-    await connectDB()
-
     try {
-        const sale = await Sale.findOne({
-            _id: id,
-            tenantId: session.user.tenantId,
-        }).lean()
+        await connectDB()
 
-        if (!sale) {
-            return NextResponse.json({ error: 'Venda não encontrada' }, { status: 404 })
+        try {
+            const sale = await Sale.findOne({
+                _id: id,
+                tenantId: session.user.tenantId,
+            }).lean()
+
+            if (!sale) {
+                return NextResponse.json({ error: 'Venda não encontrada' }, { status: 404 })
+            }
+
+            return NextResponse.json({ sale: serializeSale(sale) })
+        } catch (error) {
+            if (isDatabaseConnectionError(error)) {
+                return NextResponse.json(
+                    {
+                        error: 'Falha de conexão com o banco de dados.',
+                        errorCode: 'database_connection_lost',
+                    },
+                    { status: 503 },
+                )
+            }
+
+            return NextResponse.json({ error: 'Erro ao buscar venda' }, { status: 500 })
+        }
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
         }
 
-        return NextResponse.json({ sale: serializeSale(sale) })
-    } catch {
         return NextResponse.json({ error: 'Erro ao buscar venda' }, { status: 500 })
     }
 }
@@ -89,50 +134,60 @@ export async function PUT(req: Request, context: RouteContext) {
     const newValueCentavos = Math.round(value * 100)
     const newCommissionCentavos = Math.round(newValueCentavos * 0.1)
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const sale = await Sale.findOne({
-        _id: id,
-        tenantId: session.user.tenantId,
-    })
+        const sale = await Sale.findOne({
+            _id: id,
+            tenantId: session.user.tenantId,
+        })
 
-    if (!sale) {
-        return NextResponse.json({ error: 'Venda não encontrada.' }, { status: 404 })
+        if (!sale) {
+            return NextResponse.json({ error: 'Venda não encontrada.' }, { status: 404 })
+        }
+
+        const oldDate = sale.date
+
+        const exists = await Sale.findOne({
+            tenantId: session.user.tenantId,
+            date: {
+                $gte: dayRange.start,
+                $lte: dayRange.end,
+            },
+            _id: { $ne: id },
+        })
+
+        if (exists) {
+            return NextResponse.json(
+                { error: 'Já existe uma venda registrada para esta data.' },
+                { status: 400 },
+            )
+        }
+
+        const oldDateStart = getUtcDayStartFromDate(oldDate)
+        if (oldDateStart.getTime() !== newDate.getTime()) {
+            await deleteCommissionsForDate(session.user.tenantId, oldDate)
+        }
+
+        sale.date = newDate
+        sale.value = newValueCentavos
+        sale.totalCommissionValue = newCommissionCentavos
+        await sale.save()
+
+        await generateCommissionsForDate(session.user.tenantId, newDate)
+
+        return NextResponse.json({ ok: true })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao atualizar venda' }, { status: 500 })
     }
-
-    const oldDate = sale.date
-
-    // Verificar duplicidade
-    const exists = await Sale.findOne({
-        tenantId: session.user.tenantId,
-        date: {
-            $gte: dayRange.start,
-            $lte: dayRange.end,
-        },
-        _id: { $ne: id },
-    })
-
-    if (exists) {
-        return NextResponse.json(
-            { error: 'Já existe uma venda registrada para esta data.' },
-            { status: 400 },
-        )
-    }
-
-    // Se a data mudou, apagar comissões antigas
-    const oldDateStart = getUtcDayStartFromDate(oldDate)
-    if (oldDateStart.getTime() !== newDate.getTime()) {
-        await deleteCommissionsForDate(session.user.tenantId, oldDate)
-    }
-
-    // Atualizar venda
-    sale.date = newDate
-    sale.value = newValueCentavos
-    sale.totalCommissionValue = newCommissionCentavos
-    await sale.save()
-
-    // Gerar comissões novas
-    await generateCommissionsForDate(session.user.tenantId, newDate)
-
-    return NextResponse.json({ ok: true })
 }

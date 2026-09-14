@@ -12,21 +12,56 @@ function isMongoDuplicateKeyError(error: unknown): error is { code: number } {
     )
 }
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 export async function GET() {
     const session = await auth()
     const tenantId = session?.user?.tenantId
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const types = await SituationType.find({ tenantId }).sort({ description: 1 }).lean()
+        const types = await SituationType.find({ tenantId }).sort({ description: 1 }).lean()
 
-    return NextResponse.json({
-        types: types.map((t) => ({
-            _id: String(t._id),
-            description: t.description,
-            active: t.active,
-        })),
-    })
+        return NextResponse.json({
+            types: types.map((t) => ({
+                _id: String(t._id),
+                description: t.description,
+                active: t.active,
+            })),
+        })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao consultar tipos de situação.' }, { status: 500 })
+    }
 }
 
 export async function POST(req: Request) {
@@ -39,9 +74,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Descrição obrigatória.' }, { status: 400 })
     }
 
-    await connectDB()
-
     try {
+        await connectDB()
+
         const created = await SituationType.create({
             tenantId,
             description: description.trim(),
@@ -58,6 +93,16 @@ export async function POST(req: Request) {
             return NextResponse.json(
                 { error: 'Já existe um tipo com essa descrição.' },
                 { status: 400 },
+            )
+        }
+
+        if (isDatabaseConnectionError(err)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
             )
         }
 

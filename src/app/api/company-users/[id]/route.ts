@@ -17,6 +17,27 @@ function canManageUsers(role: 'admin' | 'manager' | 'seller'): boolean {
     return role === 'admin'
 }
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 function isValidRole(value: string): value is 'admin' | 'manager' | 'seller' {
     return value === 'admin' || value === 'manager' || value === 'seller'
 }
@@ -69,63 +90,96 @@ export async function PUT(request: Request, context: RouteContext) {
         return Response.json({ error: 'Informe um CPF valido.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const targetUser = await User.findOne({ _id: id, tenantId: sessionUser.tenantId })
+        const targetUser = await User.findOne({ _id: id, tenantId: sessionUser.tenantId })
 
-    if (!targetUser) {
-        return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
-    }
-
-    if (targetUser.email.toLowerCase() !== email) {
-        const existingUserEmail = await User.findOne({
-            email: toExactCaseInsensitiveEmailRegex(email),
-        })
-            .select('_id')
-            .lean()
-        if (existingUserEmail) {
-            return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
+        if (!targetUser) {
+            return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
         }
-    }
 
-    if (targetUser.role === 'admin' && role !== 'admin' && targetUser.active) {
-        const totalActiveAdmins = await User.countDocuments({
-            tenantId: sessionUser.tenantId,
-            role: 'admin',
-            active: true,
-        })
+        if (targetUser.email.toLowerCase() !== email) {
+            const existingUserEmail = await User.findOne({
+                email: toExactCaseInsensitiveEmailRegex(email),
+            })
+                .select('_id')
+                .lean()
+            if (existingUserEmail) {
+                return Response.json(
+                    { error: 'Ja existe usuario com este email.' },
+                    { status: 409 },
+                )
+            }
+        }
 
-        if (totalActiveAdmins <= 1) {
+        if (targetUser.role === 'admin' && role !== 'admin' && targetUser.active) {
+            const totalActiveAdmins = await User.countDocuments({
+                tenantId: sessionUser.tenantId,
+                role: 'admin',
+                active: true,
+            })
+
+            if (totalActiveAdmins <= 1) {
+                return Response.json(
+                    { error: 'Nao e permitido remover o ultimo admin da empresa.' },
+                    { status: 400 },
+                )
+            }
+        }
+
+        targetUser.name = name
+        targetUser.email = email
+        targetUser.cpf = cpf
+        targetUser.phone = phone
+        targetUser.role = role
+
+        try {
+            await targetUser.save()
+        } catch (error) {
+            if (
+                typeof error === 'object' &&
+                error !== null &&
+                'code' in error &&
+                (error as { code?: number }).code === 11000
+            ) {
+                return Response.json(
+                    { error: 'Ja existe usuario com este email.' },
+                    { status: 409 },
+                )
+            }
+
+            if (isDatabaseConnectionError(error)) {
+                return Response.json(
+                    {
+                        error: 'Falha de conexão com o banco de dados.',
+                        errorCode: 'database_connection_lost',
+                    },
+                    { status: 503 },
+                )
+            }
+
             return Response.json(
-                { error: 'Nao e permitido remover o ultimo admin da empresa.' },
-                { status: 400 },
+                { error: 'Nao foi possivel atualizar o usuario.' },
+                { status: 500 },
             )
         }
-    }
 
-    targetUser.name = name
-    targetUser.email = email
-    targetUser.cpf = cpf
-    targetUser.phone = phone
-    targetUser.role = role
-
-    try {
-        await targetUser.save()
+        const safeUser = await User.findById(targetUser._id).select('-passwordHash').lean()
+        return Response.json({ data: safeUser })
     } catch (error) {
-        if (
-            typeof error === 'object' &&
-            error !== null &&
-            'code' in error &&
-            (error as { code?: number }).code === 11000
-        ) {
-            return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
         }
 
         return Response.json({ error: 'Nao foi possivel atualizar o usuario.' }, { status: 500 })
     }
-
-    const safeUser = await User.findById(targetUser._id).select('-passwordHash').lean()
-    return Response.json({ data: safeUser })
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -160,33 +214,47 @@ export async function PATCH(request: Request, context: RouteContext) {
         )
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const targetUser = await User.findOne({ _id: id, tenantId: sessionUser.tenantId })
+        const targetUser = await User.findOne({ _id: id, tenantId: sessionUser.tenantId })
 
-    if (!targetUser) {
-        return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
-    }
+        if (!targetUser) {
+            return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
+        }
 
-    if (targetUser.role === 'admin' && body.active === false) {
-        const totalActiveAdmins = await User.countDocuments({
-            tenantId: sessionUser.tenantId,
-            role: 'admin',
-            active: true,
-        })
+        if (targetUser.role === 'admin' && body.active === false) {
+            const totalActiveAdmins = await User.countDocuments({
+                tenantId: sessionUser.tenantId,
+                role: 'admin',
+                active: true,
+            })
 
-        if (totalActiveAdmins <= 1) {
+            if (totalActiveAdmins <= 1) {
+                return Response.json(
+                    { error: 'Nao e permitido inativar o ultimo admin da empresa.' },
+                    { status: 400 },
+                )
+            }
+        }
+
+        targetUser.active = body.active
+        await targetUser.save()
+
+        const safeUser = await User.findById(targetUser._id).select('-passwordHash').lean()
+
+        return Response.json({ data: safeUser })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
             return Response.json(
-                { error: 'Nao e permitido inativar o ultimo admin da empresa.' },
-                { status: 400 },
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
             )
         }
+
+        return Response.json({ error: 'Nao foi possivel atualizar o usuario.' }, { status: 500 })
     }
-
-    targetUser.active = body.active
-    await targetUser.save()
-
-    const safeUser = await User.findById(targetUser._id).select('-passwordHash').lean()
-
-    return Response.json({ data: safeUser })
 }

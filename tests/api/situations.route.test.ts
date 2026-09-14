@@ -11,6 +11,8 @@ jest.mock('@/auth', () => ({
 
 import { auth } from '@/auth'
 import { GET, POST } from '@/app/api/situations/route'
+import { PUT } from '@/app/api/situations/[id]/route'
+import { POST as POSTSituationType } from '@/app/api/situation-types/route'
 
 const authMock = auth as unknown as jest.Mock
 
@@ -94,6 +96,67 @@ describe('API situations route', () => {
 
         return { employeeA, employeeB, sectorA, sectorB, situationType }
     }
+
+    it('POST de tipo de situação retorna 503 quando a conexão com o banco cai', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId)
+
+        const createSpy = jest.spyOn(SituationType, 'create').mockRejectedValueOnce(
+            Object.assign(new Error('MongoDB connection lost'), {
+                name: 'MongoNetworkError',
+                code: 'ECONNRESET',
+            }),
+        )
+
+        const res = await POSTSituationType(
+            new Request('http://localhost/api/situation-types', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: 'Férias' }),
+            }),
+        )
+
+        expect(res.status).toBe(503)
+        await expect(res.json()).resolves.toMatchObject({
+            errorCode: 'database_connection_lost',
+        })
+
+        createSpy.mockRestore()
+    })
+
+    it('PUT retorna 503 quando a conexão com o banco cai', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId)
+
+        const { employeeA, situationType } = await seed(tenantId)
+        const findOneAndUpdateSpy = jest.spyOn(Situation, 'findOneAndUpdate').mockRejectedValueOnce(
+            Object.assign(new Error('MongoDB connection lost'), {
+                name: 'MongoNetworkError',
+                code: 'ECONNRESET',
+            }),
+        )
+
+        const res = await PUT(
+            new Request('http://localhost/api/situations/' + employeeA._id.toString(), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    startDate: '2026-07-05',
+                    endDate: '2026-07-15',
+                    employeeId: employeeA._id.toString(),
+                    typeId: situationType._id.toString(),
+                }),
+            }),
+            { params: Promise.resolve({ id: employeeA._id.toString() }) },
+        )
+
+        expect(res.status).toBe(503)
+        await expect(res.json()).resolves.toMatchObject({
+            errorCode: 'database_connection_lost',
+        })
+
+        findOneAndUpdateSpy.mockRestore()
+    })
 
     it('GET filtra por setor corretamente', async () => {
         const tenantId = new Types.ObjectId().toString()

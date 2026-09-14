@@ -26,7 +26,7 @@ export function SalesForm({
     const [value, setValue] = useState('')
     const [localIsSaving, setLocalIsSaving] = useState(false)
     const [feedback, setFeedback] = useState<{
-        type: 'info' | 'success' | 'error'
+        type: 'info' | 'success' | 'error' | 'offline'
         message: string
     } | null>(null)
 
@@ -98,7 +98,13 @@ export function SalesForm({
             toast.success(editMode ? 'Venda atualizada com sucesso!' : 'Venda lançada com sucesso!')
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Erro ao salvar venda.'
-            setFeedback({ type: 'error', message })
+            const isOffline = /Sem conexão|offline|Falha de rede|failed to fetch|network/i.test(
+                message,
+            )
+            setFeedback({
+                type: isOffline ? 'offline' : 'error',
+                message,
+            })
             toast.error(message)
         } finally {
             setLocalIsSaving(false)
@@ -147,7 +153,9 @@ export function SalesForm({
                             ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                             : feedback.type === 'error'
                               ? 'border-red-200 bg-red-50 text-(--color-danger)'
-                              : 'border-amber-200 bg-amber-50 text-amber-900'
+                              : feedback.type === 'offline'
+                                ? 'border-orange-200 bg-orange-50 text-orange-700'
+                                : 'border-amber-200 bg-amber-50 text-amber-900'
                     }`}
                 >
                     {feedback.message}

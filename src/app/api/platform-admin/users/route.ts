@@ -23,6 +23,28 @@ function isAllowedPlatformRole(
 ): value is Exclude<PlatformRole, 'platform_owner'> {
     return value === 'platform_admin' || value === 'platform_auditor'
 }
+
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 export async function GET() {
     const session = await auth()
 
@@ -34,26 +56,43 @@ export async function GET() {
         return Response.json({ error: 'Sem permissao para acessar.' }, { status: 403 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const users = await User.find({
-        platformRole: { $exists: true, $ne: null },
-    })
-        .sort({ name: 1 })
-        .select('-passwordHash')
-        .lean()
+        const users = await User.find({
+            platformRole: { $exists: true, $ne: null },
+        })
+            .sort({ name: 1 })
+            .select('-passwordHash')
+            .lean()
 
-    return Response.json({
-        data: users.map((user) => ({
-            _id: user._id.toString(),
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            platformRole: user.platformRole,
-            active: user.active,
-            createdAt: user.createdAt,
-        })),
-    })
+        return Response.json({
+            data: users.map((user) => ({
+                _id: user._id.toString(),
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                platformRole: user.platformRole,
+                active: user.active,
+                createdAt: user.createdAt,
+            })),
+        })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json(
+            { error: 'Erro ao consultar usuarios de plataforma.' },
+            { status: 500 },
+        )
+    }
 }
 
 export async function POST(request: Request) {
@@ -117,52 +156,68 @@ export async function POST(request: Request) {
         return Response.json({ error: 'A confirmacao de senha nao confere.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const existingUser = await User.findOne({
-        email: toExactCaseInsensitiveEmailRegex(email),
-    })
-        .select('_id')
-        .lean()
+        const existingUser = await User.findOne({
+            email: toExactCaseInsensitiveEmailRegex(email),
+        })
+            .select('_id')
+            .lean()
 
-    if (existingUser) {
-        return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
-    }
+        if (existingUser) {
+            return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
+        }
 
-    const passwordHash = await hashPassword(password)
-    const now = new Date()
+        const passwordHash = await hashPassword(password)
+        const now = new Date()
 
-    const insertResult = await User.collection.insertOne({
-        name,
-        email,
-        passwordHash,
-        role: 'admin',
-        platformRole,
-        active: true,
-        createdAt: now,
-        updatedAt: now,
-    })
+        const insertResult = await User.collection.insertOne({
+            name,
+            email,
+            passwordHash,
+            role: 'admin',
+            platformRole,
+            active: true,
+            createdAt: now,
+            updatedAt: now,
+        })
 
-    const createdUser = await User.findById(insertResult.insertedId).select('-passwordHash').lean()
+        const createdUser = await User.findById(insertResult.insertedId)
+            .select('-passwordHash')
+            .lean()
 
-    if (!createdUser) {
+        if (!createdUser) {
+            return Response.json({ error: 'Nao foi possivel criar o usuario.' }, { status: 500 })
+        }
+
+        return Response.json(
+            {
+                data: {
+                    _id: createdUser._id.toString(),
+                    name: createdUser.name,
+                    email: createdUser.email,
+                    role: createdUser.role,
+                    platformRole: createdUser.platformRole,
+                    active: createdUser.active,
+                    createdAt: createdUser.createdAt,
+                },
+            },
+            { status: 201 },
+        )
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
         return Response.json({ error: 'Nao foi possivel criar o usuario.' }, { status: 500 })
     }
-
-    return Response.json(
-        {
-            data: {
-                _id: createdUser._id.toString(),
-                name: createdUser.name,
-                email: createdUser.email,
-                role: createdUser.role,
-                platformRole: createdUser.platformRole,
-                active: createdUser.active,
-                createdAt: createdUser.createdAt,
-            },
-        },
-        { status: 201 },
-    )
 }
 
 export async function PATCH(request: Request) {
@@ -202,48 +257,62 @@ export async function PATCH(request: Request) {
         return Response.json({ error: 'ID invalido.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const targetUser = await User.findById(id)
+        const targetUser = await User.findById(id)
 
-    if (!targetUser || !isPlatformAdminRole(targetUser.platformRole)) {
-        return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
-    }
+        if (!targetUser || !isPlatformAdminRole(targetUser.platformRole)) {
+            return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
+        }
 
-    if (targetUser.platformRole === 'platform_owner' && body.active === false) {
-        const totalActiveOwners = await User.countDocuments({
-            platformRole: 'platform_owner',
-            active: true,
+        if (targetUser.platformRole === 'platform_owner' && body.active === false) {
+            const totalActiveOwners = await User.countDocuments({
+                platformRole: 'platform_owner',
+                active: true,
+            })
+
+            if (totalActiveOwners <= 1) {
+                return Response.json(
+                    { error: 'Nao e permitido inativar o ultimo platform owner.' },
+                    { status: 400 },
+                )
+            }
+        }
+
+        await User.collection.updateOne(
+            { _id: targetUser._id },
+            { $set: { active: body.active, updatedAt: new Date() } },
+        )
+
+        const safeUser = await User.findById(targetUser._id).select('-passwordHash').lean()
+
+        return Response.json({
+            data: safeUser
+                ? {
+                      _id: safeUser._id.toString(),
+                      name: safeUser.name,
+                      email: safeUser.email,
+                      role: safeUser.role,
+                      platformRole: safeUser.platformRole,
+                      active: safeUser.active,
+                      createdAt: safeUser.createdAt,
+                  }
+                : null,
         })
-
-        if (totalActiveOwners <= 1) {
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
             return Response.json(
-                { error: 'Nao e permitido inativar o ultimo platform owner.' },
-                { status: 400 },
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
             )
         }
+
+        return Response.json({ error: 'Nao foi possivel atualizar o usuario.' }, { status: 500 })
     }
-
-    await User.collection.updateOne(
-        { _id: targetUser._id },
-        { $set: { active: body.active, updatedAt: new Date() } },
-    )
-
-    const safeUser = await User.findById(targetUser._id).select('-passwordHash').lean()
-
-    return Response.json({
-        data: safeUser
-            ? {
-                  _id: safeUser._id.toString(),
-                  name: safeUser.name,
-                  email: safeUser.email,
-                  role: safeUser.role,
-                  platformRole: safeUser.platformRole,
-                  active: safeUser.active,
-                  createdAt: safeUser.createdAt,
-              }
-            : null,
-    })
 }
 
 export async function PUT(request: Request) {
@@ -296,50 +365,64 @@ export async function PUT(request: Request) {
         return Response.json({ error: 'Informe um email valido.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const targetUser = await User.findById(id)
+        const targetUser = await User.findById(id)
 
-    if (!targetUser || !isPlatformAdminRole(targetUser.platformRole)) {
-        return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
-    }
+        if (!targetUser || !isPlatformAdminRole(targetUser.platformRole)) {
+            return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
+        }
 
-    const existingUser = await User.findOne({
-        email: toExactCaseInsensitiveEmailRegex(email),
-        _id: { $ne: id },
-    })
-        .select('_id')
-        .lean()
+        const existingUser = await User.findOne({
+            email: toExactCaseInsensitiveEmailRegex(email),
+            _id: { $ne: id },
+        })
+            .select('_id')
+            .lean()
 
-    if (existingUser) {
-        return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
-    }
+        if (existingUser) {
+            return Response.json({ error: 'Ja existe usuario com este email.' }, { status: 409 })
+        }
 
-    await User.collection.updateOne(
-        { _id: targetUser._id },
-        {
-            $set: {
-                name,
-                email,
-                platformRole,
-                updatedAt: new Date(),
+        await User.collection.updateOne(
+            { _id: targetUser._id },
+            {
+                $set: {
+                    name,
+                    email,
+                    platformRole,
+                    updatedAt: new Date(),
+                },
             },
-        },
-    )
+        )
 
-    const safeUser = await User.findById(targetUser._id).select('-passwordHash').lean()
+        const safeUser = await User.findById(targetUser._id).select('-passwordHash').lean()
 
-    return Response.json({
-        data: safeUser
-            ? {
-                  _id: safeUser._id.toString(),
-                  name: safeUser.name,
-                  email: safeUser.email,
-                  role: safeUser.role,
-                  platformRole: safeUser.platformRole,
-                  active: safeUser.active,
-                  createdAt: safeUser.createdAt,
-              }
-            : null,
-    })
+        return Response.json({
+            data: safeUser
+                ? {
+                      _id: safeUser._id.toString(),
+                      name: safeUser.name,
+                      email: safeUser.email,
+                      role: safeUser.role,
+                      platformRole: safeUser.platformRole,
+                      active: safeUser.active,
+                      createdAt: safeUser.createdAt,
+                  }
+                : null,
+        })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Nao foi possivel atualizar o usuario.' }, { status: 500 })
+    }
 }

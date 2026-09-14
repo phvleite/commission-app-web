@@ -10,6 +10,27 @@ import {
     resolveRequestTimeZone,
 } from '@/lib/date-timezone'
 
+function isDatabaseConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+
+    const message = error.message.toLowerCase()
+    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
+    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
+
+    return (
+        name.includes('mongo') ||
+        name.includes('mongoose') ||
+        name.includes('network') ||
+        message.includes('connection lost') ||
+        message.includes('timed out') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('timeout') ||
+        code.includes('econn') ||
+        code.includes('timedout')
+    )
+}
+
 export async function GET(req: Request) {
     const session = await auth()
     const tenantId = session?.user?.tenantId
@@ -33,65 +54,90 @@ export async function GET(req: Request) {
     const pageSize = shouldPaginate ? 50 : 0
     const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const query: Record<string, unknown> = { tenantId }
+        const query: Record<string, unknown> = { tenantId }
 
-    if (employeeId && employeeId !== 'todos') query.employeeId = employeeId
-    if (typeId && typeId !== 'todos') query.typeId = typeId
+        if (employeeId && employeeId !== 'todos') query.employeeId = employeeId
+        if (typeId && typeId !== 'todos') query.typeId = typeId
 
-    // Se sectorId foi fornecido, buscar employees do setor
-    if (sectorId && sectorId !== 'todos') {
-        const employeesInSector = await Employee.find({ tenantId, sectorId }, '_id').lean()
-        const employeeIds = employeesInSector.map((e) => e._id)
-        query.employeeId = { $in: employeeIds }
-    }
-
-    if (start && end) {
-        const startRange = getUtcRangeForCalendarDay(start, timeZone)
-        const endRange = getUtcRangeForCalendarDay(end, timeZone)
-
-        if (!startRange || !endRange) {
-            return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+        if (sectorId && sectorId !== 'todos') {
+            const employeesInSector = await Employee.find({ tenantId, sectorId }, '_id').lean()
+            const employeeIds = employeesInSector.map((e) => e._id)
+            query.employeeId = { $in: employeeIds }
         }
 
-        query.$and = [
-            { startDate: { $lte: endRange.end } },
-            { endDate: { $gte: startRange.start } },
-        ]
-    } else if (month || year) {
-        const y = year ? parseInt(year) : new Date().getFullYear()
-        const m = month ? parseInt(month) : undefined
+        if (start && end) {
+            const startRange = getUtcRangeForCalendarDay(start, timeZone)
+            const endRange = getUtcRangeForCalendarDay(end, timeZone)
 
-        if (Number.isNaN(y) || (m !== undefined && Number.isNaN(m))) {
-            return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+            if (!startRange || !endRange) {
+                return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+            }
+
+            query.$and = [
+                { startDate: { $lte: endRange.end } },
+                { endDate: { $gte: startRange.start } },
+            ]
+        } else if (month || year) {
+            const y = year ? parseInt(year) : new Date().getFullYear()
+            const m = month ? parseInt(month) : undefined
+
+            if (Number.isNaN(y) || (m !== undefined && Number.isNaN(m))) {
+                return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+            }
+
+            const firstDay =
+                m !== undefined
+                    ? getUtcRangeForCalendarMonth(y, m, timeZone).start
+                    : getUtcRangeForCalendarMonth(y, 1, timeZone).start
+
+            const lastDay =
+                m !== undefined
+                    ? getUtcRangeForCalendarMonth(y, m, timeZone).end
+                    : getUtcRangeForCalendarMonth(y, 12, timeZone).end
+
+            query.$and = [{ startDate: { $lte: lastDay } }, { endDate: { $gte: firstDay } }]
         }
 
-        const firstDay =
-            m !== undefined
-                ? getUtcRangeForCalendarMonth(y, m, timeZone).start
-                : getUtcRangeForCalendarMonth(y, 1, timeZone).start
+        const queryBuilder = Situation.find(query)
+            .populate('employeeId', 'name active')
+            .populate('typeId', 'description')
+            .sort({ startDate: -1 })
 
-        const lastDay =
-            m !== undefined
-                ? getUtcRangeForCalendarMonth(y, m, timeZone).end
-                : getUtcRangeForCalendarMonth(y, 12, timeZone).end
+        if (shouldPaginate) {
+            const totalItems = await Situation.countDocuments(query)
+            const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+            const currentPage = Math.min(page, totalPages)
+            const skip = (currentPage - 1) * pageSize
 
-        query.$and = [{ startDate: { $lte: lastDay } }, { endDate: { $gte: firstDay } }]
-    }
+            const situations = await queryBuilder.skip(skip).limit(pageSize).lean()
 
-    const queryBuilder = Situation.find(query)
-        .populate('employeeId', 'name active')
-        .populate('typeId', 'description')
-        .sort({ startDate: -1 })
+            return NextResponse.json({
+                situations: situations.map((s) => ({
+                    _id: String(s._id),
+                    employeeId: String((s.employeeId as Record<string, unknown>)?._id ?? ''),
+                    employeeName: (s.employeeId as Record<string, unknown>)?.name ?? '',
+                    employeeActive:
+                        (s.employeeId as Record<string, unknown>)?.active === true ||
+                        (s.employeeId as Record<string, unknown>)?.active === false
+                            ? ((s.employeeId as Record<string, unknown>).active as boolean)
+                            : true,
+                    typeId: String((s.typeId as Record<string, unknown>)?._id ?? ''),
+                    typeDescription: (s.typeId as Record<string, unknown>)?.description ?? '',
+                    startDate: formatDateToYmdInTimeZone(s.startDate, timeZone),
+                    endDate: formatDateToYmdInTimeZone(s.endDate, timeZone),
+                    active: s.active,
+                })),
+                currentPage,
+                totalPages,
+                totalItems,
+                pageSize,
+            })
+        }
 
-    if (shouldPaginate) {
-        const totalItems = await Situation.countDocuments(query)
-        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-        const currentPage = Math.min(page, totalPages)
-        const skip = (currentPage - 1) * pageSize
-
-        const situations = await queryBuilder.skip(skip).limit(pageSize).lean()
+        const situations = await queryBuilder.lean()
 
         return NextResponse.json({
             situations: situations.map((s) => ({
@@ -109,36 +155,24 @@ export async function GET(req: Request) {
                 endDate: formatDateToYmdInTimeZone(s.endDate, timeZone),
                 active: s.active,
             })),
-            currentPage,
-            totalPages,
-            totalItems,
-            pageSize,
+            currentPage: 1,
+            totalPages: 1,
+            totalItems: situations.length,
+            pageSize: situations.length,
         })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao consultar situações.' }, { status: 500 })
     }
-
-    const situations = await queryBuilder.lean()
-
-    return NextResponse.json({
-        situations: situations.map((s) => ({
-            _id: String(s._id),
-            employeeId: String((s.employeeId as Record<string, unknown>)?._id ?? ''),
-            employeeName: (s.employeeId as Record<string, unknown>)?.name ?? '',
-            employeeActive:
-                (s.employeeId as Record<string, unknown>)?.active === true ||
-                (s.employeeId as Record<string, unknown>)?.active === false
-                    ? ((s.employeeId as Record<string, unknown>).active as boolean)
-                    : true,
-            typeId: String((s.typeId as Record<string, unknown>)?._id ?? ''),
-            typeDescription: (s.typeId as Record<string, unknown>)?.description ?? '',
-            startDate: formatDateToYmdInTimeZone(s.startDate, timeZone),
-            endDate: formatDateToYmdInTimeZone(s.endDate, timeZone),
-            active: s.active,
-        })),
-        currentPage: 1,
-        totalPages: 1,
-        totalItems: situations.length,
-        pageSize: situations.length,
-    })
 }
 
 export async function POST(req: Request) {
@@ -170,16 +204,30 @@ export async function POST(req: Request) {
         )
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const created = await Situation.create({
-        tenantId,
-        startDate: startRange.start,
-        endDate: endRange.end,
-        employeeId,
-        typeId,
-        active: true,
-    })
+        const created = await Situation.create({
+            tenantId,
+            startDate: startRange.start,
+            endDate: endRange.end,
+            employeeId,
+            typeId,
+            active: true,
+        })
 
-    return NextResponse.json({ _id: String(created._id) })
+        return NextResponse.json({ _id: String(created._id) })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return NextResponse.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return NextResponse.json({ error: 'Erro ao criar situação.' }, { status: 500 })
+    }
 }
