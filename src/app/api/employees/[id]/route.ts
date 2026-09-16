@@ -106,7 +106,14 @@ export async function PATCH(request: Request, context: RouteContext) {
         Object.assign(employee, update)
         await employee.save()
 
-        const warning = await getEmployeePlanRangeWarning(user.tenantId)
+        let warning: string | undefined
+        try {
+            warning = await getEmployeePlanRangeWarning(user.tenantId)
+        } catch (error) {
+            if (!isDatabaseConnectionError(error)) {
+                throw error
+            }
+        }
 
         return Response.json({ data: employee, warning })
     } catch (error) {

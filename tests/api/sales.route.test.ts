@@ -1,6 +1,9 @@
 import { Types } from 'mongoose'
 import { connectTestDB, disconnectTestDB, clearTestDB } from '@/lib/test-db'
 import { Sale } from '@/models/Sale'
+import { Commission } from '@/models/Commission'
+import { CommissionProcess } from '@/models/CommissionProcess'
+import { SaleCommissionSector } from '@/models/SaleCommissionSector'
 
 jest.mock('@/auth', () => ({
     auth: jest.fn(),
@@ -70,6 +73,13 @@ describe('API sales routes', () => {
         const tenantId = new Types.ObjectId().toString()
         setSession(tenantId)
         generateCommissionsForDateMock.mockResolvedValue(undefined)
+        await CommissionProcess.create({
+            tenantId,
+            date: new Date('2026-07-28T00:00:00.000Z'),
+            status: 'success',
+            startedAt: new Date('2026-07-28T00:00:01.000Z'),
+            finishedAt: new Date('2026-07-28T00:00:02.000Z'),
+        })
 
         const firstResponse = await POST(
             new Request('http://localhost/api/sales', {
@@ -103,6 +113,109 @@ describe('API sales routes', () => {
         const sales = await Sale.find({ tenantId }).lean()
         expect(sales).toHaveLength(1)
         expect(sales[0]?.value).toBe(15000)
+    })
+
+    it('POST rolls back an incomplete previous sale before retrying the same date', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        const date = new Date('2026-07-28T00:00:00.000Z')
+        const sectorId = new Types.ObjectId()
+        const employeeId = new Types.ObjectId()
+        setSession(tenantId)
+        generateCommissionsForDateMock.mockResolvedValue(undefined)
+
+        await Sale.create({
+            tenantId,
+            date,
+            value: 10000,
+            totalCommissionValue: 1000,
+        })
+        await CommissionProcess.create({
+            tenantId,
+            date,
+            status: 'network_lost',
+            startedAt: new Date('2026-07-28T00:00:01.000Z'),
+            finishedAt: new Date('2026-07-28T00:00:02.000Z'),
+            errorCode: 'database_connection_lost',
+        })
+        await Commission.create({
+            tenantId,
+            date,
+            employeeId,
+            sectorId,
+            situation: 'Apto',
+            sectorValue: 1000,
+            employeeValue: 1000,
+            eligibleCount: 1,
+            totalCount: 1,
+        })
+        await SaleCommissionSector.create({
+            tenantId,
+            date,
+            sectorId,
+            appliedPercentage: 100,
+            totalSectorValue: 1000,
+            totalEmployees: 1,
+            eligibleEmployees: 1,
+        })
+
+        const res = await POST(
+            new Request('http://localhost/api/sales', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: '2026-07-28T12:00:00.000Z',
+                    value: 200,
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(200)
+        expect(generateCommissionsForDateMock).toHaveBeenCalledWith(tenantId, date)
+
+        const sales = await Sale.find({ tenantId, date }).lean()
+        expect(sales).toHaveLength(1)
+        expect(sales[0]?.value).toBe(20000)
+        await expect(Commission.countDocuments({ tenantId, date })).resolves.toBe(0)
+        await expect(SaleCommissionSector.countDocuments({ tenantId, date })).resolves.toBe(0)
+        await expect(CommissionProcess.countDocuments({ tenantId, date })).resolves.toBe(0)
+    })
+
+    it('POST rolls back a sale whose commission process was interrupted', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        const date = new Date('2026-07-29T00:00:00.000Z')
+        setSession(tenantId)
+        generateCommissionsForDateMock.mockResolvedValue(undefined)
+
+        await Sale.create({
+            tenantId,
+            date,
+            value: 10000,
+            totalCommissionValue: 1000,
+        })
+        await CommissionProcess.create({
+            tenantId,
+            date,
+            status: 'processing',
+            startedAt: new Date('2026-07-29T00:00:01.000Z'),
+        })
+
+        const res = await POST(
+            new Request('http://localhost/api/sales', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: '2026-07-29T12:00:00.000Z',
+                    value: 200,
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(200)
+        expect(generateCommissionsForDateMock).toHaveBeenCalledWith(tenantId, date)
+
+        const sales = await Sale.find({ tenantId, date }).lean()
+        expect(sales).toHaveLength(1)
+        expect(sales[0]?.value).toBe(20000)
     })
 
     it('GET sem filtros retorna todas as vendas do tenant', async () => {

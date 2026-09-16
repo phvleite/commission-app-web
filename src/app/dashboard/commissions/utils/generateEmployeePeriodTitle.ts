@@ -2,7 +2,7 @@ import { formatDateToBR } from './formatDate'
 
 export function generateEmployeePeriodTitle(name: string, start: string, end: string) {
     if (!start || !end) {
-        return `GORJETAS DE ${name} - PERIODO INVALIDO`
+        return `GORJETAS DE ${name} - PERÍODO INVÁLIDO`
     }
 
     if (start === end) {
@@ -18,7 +18,7 @@ export function generateEmployeePeriodTitle(name: string, start: string, end: st
         const months = [
             'JANEIRO',
             'FEVEREIRO',
-            'MARCO',
+            'MARÇO',
             'ABRIL',
             'MAIO',
             'JUNHO',
@@ -35,5 +35,5 @@ export function generateEmployeePeriodTitle(name: string, start: string, end: st
         return `GORJETAS DE ${name} - REF. ${monthName}/${yi}`
     }
 
-    return `GORJETAS DE ${name} - DE ${formatDateToBR(start)} ATE ${formatDateToBR(end)}`
+    return `GORJETAS DE ${name} - DE ${formatDateToBR(start)} ATÉ ${formatDateToBR(end)}`
 }

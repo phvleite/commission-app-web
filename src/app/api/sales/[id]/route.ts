@@ -1,7 +1,10 @@
 import { auth } from '@/auth'
 import { connectDB } from '@/lib/db'
 import { Sale } from '@/models/Sale'
-import { deleteCommissionsForDate } from '@/services/commissions/delete'
+import {
+    deleteCommissionsForDate,
+    rollbackSaleAndCommissionsForDate,
+} from '@/services/commissions/delete'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
 import { Types } from 'mongoose'
 import { NextRequest, NextResponse } from 'next/server'
@@ -126,6 +129,11 @@ export async function PUT(req: Request, context: RouteContext) {
         }
 
         const oldDate = sale.date
+        const oldSaleValues = {
+            date: sale.date,
+            value: sale.value,
+            totalCommissionValue: sale.totalCommissionValue,
+        }
 
         const exists = await Sale.findOne({
             tenantId: session.user.tenantId,
@@ -143,17 +151,33 @@ export async function PUT(req: Request, context: RouteContext) {
             )
         }
 
-        const oldDateStart = getUtcDayStartFromDate(oldDate)
-        if (oldDateStart.getTime() !== newDate.getTime()) {
-            await deleteCommissionsForDate(session.user.tenantId, oldDate)
+        try {
+            const oldDateStart = getUtcDayStartFromDate(oldDate)
+            if (oldDateStart.getTime() !== newDate.getTime()) {
+                await deleteCommissionsForDate(session.user.tenantId, oldDate)
+            }
+
+            sale.date = newDate
+            sale.value = newValueCentavos
+            sale.totalCommissionValue = newCommissionCentavos
+            await sale.save()
+
+            await generateCommissionsForDate(session.user.tenantId, newDate)
+        } catch (error) {
+            await rollbackSaleAndCommissionsForDate(session.user.tenantId, newDate)
+
+            sale.date = oldSaleValues.date
+            sale.value = oldSaleValues.value
+            sale.totalCommissionValue = oldSaleValues.totalCommissionValue
+            await sale.save()
+
+            const oldDateStart = getUtcDayStartFromDate(oldDate)
+            if (oldDateStart.getTime() !== newDate.getTime()) {
+                await generateCommissionsForDate(session.user.tenantId, oldDate)
+            }
+
+            throw error
         }
-
-        sale.date = newDate
-        sale.value = newValueCentavos
-        sale.totalCommissionValue = newCommissionCentavos
-        await sale.save()
-
-        await generateCommissionsForDate(session.user.tenantId, newDate)
 
         return NextResponse.json({ ok: true })
     } catch (error) {

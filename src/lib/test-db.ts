@@ -1,16 +1,16 @@
 import mongoose from 'mongoose'
-import { MongoMemoryServer } from 'mongodb-memory-server'
+import { MongoMemoryReplSet } from 'mongodb-memory-server'
 
-let mongod: MongoMemoryServer | null = null
+let mongod: MongoMemoryReplSet | null = null
 
 export async function connectTestDB(): Promise<void> {
     if (mongoose.connection.readyState === 1) {
         return
     }
 
-    mongod = await MongoMemoryServer.create({
-        instance: {
-            launchTimeout: 30000,
+    mongod = await MongoMemoryReplSet.create({
+        replSet: {
+            count: 1,
         },
     })
 
