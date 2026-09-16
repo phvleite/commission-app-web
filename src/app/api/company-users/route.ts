@@ -136,7 +136,18 @@ export async function POST(request: Request) {
                 active: true,
             })
 
-            const safeUser = await User.findById(newUser._id).select('-passwordHash').lean()
+            const safeUser = {
+                _id: newUser._id,
+                tenantId: newUser.tenantId,
+                name: newUser.name,
+                email: newUser.email,
+                cpf: newUser.cpf,
+                phone: newUser.phone,
+                role: newUser.role,
+                active: newUser.active,
+                createdAt: newUser.createdAt,
+                updatedAt: newUser.updatedAt,
+            }
             return Response.json({ data: safeUser }, { status: 201 })
         } catch (error) {
             if (

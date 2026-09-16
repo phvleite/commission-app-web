@@ -8,6 +8,7 @@ import { isValidCnpj, normalizeCnpj } from '@/lib/validators/cnpj'
 import { isValidCpf, normalizeCpf } from '@/lib/validators/cpf'
 import { Types } from 'mongoose'
 import { isDatabaseConnectionError } from '@/lib/api/db-errors'
+import { updateCompanyWithResponsible } from '@/services/company/updateCompanyWithResponsible'
 
 interface CompanyAddressInput {
     street?: string
@@ -302,85 +303,9 @@ export async function PATCH(request: Request) {
             }
         }
 
-        let responsibleUserId = tenantBefore.responsibleUserId
-
-        try {
-            if (responsibleUserId && Types.ObjectId.isValid(String(responsibleUserId))) {
-                const responsibleUser = await User.findOne({
-                    _id: responsibleUserId,
-                    tenantId: user.tenantId,
-                })
-
-                if (!responsibleUser) {
-                    responsibleUserId = undefined
-                } else {
-                    responsibleUser.name = responsibleName
-                    responsibleUser.email = responsibleEmail
-                    responsibleUser.cpf = responsibleCpf
-                    responsibleUser.phone = responsiblePhone
-                    responsibleUser.role = 'admin'
-                    responsibleUser.active = true
-
-                    if (responsiblePassword) {
-                        responsibleUser.passwordHash = await hashPassword(responsiblePassword)
-                    }
-
-                    await responsibleUser.save()
-                }
-            }
-
-            if (!responsibleUserId) {
-                if (!responsiblePassword) {
-                    return Response.json(
-                        {
-                            error: 'Defina a senha do responsavel para concluir o cadastro de acesso.',
-                        },
-                        { status: 400 },
-                    )
-                }
-
-                const passwordHash = await hashPassword(responsiblePassword)
-                const createdResponsible = await User.create({
-                    tenantId: user.tenantId,
-                    name: responsibleName,
-                    email: responsibleEmail,
-                    cpf: responsibleCpf,
-                    phone: responsiblePhone,
-                    passwordHash,
-                    role: 'admin',
-                    active: true,
-                })
-
-                responsibleUserId = createdResponsible._id
-            }
-        } catch (error) {
-            if (
-                typeof error === 'object' &&
-                error !== null &&
-                'code' in error &&
-                (error as { code?: number }).code === 11000
-            ) {
-                return Response.json(
-                    { error: 'Ja existe usuario com este email neste tenant.' },
-                    { status: 409 },
-                )
-            }
-
-            const message = error instanceof Error ? error.message : ''
-            if (message.includes('Limite de ') && message.includes('usuarios por tenant')) {
-                return Response.json({ error: message }, { status: 400 })
-            }
-
-            return Response.json(
-                { error: 'Nao foi possivel atualizar o responsavel.' },
-                { status: 500 },
-            )
-        }
-
         const setData: Record<string, unknown> = {
             name,
             legalName,
-            responsibleUserId,
         }
         const unsetData: Record<string, 1> = {}
 
@@ -422,71 +347,81 @@ export async function PATCH(request: Request) {
             unsetData.email = 1
         }
 
-        let tenant
-        try {
-            tenant = await Tenant.findByIdAndUpdate(
-                user.tenantId,
-                {
-                    $set: setData,
-                    ...(Object.keys(unsetData).length > 0 ? { $unset: unsetData } : {}),
-                },
-                { returnDocument: 'after' },
-            ).lean()
-        } catch (error) {
-            if (
-                typeof error === 'object' &&
-                error !== null &&
-                'code' in error &&
-                (error as { code?: number }).code === 11000
-            ) {
-                if (
-                    'keyPattern' in error &&
-                    typeof (error as { keyPattern?: unknown }).keyPattern === 'object' &&
-                    (error as { keyPattern?: Record<string, unknown> }).keyPattern?.cnpj
-                ) {
-                    return Response.json({ error: DUPLICATE_CNPJ_ERROR }, { status: 409 })
-                }
-            }
-
+        if (!tenantBefore.responsibleUserId && !responsiblePassword) {
             return Response.json(
-                { error: 'Nao foi possivel atualizar a empresa.' },
-                { status: 500 },
+                { error: 'Defina a senha do responsavel para concluir o cadastro de acesso.' },
+                { status: 400 },
             )
         }
 
-        if (!tenant) {
-            return Response.json({ error: 'Empresa nao encontrada.' }, { status: 404 })
+        const passwordHash = responsiblePassword
+            ? await hashPassword(responsiblePassword)
+            : undefined
+        const { tenant, responsibleUserId } = await updateCompanyWithResponsible(
+            user.tenantId,
+            {
+                userId:
+                    tenantBefore.responsibleUserId &&
+                    Types.ObjectId.isValid(String(tenantBefore.responsibleUserId))
+                        ? tenantBefore.responsibleUserId
+                        : undefined,
+                name: responsibleName,
+                email: responsibleEmail,
+                cpf: responsibleCpf,
+                phone: responsiblePhone,
+                passwordHash,
+            },
+            setData,
+            unsetData,
+        )
+        const tenantData = tenant as Record<string, unknown> & {
+            planCode?: string
+            monthlyPriceOverrideCents?: number
         }
-
-        const responsibleUser = responsibleUserId
-            ? await User.findOne({
-                  _id: responsibleUserId,
-                  tenantId: user.tenantId,
-              })
-                  .select('name email cpf phone')
-                  .lean()
-            : null
 
         return Response.json({
             data: {
-                ...tenant,
-                maxUsers: getResolvedServicePlan(tenant.planCode).maxUsers,
+                ...tenantData,
+                maxUsers: getResolvedServicePlan(tenantData.planCode).maxUsers,
                 effectiveMonthlyPriceCents: getEffectiveMonthlyPriceCents(
-                    tenant.planCode,
-                    tenant.monthlyPriceOverrideCents,
+                    tenantData.planCode,
+                    tenantData.monthlyPriceOverrideCents,
                 ),
-                responsible: responsibleUser
-                    ? {
-                          _id: responsibleUser._id.toString(),
-                          name: responsibleUser.name,
-                          email: responsibleUser.email,
-                          cpf: responsibleUser.cpf,
-                          phone: responsibleUser.phone,
-                      }
-                    : null,
+                responsible: {
+                    _id: String(responsibleUserId),
+                    name: responsibleName,
+                    email: responsibleEmail,
+                    cpf: responsibleCpf,
+                    phone: responsiblePhone,
+                },
             },
         })
     } catch (error) {
+        if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            (error as { code?: number }).code === 11000
+        ) {
+            if (
+                'keyPattern' in error &&
+                typeof (error as { keyPattern?: unknown }).keyPattern === 'object' &&
+                (error as { keyPattern?: Record<string, unknown> }).keyPattern?.cnpj
+            ) {
+                return Response.json({ error: 'Ja existe empresa com este CNPJ.' }, { status: 409 })
+            }
+
+            return Response.json(
+                { error: 'Ja existe usuario com este email neste tenant.' },
+                { status: 409 },
+            )
+        }
+
+        const message = error instanceof Error ? error.message : ''
+        if (message.includes('Limite de ') && message.includes('usuarios por tenant')) {
+            return Response.json({ error: message }, { status: 400 })
+        }
+
         if (isDatabaseConnectionError(error)) {
             return Response.json(
                 {

@@ -115,7 +115,14 @@ export async function POST(request: Request) {
             active: dismissalDateParsed ? false : true,
         })
 
-        const warning = await getEmployeePlanRangeWarning(user.tenantId)
+        let warning: string | undefined
+        try {
+            warning = await getEmployeePlanRangeWarning(user.tenantId)
+        } catch (error) {
+            if (!isDatabaseConnectionError(error)) {
+                throw error
+            }
+        }
 
         return Response.json({ data: employee, warning }, { status: 201 })
     } catch (error) {

@@ -1,7 +1,8 @@
 import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 import { Sale } from '@/models/Sale'
-import { deleteCommissionsForDate } from '@/services/commissions/delete'
+import { CommissionProcess } from '@/models/CommissionProcess'
+import { rollbackSaleAndCommissionsForDate } from '@/services/commissions/delete'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
 import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
@@ -109,13 +110,22 @@ export async function POST(req: Request) {
         })
 
         if (exists) {
-            return NextResponse.json(
-                { error: 'Já existe uma venda registrada para esta data.' },
-                { status: 400 },
-            )
+            const process = await CommissionProcess.findOne({
+                tenantId: session.user.tenantId,
+                date: dateObj,
+            }).lean()
+
+            if (!process || process.status !== 'success') {
+                await rollbackSaleAndCommissionsForDate(session.user.tenantId, dateObj)
+            } else {
+                return NextResponse.json(
+                    { error: 'Já existe uma venda registrada para esta data.' },
+                    { status: 400 },
+                )
+            }
         }
 
-        const createdSale = await Sale.create({
+        await Sale.create({
             tenantId: session.user.tenantId,
             date: dateObj,
             value: valueCentavos,
@@ -126,8 +136,7 @@ export async function POST(req: Request) {
             await generateCommissionsForDate(session.user.tenantId, dateObj)
         } catch (error) {
             console.error('Falha ao gerar comissões para a venda.', error)
-            await deleteCommissionsForDate(session.user.tenantId, dateObj)
-            await Sale.deleteOne({ _id: createdSale._id })
+            await rollbackSaleAndCommissionsForDate(session.user.tenantId, dateObj)
             return NextResponse.json(
                 { error: 'Erro ao processar a venda. A operação foi revertida.' },
                 { status: 500 },

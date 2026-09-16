@@ -25,27 +25,6 @@ function isAllowedPlatformRole(
     return value === 'platform_admin' || value === 'platform_auditor'
 }
 
-function isDatabaseConnectionError(error: unknown): boolean {
-    if (!(error instanceof Error)) return false
-
-    const message = error.message.toLowerCase()
-    const name = (error as Error & { name?: string }).name?.toLowerCase() ?? ''
-    const code = (error as Error & { code?: string }).code?.toString().toLowerCase() ?? ''
-
-    return (
-        name.includes('mongo') ||
-        name.includes('mongoose') ||
-        name.includes('network') ||
-        message.includes('connection lost') ||
-        message.includes('timed out') ||
-        message.includes('econnreset') ||
-        message.includes('econnrefused') ||
-        message.includes('timeout') ||
-        code.includes('econn') ||
-        code.includes('timedout')
-    )
-}
-
 export async function GET() {
     const session = await auth()
 
@@ -184,24 +163,16 @@ export async function POST(request: Request) {
             updatedAt: now,
         })
 
-        const createdUser = await User.findById(insertResult.insertedId)
-            .select('-passwordHash')
-            .lean()
-
-        if (!createdUser) {
-            return Response.json({ error: 'Nao foi possivel criar o usuario.' }, { status: 500 })
-        }
-
         return Response.json(
             {
                 data: {
-                    _id: createdUser._id.toString(),
-                    name: createdUser.name,
-                    email: createdUser.email,
-                    role: createdUser.role,
-                    platformRole: createdUser.platformRole,
-                    active: createdUser.active,
-                    createdAt: createdUser.createdAt,
+                    _id: insertResult.insertedId.toString(),
+                    name,
+                    email,
+                    role: 'admin',
+                    platformRole,
+                    active: true,
+                    createdAt: now,
                 },
             },
             { status: 201 },
