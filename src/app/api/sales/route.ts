@@ -1,10 +1,10 @@
 import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 import { Sale } from '@/models/Sale'
-import { CommissionProcess } from '@/models/CommissionProcess'
 import { rollbackSaleAndCommissionsForDate } from '@/services/commissions/delete'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
 import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
+import { findPendingSale } from '@/services/sales/pending-sale'
 
 interface SalesQuery {
     tenantId: string
@@ -101,6 +101,25 @@ export async function POST(req: Request) {
     const commissionCentavos = Math.round(valueCentavos * 0.1)
 
     try {
+        const pending = await findPendingSale(session.user.tenantId)
+        if (pending) {
+            return NextResponse.json(
+                {
+                    error: pending.recoverable
+                        ? 'Existe um lançamento anterior pendente de decisão.'
+                        : 'Existe um lançamento de venda ainda em processamento.',
+                    errorCode: 'pending_sale_recovery',
+                    pending: {
+                        date: pending.date.toISOString(),
+                        value: pending.value,
+                        status: pending.status,
+                        recoverable: pending.recoverable,
+                    },
+                },
+                { status: 409 },
+            )
+        }
+
         const exists = await Sale.findOne({
             tenantId: session.user.tenantId,
             date: {
@@ -110,19 +129,10 @@ export async function POST(req: Request) {
         })
 
         if (exists) {
-            const process = await CommissionProcess.findOne({
-                tenantId: session.user.tenantId,
-                date: dateObj,
-            }).lean()
-
-            if (!process || process.status !== 'success') {
-                await rollbackSaleAndCommissionsForDate(session.user.tenantId, dateObj)
-            } else {
-                return NextResponse.json(
-                    { error: 'Já existe uma venda registrada para esta data.' },
-                    { status: 400 },
-                )
-            }
+            return NextResponse.json(
+                { error: 'Já existe uma venda registrada para esta data.' },
+                { status: 400 },
+            )
         }
 
         await Sale.create({

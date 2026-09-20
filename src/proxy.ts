@@ -51,7 +51,7 @@ export default auth((req) => {
     const { nextUrl } = req
     const { pathname } = nextUrl
 
-    if (isPublicPath(pathname)) {
+    if (isPublicPath(pathname) && !req.auth) {
         return NextResponse.next()
     }
 
@@ -99,10 +99,8 @@ export default auth((req) => {
         return response
     }
 
-    if (!rawLastActivity) {
-        const response = NextResponse.next()
-        response.cookies.set(INACTIVITY_COOKIE_NAME, String(Date.now()), cookieOptions)
-        return response
+    if (isPublicPath(pathname)) {
+        return NextResponse.next()
     }
 
     return NextResponse.next()

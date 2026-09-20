@@ -9,6 +9,7 @@
         "start": "next start",
         "lint": "eslint",
         "seed:platform-owner": "node scripts/seed-platform-owner.mjs",
+        "migrate:commission-processes": "npx tsx src/lib/migrations/002-backfill-successful-commission-processes.ts",
         "test": "jest",
         "test:watch": "jest --watch",
         "test:coverage": "jest --coverage",
@@ -47,6 +48,7 @@
         "prettier": "^3.9.5",
         "tailwindcss": "^4",
         "ts-jest": "^29.4.11",
+        "tsx": "^4.23.13",
         "typescript": "^5"
     }
 }
