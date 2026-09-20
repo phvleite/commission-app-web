@@ -40,5 +40,7 @@ export async function GET(req: Request) {
         }),
     )
 
-    return NextResponse.json({ sectors: enriched })
+    const totalSectorValue = enriched.reduce((total, sector) => total + sector.totalSectorValue, 0)
+
+    return NextResponse.json({ sectors: enriched, totalSectorValue })
 }

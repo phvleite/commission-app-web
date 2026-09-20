@@ -9,6 +9,11 @@ import { Situation } from '@/models/Situation'
 import { SituationType } from '@/models/SituationType'
 import { deleteCommissionsForDate } from '@/services/commissions/delete'
 import { isDatabaseConnectionError } from '@/lib/api/db-errors'
+import {
+    validateCommissionGeneration,
+    type ExpectedCommissionSnapshot,
+    type ExpectedSectorSnapshot,
+} from '@/services/commissions/validate-generation'
 
 interface EmployeeRef {
     _id: { toString(): string }
@@ -29,16 +34,19 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
     await CommissionProcess.findOneAndUpdate(
         { tenantId, date },
         {
-            $setOnInsert: {
+            $set: {
                 tenantId,
                 date,
                 status: 'processing',
                 startedAt: new Date(),
+                finishedAt: undefined,
+                errorCode: undefined,
+                message: 'Cálculo de comissões em processamento.',
             },
         },
         {
             upsert: true,
-            new: true,
+            returnDocument: 'after',
             setDefaultsOnInsert: true,
         },
     )
@@ -137,6 +145,9 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
             }
         }
 
+        const expectedSectors: ExpectedSectorSnapshot[] = []
+        const expectedCommissions: ExpectedCommissionSnapshot[] = []
+
         for (const sector of sectors) {
             const sectorId = sector._id.toString()
 
@@ -149,6 +160,13 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                     tenantId,
                     date,
                     sectorId: sector._id,
+                    appliedPercentage: sector.percentage,
+                    totalSectorValue: sectorValue,
+                    totalEmployees: 0,
+                    eligibleEmployees: 0,
+                })
+                expectedSectors.push({
+                    sectorId,
                     appliedPercentage: sector.percentage,
                     totalSectorValue: sectorValue,
                     totalEmployees: 0,
@@ -182,6 +200,13 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                 totalEmployees,
                 eligibleEmployees: eligibleCount,
             })
+            expectedSectors.push({
+                sectorId,
+                appliedPercentage: sector.percentage,
+                totalSectorValue: sectorValue,
+                totalEmployees,
+                eligibleEmployees: eligibleCount,
+            })
 
             let eligibleIndex = 0
 
@@ -190,6 +215,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                 const situation = employeeSituation.get(employeeId) ?? 'Apto'
                 const isEligible = situation === 'Apto'
 
+                const employeeValue = isEligible ? distributed[eligibleIndex++] : 0
                 await Commission.create({
                     tenantId,
                     date,
@@ -197,12 +223,23 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                     sectorId: sector._id,
                     situation,
                     sectorValue,
-                    employeeValue: isEligible ? distributed[eligibleIndex++] : 0,
+                    employeeValue,
+                    eligibleCount,
+                    totalCount: totalEmployees,
+                })
+                expectedCommissions.push({
+                    employeeId,
+                    sectorId,
+                    situation,
+                    sectorValue,
+                    employeeValue,
                     eligibleCount,
                     totalCount: totalEmployees,
                 })
             }
         }
+
+        await validateCommissionGeneration(tenantId, date, expectedSectors, expectedCommissions)
 
         await CommissionProcess.findOneAndUpdate(
             { tenantId, date },
@@ -211,7 +248,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                     status: 'success',
                     finishedAt: new Date(),
                     errorCode: undefined,
-                    message: 'Cálculo de comissões concluído com sucesso.',
+                    message: 'Cálculo de comissões concluído e validado com sucesso.',
                 },
             },
         )

@@ -20,12 +20,20 @@ export function SessionActivityHeartbeat() {
             lastPingAtRef.current = now
 
             try {
-                await fetch('/api/session/activity', {
+                const response = await fetch('/api/session/activity', {
                     method: 'POST',
                     credentials: 'same-origin',
                     keepalive: true,
                     cache: 'no-store',
                 })
+
+                if (
+                    response.status === 401 ||
+                    response.redirected ||
+                    response.url.includes('/login')
+                ) {
+                    window.location.replace('/login?reason=inactivity')
+                }
             } catch {
                 if (!cancelled) {
                     // Ignore heartbeat failures; middleware still enforces timeout.
@@ -43,6 +51,11 @@ export function SessionActivityHeartbeat() {
             }
         }
 
+        function handlePageShow() {
+            lastPingAtRef.current = 0
+            void pingActivity()
+        }
+
         const events: Array<keyof WindowEventMap> = [
             'pointerdown',
             'keydown',
@@ -55,6 +68,7 @@ export function SessionActivityHeartbeat() {
         }
 
         document.addEventListener('visibilitychange', handleVisibility)
+        window.addEventListener('pageshow', handlePageShow)
         void pingActivity()
 
         return () => {
@@ -63,6 +77,7 @@ export function SessionActivityHeartbeat() {
                 window.removeEventListener(eventName, handleInteraction)
             }
             document.removeEventListener('visibilitychange', handleVisibility)
+            window.removeEventListener('pageshow', handlePageShow)
         }
     }, [])
 

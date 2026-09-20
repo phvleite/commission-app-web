@@ -23,6 +23,7 @@ interface SectorInfo {
 
 export function SalesSectorsModal({ date, onClose }: SalesSectorsModalProps) {
     const [sectors, setSectors] = useState<SectorInfo[]>([])
+    const [totalSectorValue, setTotalSectorValue] = useState(0)
 
     useEffect(() => {
         async function loadSectors() {
@@ -39,6 +40,7 @@ export function SalesSectorsModal({ date, onClose }: SalesSectorsModalProps) {
                 }
 
                 setSectors(json.sectors)
+                setTotalSectorValue(json.totalSectorValue ?? 0)
             } catch {
                 toast.error('Erro ao carregar setores.')
             }
@@ -80,6 +82,15 @@ export function SalesSectorsModal({ date, onClose }: SalesSectorsModalProps) {
                                     <td className="py-2 text-center">{s.eligibleEmployees}</td>
                                 </tr>
                             ))}
+                            <tr className="bg-[#d2e2f6] font-semibold text-(--color-primary-strong)">
+                                <td className="py-3" colSpan={2}>
+                                    Total dos Setores
+                                </td>
+                                <td className="py-3 text-right">
+                                    R$ {formatCurrencyFromDatabase(totalSectorValue)}
+                                </td>
+                                <td colSpan={2} />
+                            </tr>
                         </tbody>
                     </table>
                 </div>

@@ -190,4 +190,41 @@ describe('generateCommissionsForDate', () => {
         expect(commissions[0]?.employeeValue).toBe(120)
         expect(sectorSnapshots[0]?.totalSectorValue).toBe(120)
     })
+
+    it('does not mark the process as success when a sector snapshot is missing', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        const date = new Date('2026-07-13T00:00:00.000Z')
+        const sector = await Sector.create({
+            tenantId,
+            name: 'Vendas',
+            percentage: 100,
+            active: true,
+            isMeritocracia: false,
+        })
+
+        await Employee.create({
+            tenantId,
+            name: 'Daniel',
+            sectorId: sector._id,
+            admissionDate: new Date('2026-01-01T00:00:00.000Z'),
+            active: true,
+        })
+        await Sale.create({ tenantId, date, value: 50000, totalCommissionValue: 5000 })
+
+        const createSpy = jest
+            .spyOn(SaleCommissionSector, 'create')
+            .mockResolvedValueOnce({} as never)
+
+        await expect(generateCommissionsForDate(tenantId, date)).rejects.toThrow(
+            'Validação das comissões falhou',
+        )
+
+        const process = await CommissionProcess.findOne({ tenantId, date }).lean()
+        expect(process).toMatchObject({
+            status: 'failed',
+            errorCode: 'commission_generation_failed',
+        })
+
+        createSpy.mockRestore()
+    })
 })

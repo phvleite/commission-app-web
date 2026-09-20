@@ -14,6 +14,7 @@ interface SalesFormProps {
     onSave: (date: string, value: number) => Promise<void>
     onCancel: () => void
     isSaving?: boolean
+    isBlocked?: boolean
 }
 
 export function SalesForm({
@@ -21,6 +22,7 @@ export function SalesForm({
     onSave,
     onCancel,
     isSaving: externalIsSaving,
+    isBlocked = false,
 }: SalesFormProps) {
     const [date, setDate] = useState('')
     const [value, setValue] = useState('')
@@ -93,9 +95,15 @@ export function SalesForm({
             setValue('')
             setFeedback({
                 type: 'success',
-                message: editMode ? 'Venda atualizada com sucesso.' : 'Venda lançada com sucesso.',
+                message: editMode
+                    ? 'Venda atualizada e comissões validadas com sucesso.'
+                    : 'Venda lançada e comissões validadas com sucesso.',
             })
-            toast.success(editMode ? 'Venda atualizada com sucesso!' : 'Venda lançada com sucesso!')
+            toast.success(
+                editMode
+                    ? 'Venda atualizada e comissões validadas com sucesso!'
+                    : 'Venda lançada e comissões validadas com sucesso!',
+            )
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Erro ao salvar venda.'
             const isOffline = /Sem conexão|offline|Falha de rede|failed to fetch|network/i.test(
@@ -131,6 +139,7 @@ export function SalesForm({
                         type="date"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
+                        disabled={isBlocked}
                         className="w-full border border-(--color-border) rounded-xl p-3 bg-surface-soft"
                     />
                 </div>
@@ -141,6 +150,7 @@ export function SalesForm({
                         type="text"
                         value={value}
                         onChange={handleValueChange}
+                        disabled={isBlocked}
                         className="w-full border border-(--color-border) rounded-xl p-3 bg-surface-soft"
                     />
                 </div>
@@ -166,7 +176,7 @@ export function SalesForm({
                 <button
                     className="primary-button px-5 py-3 rounded-xl disabled:opacity-70"
                     onClick={handleSave}
-                    disabled={isSaving}
+                    disabled={isSaving || isBlocked}
                 >
                     {isSaving ? 'Processando...' : editMode ? 'Salvar Alterações' : 'Salvar'}
                 </button>

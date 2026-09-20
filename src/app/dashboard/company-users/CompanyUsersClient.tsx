@@ -140,6 +140,18 @@ function formatMobilePhoneInput(value: string): string {
     return `(${ddd}) ${first}-${second}`
 }
 
+function formatUserMobilePhoneInput(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 11)
+    const ddd = digits.slice(0, 2)
+    const first = digits.slice(2, 7)
+    const second = digits.slice(7, 11)
+
+    if (!ddd) return ''
+    if (!first) return `(${ddd}`
+    if (!second) return `(${ddd}) ${first}`
+    return `(${ddd}) ${first}-${second}`
+}
+
 function formatCnpjInput(value: string): string {
     const chars = value
         .replace(/[^A-Za-z0-9]/g, '')
@@ -210,7 +222,7 @@ function getUserEditForm(user: CompanyUser): UserEditFormState {
         name: user.name,
         email: user.email,
         cpf: formatCpfInput(user.cpf ?? ''),
-        phone: formatMobilePhoneInput(user.phone ?? ''),
+        phone: formatUserMobilePhoneInput(user.phone ?? ''),
         role: user.role,
     }
 }
@@ -1117,7 +1129,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                     onChange={(event) =>
                                         setNewUser((prev) => ({
                                             ...prev,
-                                            phone: formatMobilePhoneInput(event.target.value),
+                                            phone: formatUserMobilePhoneInput(event.target.value),
                                         }))
                                     }
                                     disabled={!canManageUsers}
@@ -1230,7 +1242,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                         ) : null}
                                         {user.phone ? (
                                             <p className="text-xs text-(--color-muted)">
-                                                Celular: {formatMobilePhoneInput(user.phone)}
+                                                Celular: {formatUserMobilePhoneInput(user.phone)}
                                             </p>
                                         ) : null}
                                         <p className="mt-1 text-xs text-(--color-muted)">
@@ -1367,7 +1379,7 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
                                                             prev
                                                                 ? {
                                                                       ...prev,
-                                                                      phone: formatMobilePhoneInput(
+                                                                      phone: formatUserMobilePhoneInput(
                                                                           event.target.value,
                                                                       ),
                                                                   }

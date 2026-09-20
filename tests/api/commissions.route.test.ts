@@ -258,6 +258,7 @@ describe('API commissions routes', () => {
             sectorName: 'Setor A',
             totalSectorValue: 700,
         })
+        expect(json.totalSectorValue).toBe(700)
     })
 
     it('generate route returns 401 without session and calls service when authenticated', async () => {

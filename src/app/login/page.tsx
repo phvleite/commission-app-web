@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { LoginForm } from './LoginForm'
@@ -56,6 +57,14 @@ export default async function LoginPage() {
                 </div>
 
                 <div className="bg-(--color-surface) px-6 py-8 sm:px-10 sm:py-10">
+                    <Link
+                        href="/"
+                        className="secondary-button mb-6 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+                    >
+                        <span aria-hidden="true">←</span>
+                        Voltar para a página principal
+                    </Link>
+
                     <h2 className="gold-bar-title text-2xl font-semibold text-(--color-primary-strong)">
                         Acesse sua conta
                     </h2>

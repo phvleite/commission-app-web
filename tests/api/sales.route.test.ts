@@ -115,7 +115,7 @@ describe('API sales routes', () => {
         expect(sales[0]?.value).toBe(15000)
     })
 
-    it('POST rolls back an incomplete previous sale before retrying the same date', async () => {
+    it('POST blocks a new sale when a previous sale needs recovery', async () => {
         const tenantId = new Types.ObjectId().toString()
         const date = new Date('2026-07-28T00:00:00.000Z')
         const sectorId = new Types.ObjectId()
@@ -163,24 +163,28 @@ describe('API sales routes', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    date: '2026-07-28T12:00:00.000Z',
+                    date: '2026-07-30T12:00:00.000Z',
                     value: 200,
                 }),
             }),
         )
 
-        expect(res.status).toBe(200)
-        expect(generateCommissionsForDateMock).toHaveBeenCalledWith(tenantId, date)
+        expect(res.status).toBe(409)
+        await expect(res.json()).resolves.toMatchObject({
+            errorCode: 'pending_sale_recovery',
+            pending: { status: 'network_lost', recoverable: true },
+        })
+        expect(generateCommissionsForDateMock).not.toHaveBeenCalled()
 
         const sales = await Sale.find({ tenantId, date }).lean()
         expect(sales).toHaveLength(1)
-        expect(sales[0]?.value).toBe(20000)
-        await expect(Commission.countDocuments({ tenantId, date })).resolves.toBe(0)
-        await expect(SaleCommissionSector.countDocuments({ tenantId, date })).resolves.toBe(0)
-        await expect(CommissionProcess.countDocuments({ tenantId, date })).resolves.toBe(0)
+        expect(sales[0]?.value).toBe(10000)
+        await expect(Commission.countDocuments({ tenantId, date })).resolves.toBe(1)
+        await expect(SaleCommissionSector.countDocuments({ tenantId, date })).resolves.toBe(1)
+        await expect(CommissionProcess.countDocuments({ tenantId, date })).resolves.toBe(1)
     })
 
-    it('POST rolls back a sale whose commission process was interrupted', async () => {
+    it('POST blocks a new sale when an old processing operation was interrupted', async () => {
         const tenantId = new Types.ObjectId().toString()
         const date = new Date('2026-07-29T00:00:00.000Z')
         setSession(tenantId)
@@ -210,12 +214,16 @@ describe('API sales routes', () => {
             }),
         )
 
-        expect(res.status).toBe(200)
-        expect(generateCommissionsForDateMock).toHaveBeenCalledWith(tenantId, date)
+        expect(res.status).toBe(409)
+        await expect(res.json()).resolves.toMatchObject({
+            errorCode: 'pending_sale_recovery',
+            pending: { status: 'processing', recoverable: true },
+        })
+        expect(generateCommissionsForDateMock).not.toHaveBeenCalled()
 
         const sales = await Sale.find({ tenantId, date }).lean()
         expect(sales).toHaveLength(1)
-        expect(sales[0]?.value).toBe(20000)
+        expect(sales[0]?.value).toBe(10000)
     })
 
     it('GET sem filtros retorna todas as vendas do tenant', async () => {

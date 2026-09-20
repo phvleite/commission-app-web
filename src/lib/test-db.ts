@@ -9,6 +9,7 @@ export async function connectTestDB(): Promise<void> {
     }
 
     mongod = await MongoMemoryReplSet.create({
+        instanceOpts: [{ launchTimeout: 30000 }],
         replSet: {
             count: 1,
         },
