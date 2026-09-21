@@ -6,6 +6,8 @@ import { Tenant } from '@/models/Tenant'
 import { formatCurrencyFromDatabase } from '@/app/dashboard/commissions/utils/formatCurrency'
 import { formatDateFromDatabase } from '@/app/dashboard/commissions/utils/formatDate'
 import { generateEmployeePeriodTitle } from '@/app/dashboard/commissions/utils/generateEmployeePeriodTitle'
+import { MeritocracyAllocation, type IMeritocracyRecipient } from '@/models/MeritocracyAllocation'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,8 +31,10 @@ interface SectorSummaryRow {
 interface PdfEmployeePayload {
     startDate: string
     endDate: string
+    employeeId?: string
     data: CommissionPayloadRow[]
     sectorSummary: SectorSummaryRow[]
+    meritocracyValue?: number
 }
 
 function getFilenameTimestamp(date = new Date()): string {
@@ -81,6 +85,7 @@ function toDateSortKey(value: string): number {
 function renderReportEmployeeHtml(params: {
     title: string
     totalGeneral: number
+    meritocracyValue: number
     sectorSummary: SectorSummaryRow[]
     data: CommissionPayloadRow[]
     companyName: string
@@ -225,7 +230,13 @@ function renderReportEmployeeHtml(params: {
         </tbody>
     </table>
 
-    <h2>Total Geral: R$ ${formatCurrencyFromDatabase(params.totalGeneral)}</h2>
+    <h2>Total de Gorjetas: R$ ${formatCurrencyFromDatabase(params.totalGeneral - params.meritocracyValue)}</h2>
+    ${
+        params.meritocracyValue > 0
+            ? `<h2>Meritocracia: R$ ${formatCurrencyFromDatabase(params.meritocracyValue)}</h2>
+    <h2>Total Geral (Gorjetas + Meritocracia): R$ ${formatCurrencyFromDatabase(params.totalGeneral)}</h2>`
+            : '<h2>Total Geral: R$ ' + formatCurrencyFromDatabase(params.totalGeneral) + '</h2>'
+    }
     <p class="institutional-signature">${escapeHtml(params.companyName)} | ${escapeHtml(params.website)} | contato@commission.com.br</p>
 </body>
 </html>`
@@ -266,10 +277,49 @@ export async function POST(req: Request) {
             )
         }
 
-        const { startDate, endDate, data, sectorSummary } = body
+        const { startDate, endDate, employeeId, data, sectorSummary } = body
+
+        const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+        const reportStartRange = getUtcRangeForCalendarDay(startDate, timeZone)
+        const reportEndRange = getUtcRangeForCalendarDay(endDate, timeZone)
+        if (!reportStartRange || !reportEndRange) {
+            return NextResponse.json(
+                { error: 'Período inválido para geração de PDF.' },
+                { status: 400 },
+            )
+        }
+
+        let meritocracyValue = 0
+        if (employeeId) {
+            const meritocracyAllocations = await MeritocracyAllocation.find({
+                tenantId: session.user.tenantId,
+                status: 'success',
+                paymentDate: { $gte: reportStartRange.start, $lte: reportEndRange.end },
+                'recipients.employeeId': employeeId,
+            })
+                .select('recipients')
+                .lean()
+
+            meritocracyValue = meritocracyAllocations.reduce(
+                (total, allocation) =>
+                    total +
+                    allocation.recipients
+                        .filter(
+                            (recipient: IMeritocracyRecipient) =>
+                                String(recipient.employeeId) === employeeId,
+                        )
+                        .reduce(
+                            (recipientTotal: number, recipient: IMeritocracyRecipient) =>
+                                recipientTotal + recipient.employeeValue,
+                            0,
+                        ),
+                0,
+            )
+        }
 
         const employeeName = data.length > 0 ? String(data[0].employeeName) : 'COLABORADOR'
-        const totalGeneral = data.reduce((acc, row) => acc + row.employeeValue, 0)
+        const totalGeneral =
+            data.reduce((acc, row) => acc + row.employeeValue, 0) + meritocracyValue
         const title = generateEmployeePeriodTitle(employeeName.toUpperCase(), startDate, endDate)
 
         const html = renderReportEmployeeHtml({
@@ -277,6 +327,7 @@ export async function POST(req: Request) {
             totalGeneral,
             sectorSummary,
             data,
+            meritocracyValue,
             companyName: tenant.name,
             website: process.env.APP_BASE_URL ?? 'https://www.commission.com.br',
         })

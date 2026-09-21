@@ -133,4 +133,17 @@ describe('CommissionsReportEmployee', () => {
 
         jest.useRealTimers()
     })
+
+    it('appends meritocracy to the employee total when received', () => {
+        render(
+            <CommissionsReportEmployee
+                result={{ ...buildResult(), employeeId: 'employee-1', meritocracyValue: 125 }}
+            />,
+        )
+
+        expect(screen.getByText('Meritocracia: R$ 1,25')).toBeInTheDocument()
+        expect(
+            screen.getByText('Total Geral (Gorjetas + Meritocracia): R$ 21,25'),
+        ).toBeInTheDocument()
+    })
 })

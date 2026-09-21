@@ -122,6 +122,15 @@ describe('CommissionsReportAll', () => {
         expect(URL.createObjectURL).not.toHaveBeenCalled()
     })
 
+    it('includes paid meritocracy in the combined total', () => {
+        render(<CommissionsReportAll result={{ ...buildResult(), meritocracyTotal: 125 }} />)
+
+        expect(screen.getByText('Meritocracia paga no período:')).toBeInTheDocument()
+        expect(
+            screen.getByText('Total Geral (Gorjetas + Meritocracia): R$ 71,25'),
+        ).toBeInTheDocument()
+    })
+
     it('exports pdf and triggers download when endpoint succeeds', async () => {
         jest.useFakeTimers()
 

@@ -6,6 +6,7 @@ import { Employee } from '@/models/Employee'
 import { Sale } from '@/models/Sale'
 import { SaleCommissionSector } from '@/models/SaleCommissionSector'
 import { Sector } from '@/models/Sector'
+import { MeritocracyAllocation } from '@/models/MeritocracyAllocation'
 import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 export async function GET(req: Request) {
@@ -90,10 +91,24 @@ export async function GET(req: Request) {
             totalCommissionValue: sale.totalCommissionValue,
         }))
 
+        const meritocracyAllocations = await MeritocracyAllocation.find({
+            tenantId: session.user.tenantId,
+            status: 'success',
+            paymentDate: { $gte: startDate, $lte: endDate },
+        })
+            .select('totalMeritocracyValue')
+            .lean()
+
+        const meritocracyTotal = meritocracyAllocations.reduce(
+            (total, allocation) => total + allocation.totalMeritocracyValue,
+            0,
+        )
+
         return NextResponse.json({
             data: enriched,
             sectorSummary,
             salesSummary,
+            meritocracyTotal,
         })
     } catch (error) {
         if (isDatabaseConnectionError(error)) {

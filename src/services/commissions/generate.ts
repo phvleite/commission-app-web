@@ -9,6 +9,7 @@ import { Situation } from '@/models/Situation'
 import { SituationType } from '@/models/SituationType'
 import { deleteCommissionsForDate } from '@/services/commissions/delete'
 import { isDatabaseConnectionError } from '@/lib/api/db-errors'
+import { splitCents } from '@/lib/split-cents'
 import {
     validateCommissionGeneration,
     type ExpectedCommissionSnapshot,
@@ -18,15 +19,6 @@ import {
 interface EmployeeRef {
     _id: { toString(): string }
     sectorId: { toString(): string }
-}
-
-function splitCents(total: number, parts: number): number[] {
-    if (parts <= 0) return []
-
-    const base = Math.floor(total / parts)
-    const remainder = total % parts
-
-    return Array.from({ length: parts }, (_, index) => base + (index < remainder ? 1 : 0))
 }
 export async function generateCommissionsForDate(tenantId: string, date: Date): Promise<void> {
     await connectDB()

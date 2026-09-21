@@ -9,6 +9,7 @@ interface Props {
     userName?: string | null
     role?: string | null
     sectorsOk: boolean
+    hasMeritocraciaSector: boolean
 }
 
 const MENU_ITEMS = [
@@ -18,6 +19,12 @@ const MENU_ITEMS = [
     { href: '/dashboard/situations', label: 'Situações', requiresSectorsOk: true },
     { href: '/dashboard/sales', label: 'Vendas', requiresSectorsOk: true },
     { href: '/dashboard/commissions', label: 'Gorjetas', requiresSectorsOk: true },
+    {
+        href: '/dashboard/meritocracy',
+        label: 'Lançamento Meritocracia',
+        requiresSectorsOk: true,
+        requiresMeritocraciaSector: true,
+    },
     { href: '/dashboard/company-users', label: 'Empresa/Usuários' },
 ]
 
@@ -60,9 +67,13 @@ function ItemLink({
     )
 }
 
-export function SidebarNav({ userName, role, sectorsOk }: Props) {
+export function SidebarNav({ userName, role, sectorsOk, hasMeritocraciaSector }: Props) {
     const pathname = usePathname()
     const [open, setOpen] = useState(false)
+
+    const visibleMenuItems = MENU_ITEMS.filter(
+        (item) => !item.requiresMeritocraciaSector || hasMeritocraciaSector,
+    )
 
     return (
         <>
@@ -95,7 +106,7 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
 
                     <nav>
                         <ul>
-                            {MENU_ITEMS.map((item) => (
+                            {visibleMenuItems.map((item) => (
                                 <ItemLink
                                     key={item.href}
                                     href={item.href}
@@ -152,7 +163,7 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
 
                         <nav>
                             <ul>
-                                {MENU_ITEMS.map((item) => (
+                                {visibleMenuItems.map((item) => (
                                     <ItemLink
                                         key={item.href}
                                         href={item.href}
