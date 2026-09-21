@@ -5,6 +5,7 @@ import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 import { getEmployeePlanRangeWarning } from '@/services/employees/getEmployeePlanRangeWarning'
 import { isDatabaseConnectionError } from '@/lib/api/db-errors'
+import { createEmployeeWithHistory } from '@/services/employees/createEmployeeWithHistory'
 export async function GET(request: Request) {
     const user = await getRouteSessionUser()
 
@@ -106,13 +107,13 @@ export async function POST(request: Request) {
             )
         }
 
-        const employee = await Employee.create({
+        const employee = await createEmployeeWithHistory({
             tenantId: user.tenantId,
             name,
             sectorId,
             admissionDate: admissionDateParsed,
             dismissalDate: dismissalDateParsed,
-            active: dismissalDateParsed ? false : true,
+            createdBy: user.id,
         })
 
         let warning: string | undefined

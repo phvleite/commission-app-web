@@ -133,4 +133,39 @@ describe('EmployeesClient', () => {
 
         expect(result.current.planRangeWarning).toBe(warning)
     })
+
+    it('requires the change date when editing the employee sector', async () => {
+        const { result } = renderHook(() =>
+            EmployeesClient({
+                userRole: 'admin',
+                initialEmployees: [
+                    {
+                        _id: 'emp-1',
+                        name: 'Alice',
+                        sectorId: 'sec-1',
+                        sectorName: 'Setor A',
+                        admissionDate: '2026-01-01',
+                        dismissalDate: null,
+                        active: true,
+                    },
+                ],
+                initialSectors: [
+                    { _id: 'sec-1', name: 'Setor A' },
+                    { _id: 'sec-2', name: 'Setor B' },
+                ],
+            }),
+        )
+
+        await act(async () => {
+            result.current.startEdit(result.current.employees[0])
+            result.current.setEditSectorId('sec-2')
+        })
+        await act(async () => {
+            await result.current.handleSaveEdition('emp-1')
+        })
+
+        expect(result.current.error).toBe('Informe a data da mudança de setor.')
+        expect(result.current.submittingMessage).toBeNull()
+        expect(global.fetch).not.toHaveBeenCalled()
+    })
 })

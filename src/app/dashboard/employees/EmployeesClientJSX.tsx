@@ -14,6 +14,7 @@ export function EmployeesClientJSX(
         success,
         planRangeWarning,
         canWrite,
+        canCorrectHistory,
         isSubmitting,
         submittingMessage,
 
@@ -41,6 +42,7 @@ export function EmployeesClientJSX(
         editingId,
         editName,
         editSectorId,
+        editSectorChangeDate,
         editAdmissionDate,
         editDismissalDate,
 
@@ -51,6 +53,7 @@ export function EmployeesClientJSX(
 
         setEditName,
         setEditSectorId,
+        setEditSectorChangeDate,
         setEditAdmissionDate,
         setEditDismissalDate,
 
@@ -165,14 +168,17 @@ export function EmployeesClientJSX(
                 editingId={editingId}
                 editName={editName}
                 editSectorId={editSectorId}
+                editSectorChangeDate={editSectorChangeDate}
                 editAdmissionDate={editAdmissionDate}
                 editDismissalDate={editDismissalDate}
                 canWrite={canWrite}
+                canCorrectHistory={canCorrectHistory}
                 startEdit={startEdit}
                 cancelEdit={cancelEdit}
                 handleSaveEdition={handleSaveEdition}
                 setEditName={setEditName}
                 setEditSectorId={setEditSectorId}
+                setEditSectorChangeDate={setEditSectorChangeDate}
                 setEditAdmissionDate={setEditAdmissionDate}
                 setEditDismissalDate={setEditDismissalDate}
                 isSubmitting={isSubmitting}
