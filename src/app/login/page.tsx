@@ -4,10 +4,18 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { LoginForm } from './LoginForm'
 
-export default async function LoginPage() {
-    const session = await auth()
+interface LoginPageProps {
+    searchParams?: Promise<{
+        reason?: string
+    }>
+}
 
-    if (session?.user) {
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+    const session = await auth()
+    const params = await searchParams
+    const isInactivityRedirect = params?.reason === 'inactivity'
+
+    if (session?.user && !isInactivityRedirect) {
         redirect('/dashboard')
     }
 
@@ -71,6 +79,12 @@ export default async function LoginPage() {
                     <p className="mt-3 mb-6 text-sm leading-7 text-(--color-muted)">
                         Use o e-mail e a senha do administrador ou usuário autorizado.
                     </p>
+
+                    {isInactivityRedirect ? (
+                        <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                            Sua sessão expirou por inatividade. Entre novamente para continuar.
+                        </p>
+                    ) : null}
 
                     <p className="mb-6 text-sm leading-7 text-(--color-muted)">
                         Não possui cadastro?{' '}

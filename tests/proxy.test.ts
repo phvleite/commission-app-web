@@ -44,6 +44,18 @@ describe('proxy middleware', () => {
         expect(response.headers.get('location')).toBeNull()
     })
 
+    it.each(['/', '/login'])(
+        'allows public route %s even when an old authenticated cookie remains',
+        (pathname) => {
+            const response = middleware(
+                buildRequest(`http://localhost${pathname}`, { user: { id: 'u1' } }),
+            )
+
+            expect(response.status).toBe(200)
+            expect(response.headers.get('location')).toBeNull()
+        },
+    )
+
     it('redirects unauthenticated user to login with callbackUrl on protected route', () => {
         const response = middleware(buildRequest('http://localhost/dashboard/sales', null))
 
