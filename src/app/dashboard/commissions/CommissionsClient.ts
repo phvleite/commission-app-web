@@ -49,14 +49,24 @@ export interface CommissionsAllResult {
     sectorSummary: SectorSummaryRow[]
     salesSummary: SalesSummaryRow[]
     situations: SituationRow[]
+    meritocracyTotal?: number
 }
 
 export interface CommissionsEmployeeResult {
     type: 'employee'
     startDate: string
     endDate: string
+    employeeId?: string
     data: CommissionRow[]
     sectorSummary: Array<SectorSummaryRow & { employeeValue: number }>
+    meritocracyValue?: number
+    meritocracyEntries?: Array<{
+        date: string
+        situation: string
+        sectorName: string
+        sectorValue: number
+        employeeValue: number
+    }>
 }
 
 export type CommissionsResult = CommissionsAllResult | CommissionsEmployeeResult | null
@@ -81,6 +91,7 @@ export interface CommissionsClientState {
         data: CommissionRow[]
         sectorSummary: SectorSummaryRow[]
         salesSummary: SalesSummaryRow[]
+        meritocracyTotal?: number
     } | null>
     listByPeriodEmployee: (
         start: string,
@@ -89,6 +100,7 @@ export interface CommissionsClientState {
     ) => Promise<{
         data: CommissionRow[]
         sectorSummary: Array<SectorSummaryRow & { employeeValue: number }>
+        meritocracyValue?: number
     } | null>
     listSituations: (start: string, end: string) => Promise<SituationRow[] | null>
     clearFilters: () => void

@@ -5,6 +5,7 @@ import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 import { Sale } from '@/models/Sale'
 import { SaleCommissionSector } from '@/models/SaleCommissionSector'
+import { MeritocracyAllocation } from '@/models/MeritocracyAllocation'
 
 jest.mock('@/auth', () => ({
     auth: jest.fn(),
@@ -160,6 +161,38 @@ describe('API commissions routes', () => {
             totalCommissionValue: 1200,
         })
 
+        const meritocracySector = await Sector.create({
+            tenantId,
+            name: 'MERITOCRACIA',
+            percentage: 0,
+            active: true,
+            isMeritocracia: true,
+        })
+
+        await MeritocracyAllocation.create({
+            tenantId,
+            competence: '2026-07',
+            periodStart: new Date('2026-07-01T00:00:00.000Z'),
+            periodEnd: new Date('2026-07-31T23:59:59.999Z'),
+            paymentDate: dateB,
+            meritocracySectorId: meritocracySector._id,
+            totalMeritocracyValue: 125,
+            recipientCount: 1,
+            selectedSectorIds: [sectorA._id],
+            explicitlyIncludedEmployeeIds: [],
+            explicitlyExcludedEmployeeIds: [],
+            recipients: [
+                {
+                    employeeId: employeeA._id,
+                    employeeName: 'Alice',
+                    sectorId: sectorA._id,
+                    sectorName: 'Setor A',
+                    employeeValue: 125,
+                },
+            ],
+            status: 'success',
+        })
+
         return { dateA, dateB, employeeA }
     }
 
@@ -186,6 +219,7 @@ describe('API commissions routes', () => {
             { value: 10000, totalCommissionValue: 1000 },
             { value: 12000, totalCommissionValue: 1200 },
         ])
+        expect(json.meritocracyTotal).toBe(125)
     })
 
     it('period employee route sorts by date and returns sector totals for the employee', async () => {
@@ -219,6 +253,7 @@ describe('API commissions routes', () => {
                 }),
             ]),
         )
+        expect(json.meritocracyValue).toBe(125)
     })
 
     it('situations route returns only non-Apto situations ordered by date', async () => {

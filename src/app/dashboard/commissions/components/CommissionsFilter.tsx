@@ -40,6 +40,7 @@ interface CommissionsFilterProps {
             value: number
             totalCommissionValue: number
         }>
+        meritocracyTotal?: number
     } | null>
     listByPeriodEmployee: (
         start: string,
@@ -57,6 +58,14 @@ interface CommissionsFilterProps {
             totalCount: number
         }>
         sectorSummary: Array<{
+            sectorName: string
+            sectorValue: number
+            employeeValue: number
+        }>
+        meritocracyValue?: number
+        meritocracyEntries?: Array<{
+            date: string
+            situation: string
             sectorName: string
             sectorValue: number
             employeeValue: number
@@ -139,6 +148,7 @@ export default function CommissionsFilter({
                 data: periodResult.data,
                 sectorSummary: periodResult.sectorSummary,
                 salesSummary: periodResult.salesSummary,
+                meritocracyTotal: periodResult.meritocracyTotal,
                 situations,
             })
             toast.success('Relatório de Gorjetas gerado.')
@@ -182,8 +192,11 @@ export default function CommissionsFilter({
                 type: 'employee',
                 startDate,
                 endDate,
+                employeeId,
                 data: employeeResult.data,
                 sectorSummary: employeeResult.sectorSummary,
+                meritocracyValue: employeeResult.meritocracyValue,
+                meritocracyEntries: employeeResult.meritocracyEntries,
             })
             toast.success('Relatório de Gorjetas por colaborador gerado.')
         } finally {

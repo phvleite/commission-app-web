@@ -8,6 +8,8 @@ import { Tenant } from '@/models/Tenant'
 import { formatCurrencyFromDatabase } from '@/app/dashboard/commissions/utils/formatCurrency'
 import { generatePeriodTitle } from '@/app/dashboard/commissions/utils/generatePeriodTitle'
 import { formatDateFromDatabase } from '@/app/dashboard/commissions/utils/formatDate'
+import { MeritocracyAllocation } from '@/models/MeritocracyAllocation'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +36,7 @@ interface PdfAllPayload {
     sectorSummary: SectorSummaryRow[]
     salesSummary: SalesSummaryRow[]
     situations?: SituationPayloadRow[]
+    meritocracyTotal?: number
 }
 
 interface GroupedEmployeeRow {
@@ -87,6 +90,7 @@ function renderReportAllHtml(params: {
     totalSectors: number
     totalSectorsWithoutMerit: number
     totalGeneral: number
+    meritocracyTotal: number
     sectorSummary: SectorSummaryRow[]
     groupedEmployees: GroupedEmployeeRow[]
     situations: SituationPayloadRow[]
@@ -245,6 +249,7 @@ function renderReportAllHtml(params: {
     <div class="summary">
         <div><strong>Valor total das vendas:</strong> R$ ${formatCurrencyFromDatabase(params.totalSales)}</div>
         <div><strong>Total de gorjetas do período:</strong> R$ ${formatCurrencyFromDatabase(params.totalSalesCommission)}</div>
+        <div><strong>Meritocracia paga no período:</strong> R$ ${formatCurrencyFromDatabase(params.meritocracyTotal)}</div>
     </div>
 
     <h2 class="center">Resumo por Setor</h2>
@@ -282,7 +287,7 @@ function renderReportAllHtml(params: {
         </tbody>
     </table>
 
-    <h2>Total Geral: R$ ${formatCurrencyFromDatabase(params.totalGeneral)}</h2>
+    <h2>${params.meritocracyTotal > 0 ? 'Total Geral (Gorjetas + Meritocracia)' : 'Total Geral'}: R$ ${formatCurrencyFromDatabase(params.totalGeneral)}</h2>
 
     ${
         hasSituations
@@ -348,6 +353,28 @@ export async function POST(req: Request) {
         const { startDate, endDate, data, sectorSummary, salesSummary } = body
         const { situations = [] } = body
 
+        const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+        const reportStartRange = getUtcRangeForCalendarDay(startDate, timeZone)
+        const reportEndRange = getUtcRangeForCalendarDay(endDate, timeZone)
+        if (!reportStartRange || !reportEndRange) {
+            return NextResponse.json(
+                { error: 'Período inválido para geração de PDF.' },
+                { status: 400 },
+            )
+        }
+
+        const meritocracyAllocations = await MeritocracyAllocation.find({
+            tenantId: session.user.tenantId,
+            status: 'success',
+            paymentDate: { $gte: reportStartRange.start, $lte: reportEndRange.end },
+        })
+            .select('totalMeritocracyValue')
+            .lean()
+        const meritocracyTotal = meritocracyAllocations.reduce(
+            (total, allocation) => total + allocation.totalMeritocracyValue,
+            0,
+        )
+
         const totalSectors = sectorSummary.reduce((acc, sector) => acc + sector.sectorValue, 0)
         const totalSectorsWithoutMerit = sectorSummary
             .filter((sector) => sector.sectorName.toUpperCase() !== 'MERITOCRACIA')
@@ -374,7 +401,7 @@ export async function POST(req: Request) {
 
         const totalGeneral = groupedEmployees.reduce(
             (acc, employee) => acc + employee.totalCommission,
-            0,
+            meritocracyTotal,
         )
 
         const totalSales = salesSummary.reduce((acc, sale) => acc + sale.value, 0)
@@ -391,6 +418,7 @@ export async function POST(req: Request) {
             totalSectors,
             totalSectorsWithoutMerit,
             totalGeneral,
+            meritocracyTotal,
             sectorSummary,
             groupedEmployees,
             situations,

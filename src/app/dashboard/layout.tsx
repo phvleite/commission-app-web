@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { validateActiveSectorsPercentage } from '@/lib/api/business-rules'
 import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 import { connectDB } from '@/lib/db'
+import { Sector } from '@/models/Sector'
 import { SidebarNav } from './_components/SidebarNav'
 import { SessionActivityHeartbeat } from './_components/SessionActivityHeartbeat'
 
@@ -10,17 +11,24 @@ function DashboardShell({
     children,
     role,
     sectorsOk,
+    hasMeritocraciaSector,
     userName,
 }: Readonly<{
     children: React.ReactNode
     role?: string | null
     sectorsOk: boolean
+    hasMeritocraciaSector: boolean
     userName?: string | null
 }>) {
     return (
         <div className="app-shell min-h-screen">
             <SessionActivityHeartbeat />
-            <SidebarNav userName={userName} role={role} sectorsOk={sectorsOk} />
+            <SidebarNav
+                userName={userName}
+                role={role}
+                sectorsOk={sectorsOk}
+                hasMeritocraciaSector={hasMeritocraciaSector}
+            />
             <div className="lg:pl-72">
                 <div className="px-4 py-6 sm:px-6 sm:py-8">{children}</div>
             </div>
@@ -58,12 +66,17 @@ export default async function DashboardLayout({
     try {
         await connectDB()
         const sectorStatus = await validateActiveSectorsPercentage(session.user.tenantId)
+        const hasMeritocraciaSector = await Sector.exists({
+            tenantId: session.user.tenantId,
+            isMeritocracia: true,
+        }).then(Boolean)
 
         return (
             <DashboardShell
                 userName={session.user.name}
                 role={session.user.role}
                 sectorsOk={sectorStatus.valid}
+                hasMeritocraciaSector={hasMeritocraciaSector}
             >
                 {children}
             </DashboardShell>
@@ -74,7 +87,12 @@ export default async function DashboardLayout({
         }
 
         return (
-            <DashboardShell userName={session.user.name} role={session.user.role} sectorsOk={false}>
+            <DashboardShell
+                userName={session.user.name}
+                role={session.user.role}
+                sectorsOk={false}
+                hasMeritocraciaSector={false}
+            >
                 <DatabaseUnavailableMessage />
             </DashboardShell>
         )

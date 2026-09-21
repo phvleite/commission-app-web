@@ -5,6 +5,7 @@ import DashboardLayout from '@/app/dashboard/layout'
 import { auth } from '@/auth'
 import { connectDB } from '@/lib/db'
 import { validateActiveSectorsPercentage } from '@/lib/api/business-rules'
+import { Sector } from '@/models/Sector'
 
 jest.mock('@/auth', () => ({
     auth: jest.fn(),
@@ -16,6 +17,10 @@ jest.mock('@/lib/db', () => ({
 
 jest.mock('@/lib/api/business-rules', () => ({
     validateActiveSectorsPercentage: jest.fn(),
+}))
+
+jest.mock('@/models/Sector', () => ({
+    Sector: { exists: jest.fn() },
 }))
 
 jest.mock('next/navigation', () => ({
@@ -30,6 +35,7 @@ const connectDBMock = connectDB as jest.MockedFunction<typeof connectDB>
 const validateActiveSectorsPercentageMock = validateActiveSectorsPercentage as jest.MockedFunction<
     typeof validateActiveSectorsPercentage
 >
+const sectorExistsMock = Sector.exists as unknown as jest.Mock
 
 function setSession() {
     authMock.mockResolvedValue({
@@ -49,6 +55,7 @@ describe('DashboardLayout', () => {
         authMock.mockReset()
         connectDBMock.mockReset()
         validateActiveSectorsPercentageMock.mockReset()
+        sectorExistsMock.mockReset()
     })
 
     it('renders an unavailable database state instead of crashing on Mongo network errors', async () => {
@@ -74,6 +81,7 @@ describe('DashboardLayout', () => {
         setSession()
         connectDBMock.mockResolvedValueOnce({} as Awaited<ReturnType<typeof connectDB>>)
         validateActiveSectorsPercentageMock.mockResolvedValueOnce({ valid: true, total: 100 })
+        sectorExistsMock.mockResolvedValueOnce(null)
 
         const element = await DashboardLayout({ children: <main>Dashboard content</main> })
 
