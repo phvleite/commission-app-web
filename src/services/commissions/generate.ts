@@ -18,6 +18,7 @@ import {
 
 interface EmployeeRef {
     _id: { toString(): string }
+    name: string
     sectorId: { toString(): string }
 }
 export async function generateCommissionsForDate(tenantId: string, date: Date): Promise<void> {
@@ -69,7 +70,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
             tenantId,
             active: true,
         })
-            .select('_id percentage isMeritocracia')
+            .select('_id name percentage isMeritocracia')
             .lean()
 
         if (!sectors.length) {
@@ -97,7 +98,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                 { dismissalDate: { $gte: date } },
             ],
         })
-            .select('_id sectorId')
+            .select('_id name sectorId')
             .lean()) as EmployeeRef[]
 
         const employeesBySector = new Map<string, EmployeeRef[]>()
@@ -152,6 +153,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                     tenantId,
                     date,
                     sectorId: sector._id,
+                    sectorName: sector.name,
                     appliedPercentage: sector.percentage,
                     totalSectorValue: sectorValue,
                     totalEmployees: 0,
@@ -187,6 +189,7 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                 tenantId,
                 date,
                 sectorId: sector._id,
+                sectorName: sector.name,
                 appliedPercentage: sector.percentage,
                 totalSectorValue: sectorValue,
                 totalEmployees,
@@ -212,7 +215,9 @@ export async function generateCommissionsForDate(tenantId: string, date: Date): 
                     tenantId,
                     date,
                     employeeId: employee._id,
+                    employeeName: employee.name,
                     sectorId: sector._id,
+                    sectorName: sector.name,
                     situation,
                     sectorValue,
                     employeeValue,

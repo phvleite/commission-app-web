@@ -5,7 +5,11 @@ export interface ICommission extends WithTenant, WithTimestamps {
     _id: Types.ObjectId
     date: Date
     employeeId: Types.ObjectId
+    /** Snapshot do nome do colaborador no momento do cálculo */
+    employeeName?: string
     sectorId: Types.ObjectId
+    /** Snapshot do nome do setor no momento do cálculo */
+    sectorName?: string
     /** Snapshot da situação do colaborador neste dia (ex: "Apto", "Férias") */
     situation: string
     /** Valor total do setor neste dia em centavos */
@@ -23,7 +27,9 @@ const commissionSchema = new Schema<CommissionDocument>(
         tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
         date: { type: Date, required: true },
         employeeId: { type: Schema.Types.ObjectId, ref: 'Employee', required: true, index: true },
+        employeeName: { type: String, trim: true },
         sectorId: { type: Schema.Types.ObjectId, ref: 'Sector', required: true },
+        sectorName: { type: String, trim: true },
         situation: { type: String, required: true, trim: true },
         sectorValue: { type: Number, required: true, min: 0 },
         employeeValue: { type: Number, required: true, min: 0 },

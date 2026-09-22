@@ -63,6 +63,7 @@ describe('API employees routes', () => {
         const history = await EmployeeSectorHistory.findOne({ employeeId: created?._id }).lean()
         expect(history).toMatchObject({
             sectorId: sector._id,
+            sectorName: 'Vendas',
             startDate: new Date('2024-01-15'),
         })
     })

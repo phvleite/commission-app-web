@@ -11,6 +11,8 @@
         "seed:platform-owner": "node scripts/seed-platform-owner.mjs",
         "migrate:commission-processes": "npx tsx src/lib/migrations/002-backfill-successful-commission-processes.ts",
         "migrate:employee-sector-history": "npx tsx src/lib/migrations/003-backfill-employee-sector-history.ts",
+        "migrate:situation-types": "npx tsx src/lib/migrations/004-seed-situation-types.ts",
+        "migrate:snapshot-names": "npx tsx src/lib/migrations/005-backfill-snapshot-names.ts",
         "test": "jest",
         "test:watch": "jest --watch",
         "test:coverage": "jest --coverage",

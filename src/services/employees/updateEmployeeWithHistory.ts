@@ -1,6 +1,7 @@
 import { connectDB } from '@/lib/db'
 import { Employee } from '@/models/Employee'
 import { EmployeeSectorHistory } from '@/models/EmployeeSectorHistory'
+import { Sector } from '@/models/Sector'
 import { Types } from 'mongoose'
 
 interface UpdateEmployeeWithHistoryInput {
@@ -45,12 +46,21 @@ export async function updateEmployeeWithHistory(input: UpdateEmployeeWithHistory
                 .session(session)
 
             if (histories.length === 0) {
+                const currentSector = await Sector.findOne({
+                    _id: employee.sectorId,
+                    tenantId: input.tenantId,
+                })
+                    .select('name')
+                    .session(session)
+                    .lean()
+
                 const [initialHistory] = await EmployeeSectorHistory.create(
                     [
                         {
                             tenantId: input.tenantId,
                             employeeId: employee._id,
                             sectorId: employee.sectorId,
+                            sectorName: currentSector?.name,
                             startDate: employee.admissionDate,
                             endDate: employee.dismissalDate,
                             createdBy:
@@ -106,12 +116,21 @@ export async function updateEmployeeWithHistory(input: UpdateEmployeeWithHistory
                 latestHistory.endDate = previousCalendarDay(input.sectorChangeDate)
                 await latestHistory.save({ session })
 
+                const nextSector = await Sector.findOne({
+                    _id: input.sectorId,
+                    tenantId: input.tenantId,
+                })
+                    .select('name')
+                    .session(session)
+                    .lean()
+
                 await EmployeeSectorHistory.create(
                     [
                         {
                             tenantId: input.tenantId,
                             employeeId: employee._id,
                             sectorId: input.sectorId,
+                            sectorName: nextSector?.name,
                             startDate: input.sectorChangeDate,
                             endDate: dismissalDate,
                             createdBy:
