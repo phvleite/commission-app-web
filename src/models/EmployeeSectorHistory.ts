@@ -5,6 +5,8 @@ export interface IEmployeeSectorHistory extends WithTenant, WithTimestamps {
     _id: Types.ObjectId
     employeeId: Types.ObjectId
     sectorId: Types.ObjectId
+    /** Snapshot do nome do setor no momento do registro */
+    sectorName?: string
     startDate: Date
     endDate?: Date
     createdBy?: Types.ObjectId
@@ -17,6 +19,7 @@ const employeeSectorHistorySchema = new Schema<EmployeeSectorHistoryDocument>(
         tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
         employeeId: { type: Schema.Types.ObjectId, ref: 'Employee', required: true, index: true },
         sectorId: { type: Schema.Types.ObjectId, ref: 'Sector', required: true, index: true },
+        sectorName: { type: String, trim: true },
         startDate: { type: Date, required: true },
         endDate: { type: Date },
         createdBy: { type: Schema.Types.ObjectId, ref: 'User' },

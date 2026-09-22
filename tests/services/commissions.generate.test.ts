@@ -86,12 +86,14 @@ describe('generateCommissionsForDate', () => {
         )
 
         expect(normalSnapshot).toMatchObject({
+            sectorName: 'Vendas',
             totalSectorValue: 50,
             totalEmployees: 2,
             eligibleEmployees: 1,
         })
 
         expect(meritSnapshot).toMatchObject({
+            sectorName: 'MERITOCRACIA',
             totalSectorValue: 50,
             totalEmployees: 0,
             eligibleEmployees: 0,
@@ -108,6 +110,8 @@ describe('generateCommissionsForDate', () => {
         )
 
         expect(aptoCommission).toMatchObject({
+            employeeName: 'Alice',
+            sectorName: 'Vendas',
             situation: 'Apto',
             employeeValue: 50,
             eligibleCount: 1,
@@ -116,6 +120,8 @@ describe('generateCommissionsForDate', () => {
         })
 
         expect(feriasCommission).toMatchObject({
+            employeeName: 'Bruno',
+            sectorName: 'Vendas',
             situation: 'Férias',
             employeeValue: 0,
             eligibleCount: 1,

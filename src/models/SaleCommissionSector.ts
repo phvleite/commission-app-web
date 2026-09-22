@@ -5,6 +5,8 @@ export interface ISaleCommissionSector extends WithTenant, WithTimestamps {
     _id: Types.ObjectId
     date: Date
     sectorId: Types.ObjectId
+    /** Snapshot do nome do setor no momento do cálculo */
+    sectorName?: string
     appliedPercentage: number
     /** Valor total do setor neste dia em centavos */
     totalSectorValue: number
@@ -19,6 +21,7 @@ const saleCommissionSectorSchema = new Schema<SaleCommissionSectorDocument>(
         tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
         date: { type: Date, required: true },
         sectorId: { type: Schema.Types.ObjectId, ref: 'Sector', required: true },
+        sectorName: { type: String, trim: true },
         appliedPercentage: { type: Number, required: true, min: 0, max: 100 },
         totalSectorValue: { type: Number, required: true, min: 0 },
         totalEmployees: { type: Number, required: true, min: 0 },

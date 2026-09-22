@@ -1,6 +1,7 @@
 import { connectDB } from '@/lib/db'
 import { Employee } from '@/models/Employee'
 import { EmployeeSectorHistory } from '@/models/EmployeeSectorHistory'
+import { Sector } from '@/models/Sector'
 import { Types } from 'mongoose'
 
 interface CreateEmployeeWithHistoryInput {
@@ -20,6 +21,11 @@ export async function createEmployeeWithHistory(input: CreateEmployeeWithHistory
         let createdEmployee: InstanceType<typeof Employee> | null = null
 
         await session.withTransaction(async () => {
+            const sector = await Sector.findOne({ _id: input.sectorId, tenantId: input.tenantId })
+                .select('name')
+                .session(session)
+                .lean()
+
             const [employee] = await Employee.create(
                 [
                     {
@@ -40,6 +46,7 @@ export async function createEmployeeWithHistory(input: CreateEmployeeWithHistory
                         tenantId: input.tenantId,
                         employeeId: employee._id,
                         sectorId: input.sectorId,
+                        sectorName: sector?.name,
                         startDate: input.admissionDate,
                         endDate: input.dismissalDate,
                         createdBy:

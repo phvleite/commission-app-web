@@ -1,6 +1,7 @@
 import { connectDB } from '@/lib/db'
 import { Employee } from '@/models/Employee'
 import { EmployeeSectorHistory } from '@/models/EmployeeSectorHistory'
+import { Sector } from '@/models/Sector'
 import { Types } from 'mongoose'
 
 interface CorrectionInput {
@@ -72,7 +73,16 @@ export async function correctEmployeeSectorHistory(input: CorrectionInput) {
                 await previous.save({ session })
             }
 
+            const correctedSector = await Sector.findOne({
+                _id: input.sectorId,
+                tenantId: input.tenantId,
+            })
+                .select('name')
+                .session(session)
+                .lean()
+
             target.sectorId = new Types.ObjectId(input.sectorId)
+            target.sectorName = correctedSector?.name
             target.startDate = input.startDate
             target.endDate = endDate
             await target.save({ session })
