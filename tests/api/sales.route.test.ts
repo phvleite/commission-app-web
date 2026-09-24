@@ -15,6 +15,7 @@ jest.mock('@/services/commissions/generate', () => ({
 
 import { auth } from '@/auth'
 import { GET, POST } from '@/app/api/sales/route'
+import { PUT } from '@/app/api/sales/[id]/route'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
 
 const authMock = auth as unknown as jest.Mock
@@ -67,6 +68,130 @@ describe('API sales routes', () => {
             date: new Date('2026-07-28T12:00:00.000Z'),
         }).lean()
         expect(sale).toBeNull()
+    })
+
+    it('PUT restores the previous sale and commissions when regeneration fails on the same date', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        const saleDate = new Date('2026-07-28T00:00:00.000Z')
+        const employeeId = new Types.ObjectId()
+        const sectorId = new Types.ObjectId()
+        setSession(tenantId)
+
+        const sale = await Sale.create({
+            tenantId,
+            date: saleDate,
+            value: 10000,
+            totalCommissionValue: 1000,
+        })
+        await Commission.create({
+            tenantId,
+            date: saleDate,
+            employeeId,
+            sectorId,
+            situation: 'Apto',
+            sectorValue: 1000,
+            employeeValue: 1000,
+            eligibleCount: 1,
+            totalCount: 1,
+        })
+        await SaleCommissionSector.create({
+            tenantId,
+            date: saleDate,
+            sectorId,
+            appliedPercentage: 100,
+            totalSectorValue: 1000,
+            totalEmployees: 1,
+            eligibleEmployees: 1,
+        })
+        await CommissionProcess.create({
+            tenantId,
+            date: saleDate,
+            status: 'success',
+            startedAt: new Date('2026-07-28T00:00:01.000Z'),
+            finishedAt: new Date('2026-07-28T00:00:02.000Z'),
+        })
+
+        generateCommissionsForDateMock.mockRejectedValueOnce(new Error('falha no recálculo'))
+
+        const response = await PUT(
+            new Request('http://localhost/api/sales/sale-1', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: '2026-07-28', value: 200 }),
+            }),
+            { params: Promise.resolve({ id: sale._id.toString() }) },
+        )
+
+        expect(response.status).toBe(500)
+        await expect(Sale.findById(sale._id).lean()).resolves.toMatchObject({
+            value: 10000,
+            totalCommissionValue: 1000,
+        })
+        await expect(Commission.countDocuments({ tenantId, date: saleDate })).resolves.toBe(1)
+        await expect(
+            SaleCommissionSector.countDocuments({ tenantId, date: saleDate }),
+        ).resolves.toBe(1)
+        await expect(
+            CommissionProcess.findOne({ tenantId, date: saleDate }).lean(),
+        ).resolves.toMatchObject({ status: 'success' })
+    })
+
+    it('PUT blocks an edit while another sale requires recovery', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        const saleDate = new Date('2026-07-28T00:00:00.000Z')
+        setSession(tenantId)
+
+        const sale = await Sale.create({
+            tenantId,
+            date: saleDate,
+            value: 10000,
+            totalCommissionValue: 1000,
+        })
+        await CommissionProcess.create({
+            tenantId,
+            date: saleDate,
+            status: 'network_lost',
+            startedAt: new Date('2026-07-28T00:00:01.000Z'),
+        })
+
+        const response = await PUT(
+            new Request('http://localhost/api/sales/sale-1', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: '2026-07-28', value: 200 }),
+            }),
+            { params: Promise.resolve({ id: sale._id.toString() }) },
+        )
+
+        expect(response.status).toBe(409)
+        await expect(response.json()).resolves.toMatchObject({
+            errorCode: 'pending_sale_recovery',
+        })
+        expect(generateCommissionsForDateMock).not.toHaveBeenCalled()
+    })
+
+    it('PUT rejects a non-positive or non-numeric value before changing the sale', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId)
+        const sale = await Sale.create({
+            tenantId,
+            date: new Date('2026-07-28T00:00:00.000Z'),
+            value: 10000,
+            totalCommissionValue: 1000,
+        })
+
+        const response = await PUT(
+            new Request('http://localhost/api/sales/sale-1', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: '2026-07-28', value: 0 }),
+            }),
+            { params: Promise.resolve({ id: sale._id.toString() }) },
+        )
+
+        expect(response.status).toBe(400)
+        await expect(response.json()).resolves.toEqual({ error: 'Valor inválido.' })
+        await expect(Sale.findById(sale._id).lean()).resolves.toMatchObject({ value: 10000 })
     })
 
     it('POST keeps only one sale when the client retries after a perceived network failure', async () => {

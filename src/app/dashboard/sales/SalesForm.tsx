@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
     formatCurrencyInput,
@@ -24,6 +24,7 @@ export function SalesForm({
     isSaving: externalIsSaving,
     isBlocked = false,
 }: SalesFormProps) {
+    const valueInputRef = useRef<HTMLInputElement>(null)
     const [date, setDate] = useState('')
     const [value, setValue] = useState('')
     const [localIsSaving, setLocalIsSaving] = useState(false)
@@ -56,6 +57,7 @@ export function SalesForm({
 
             setDate(sale.date.slice(0, 10))
             setValue(formatCurrencyFromDatabase(sale.value))
+            window.requestAnimationFrame(() => valueInputRef.current?.focus())
         }
 
         loadSale()
@@ -147,6 +149,7 @@ export function SalesForm({
                 <div>
                     <label className="block text-sm font-medium mb-1">Valor:</label>
                     <input
+                        ref={valueInputRef}
                         type="text"
                         value={value}
                         onChange={handleValueChange}
@@ -169,6 +172,13 @@ export function SalesForm({
                     }`}
                 >
                     {feedback.message}
+                </p>
+            ) : null}
+
+            {isSaving && editMode ? (
+                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                    Alteração em processamento. As comissões da venda estão sendo recalculadas e
+                    validadas, aguarde...
                 </p>
             ) : null}
 
