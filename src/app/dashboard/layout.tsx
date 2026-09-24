@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { auth } from '@/auth'
+import { auth, signOut } from '@/auth'
 import { validateActiveSectorsPercentage } from '@/lib/api/business-rules'
 import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 import { connectDB } from '@/lib/db'
@@ -13,12 +13,14 @@ function DashboardShell({
     sectorsOk,
     hasMeritocraciaSector,
     userName,
+    onSignOut,
 }: Readonly<{
     children: React.ReactNode
     role?: string | null
     sectorsOk: boolean
     hasMeritocraciaSector: boolean
     userName?: string | null
+    onSignOut: () => Promise<void>
 }>) {
     return (
         <div className="app-shell min-h-screen">
@@ -28,6 +30,7 @@ function DashboardShell({
                 role={role}
                 sectorsOk={sectorsOk}
                 hasMeritocraciaSector={hasMeritocraciaSector}
+                onSignOut={onSignOut}
             />
             <div className="lg:pl-72">
                 <div className="px-4 py-6 sm:px-6 sm:py-8">{children}</div>
@@ -63,38 +66,40 @@ export default async function DashboardLayout({
         redirect('/platform-admin')
     }
 
+    async function handleSignOut() {
+        'use server'
+        await signOut({ redirectTo: '/login' })
+    }
+
+    let sectorsOk = false
+    let hasMeritocraciaSector = false
+    let databaseUnavailable = false
+
     try {
         await connectDB()
         const sectorStatus = await validateActiveSectorsPercentage(session.user.tenantId)
-        const hasMeritocraciaSector = await Sector.exists({
+        sectorsOk = sectorStatus.valid
+        hasMeritocraciaSector = await Sector.exists({
             tenantId: session.user.tenantId,
             isMeritocracia: true,
         }).then(Boolean)
-
-        return (
-            <DashboardShell
-                userName={session.user.name}
-                role={session.user.role}
-                sectorsOk={sectorStatus.valid}
-                hasMeritocraciaSector={hasMeritocraciaSector}
-            >
-                {children}
-            </DashboardShell>
-        )
     } catch (error) {
         if (!isDatabaseConnectionError(error)) {
             throw error
         }
 
-        return (
-            <DashboardShell
-                userName={session.user.name}
-                role={session.user.role}
-                sectorsOk={false}
-                hasMeritocraciaSector={false}
-            >
-                <DatabaseUnavailableMessage />
-            </DashboardShell>
-        )
+        databaseUnavailable = true
     }
+
+    return (
+        <DashboardShell
+            userName={session.user.name}
+            role={session.user.role}
+            sectorsOk={sectorsOk}
+            hasMeritocraciaSector={hasMeritocraciaSector}
+            onSignOut={handleSignOut}
+        >
+            {databaseUnavailable ? <DatabaseUnavailableMessage /> : children}
+        </DashboardShell>
+    )
 }

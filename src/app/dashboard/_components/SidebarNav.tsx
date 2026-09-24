@@ -10,6 +10,7 @@ interface Props {
     role?: string | null
     sectorsOk: boolean
     hasMeritocraciaSector: boolean
+    onSignOut?: () => Promise<void>
 }
 
 const MENU_ITEMS = [
@@ -67,9 +68,10 @@ function ItemLink({
     )
 }
 
-export function SidebarNav({ userName, role, sectorsOk, hasMeritocraciaSector }: Props) {
+export function SidebarNav({ userName, role, sectorsOk, hasMeritocraciaSector, onSignOut }: Props) {
     const pathname = usePathname()
     const [open, setOpen] = useState(false)
+    const handleSignOut = onSignOut ?? (async () => undefined)
 
     const visibleMenuItems = MENU_ITEMS.filter(
         (item) => !item.requiresMeritocraciaSector || hasMeritocraciaSector,
@@ -133,6 +135,15 @@ export function SidebarNav({ userName, role, sectorsOk, hasMeritocraciaSector }:
                         <p className="font-semibold text-white">{userName ?? 'Usuario'}</p>
                         <p className="mt-1 uppercase">Perfil: {role ?? '-'}</p>
                     </div>
+
+                    <form action={handleSignOut} className="mt-3">
+                        <button
+                            type="submit"
+                            className="flex w-full items-center justify-center gap-2 cancel-button rounded-xl px-4 py-2.5 text-sm font-semibold"
+                        >
+                            Sair
+                        </button>
+                    </form>
                 </div>
             </aside>
 
@@ -199,6 +210,15 @@ export function SidebarNav({ userName, role, sectorsOk, hasMeritocraciaSector }:
                         >
                             Fechar
                         </button>
+
+                        <form action={handleSignOut} className="mt-3">
+                            <button
+                                type="submit"
+                                className="flex w-full items-center justify-center gap-2 cancel-button rounded-xl px-4 py-2.5 text-sm font-semibold"
+                            >
+                                Sair
+                            </button>
+                        </form>
                     </div>
                 </div>
             ) : null}
