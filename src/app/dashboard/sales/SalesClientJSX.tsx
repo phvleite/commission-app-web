@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { SalesForm } from './SalesForm'
 import { SalesFilters } from './SalesFilter'
 import { SalesList } from './SalesList'
@@ -12,9 +13,16 @@ interface SalesClientJSXProps {
 }
 
 export function SalesClientJSX({ client }: SalesClientJSXProps) {
+    const formSectionRef = useRef<HTMLDivElement>(null)
     const pendingDate = client.pendingSale
         ? client.pendingSale.date.slice(0, 10).split('-').reverse().join('/')
         : ''
+
+    useEffect(() => {
+        if (!client.editId) return
+
+        formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, [client.editId])
 
     return (
         <section>
@@ -59,13 +67,15 @@ export function SalesClientJSX({ client }: SalesClientJSXProps) {
                 </div>
             ) : null}
 
-            <SalesForm
-                editId={client.editId}
-                onSave={client.saveSale}
-                onCancel={client.cancelEdit}
-                isSaving={client.isSaving}
-                isBlocked={Boolean(client.pendingSale)}
-            />
+            <div ref={formSectionRef}>
+                <SalesForm
+                    editId={client.editId}
+                    onSave={client.saveSale}
+                    onCancel={client.cancelEdit}
+                    isSaving={client.isSaving}
+                    isBlocked={Boolean(client.pendingSale)}
+                />
+            </div>
 
             <SalesFilters
                 startDate={client.startDate}

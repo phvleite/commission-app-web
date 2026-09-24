@@ -1,6 +1,9 @@
 import { auth } from '@/auth'
 import { connectDB } from '@/lib/db'
 import { Sale } from '@/models/Sale'
+import { Commission } from '@/models/Commission'
+import { CommissionProcess } from '@/models/CommissionProcess'
+import { SaleCommissionSector } from '@/models/SaleCommissionSector'
 import {
     deleteCommissionsForDate,
     rollbackSaleAndCommissionsForDate,
@@ -10,6 +13,7 @@ import { Types } from 'mongoose'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 import { isDatabaseConnectionError } from '@/lib/api/db-errors'
+import { findPendingSale } from '@/services/sales/pending-sale'
 
 interface RouteContext {
     params: Promise<{ id: string }>
@@ -106,6 +110,10 @@ export async function PUT(req: Request, context: RouteContext) {
         return NextResponse.json({ error: 'Data inválida.' }, { status: 400 })
     }
 
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        return NextResponse.json({ error: 'Valor inválido.' }, { status: 400 })
+    }
+
     const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
     const dayRange = getUtcRangeForCalendarDay(date, timeZone)
     if (!dayRange) {
@@ -118,6 +126,25 @@ export async function PUT(req: Request, context: RouteContext) {
 
     try {
         await connectDB()
+
+        const pending = await findPendingSale(session.user.tenantId)
+        if (pending) {
+            return NextResponse.json(
+                {
+                    error: pending.recoverable
+                        ? 'Existe um lançamento anterior pendente de decisão.'
+                        : 'Existe um lançamento de venda ainda em processamento.',
+                    errorCode: 'pending_sale_recovery',
+                    pending: {
+                        date: pending.date.toISOString(),
+                        value: pending.value,
+                        status: pending.status,
+                        recoverable: pending.recoverable,
+                    },
+                },
+                { status: 409 },
+            )
+        }
 
         const sale = await Sale.findOne({
             _id: id,
@@ -134,6 +161,12 @@ export async function PUT(req: Request, context: RouteContext) {
             value: sale.value,
             totalCommissionValue: sale.totalCommissionValue,
         }
+
+        const [oldCommissions, oldSectorSnapshots, oldProcess] = await Promise.all([
+            Commission.find({ tenantId: session.user.tenantId, date: oldDate }).lean(),
+            SaleCommissionSector.find({ tenantId: session.user.tenantId, date: oldDate }).lean(),
+            CommissionProcess.findOne({ tenantId: session.user.tenantId, date: oldDate }).lean(),
+        ])
 
         const exists = await Sale.findOne({
             tenantId: session.user.tenantId,
@@ -166,14 +199,26 @@ export async function PUT(req: Request, context: RouteContext) {
         } catch (error) {
             await rollbackSaleAndCommissionsForDate(session.user.tenantId, newDate)
 
-            sale.date = oldSaleValues.date
-            sale.value = oldSaleValues.value
-            sale.totalCommissionValue = oldSaleValues.totalCommissionValue
-            await sale.save()
+            await Sale.findOneAndUpdate(
+                { _id: sale._id, tenantId: session.user.tenantId },
+                {
+                    $set: {
+                        date: oldSaleValues.date,
+                        value: oldSaleValues.value,
+                        totalCommissionValue: oldSaleValues.totalCommissionValue,
+                    },
+                },
+                { upsert: true, returnDocument: 'after' },
+            )
 
-            const oldDateStart = getUtcDayStartFromDate(oldDate)
-            if (oldDateStart.getTime() !== newDate.getTime()) {
-                await generateCommissionsForDate(session.user.tenantId, oldDate)
+            if (oldCommissions.length > 0) {
+                await Commission.insertMany(oldCommissions, { ordered: false })
+            }
+            if (oldSectorSnapshots.length > 0) {
+                await SaleCommissionSector.insertMany(oldSectorSnapshots, { ordered: false })
+            }
+            if (oldProcess) {
+                await CommissionProcess.create(oldProcess)
             }
 
             throw error
