@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
 type CategoriaFiltro = 'geral' | 'tributario' | 'operacao' | 'tendencias'
@@ -24,20 +23,12 @@ const categorias: Array<{ value: CategoriaFiltro; label: string }> = [
     { value: 'tendencias', label: 'Tendências' },
 ]
 
-const filtroLabels: Record<CategoriaFiltro, string> = {
-    geral: 'Geral',
-    tributario: 'Tributário',
-    operacao: 'Operação',
-    tendencias: 'Tendências',
-}
-
 export default function NoticiasCarousel() {
     const [categoria, setCategoria] = useState<CategoriaFiltro>('geral')
     const [indice, setIndice] = useState(0)
     const [noticias, setNoticias] = useState<Noticia[]>([])
     const [carregando, setCarregando] = useState(true)
     const [origemApi, setOrigemApi] = useState<'api' | 'vazia'>('vazia')
-    const [imagemComErro, setImagemComErro] = useState<string | null>(null)
 
     useEffect(() => {
         let ativo = true
@@ -147,54 +138,21 @@ export default function NoticiasCarousel() {
                             Carregando notícias...
                         </div>
                     ) : noticiaAtual ? (
-                        <div className="grid min-h-80 sm:grid-cols-[minmax(15rem,0.8fr)_minmax(0,1.2fr)]">
-                            <div className="relative min-h-48 overflow-hidden bg-(--color-primary-strong) sm:min-h-80">
-                                {noticiaAtual.imagem && imagemComErro !== noticiaAtual.id ? (
-                                    <Image
-                                        src={noticiaAtual.imagem}
-                                        alt={noticiaAtual.titulo}
-                                        fill
-                                        unoptimized
-                                        priority={indice === 0}
-                                        onError={() => setImagemComErro(noticiaAtual.id)}
-                                        className="object-cover"
-                                        sizes="(max-width: 640px) 100vw, 35vw"
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-(--color-primary-strong) via-(--color-primary) to-(--color-primary-soft)">
-                                        <span className="max-w-xs px-8 text-center text-xl font-semibold text-white/90">
-                                            {noticiaAtual.fonte}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 bg-linear-to-t from-primary-strong/80 via-primary-strong/20 to-transparent" />
-
-                                <div className="absolute inset-x-0 bottom-0 p-4">
-                                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-widest text-white">
-                                        <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur-sm">
-                                            {filtroLabels[categoria]}
-                                        </span>
-                                        <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur-sm">
-                                            {noticiaAtual.fonte}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex min-w-0 flex-col justify-center p-5 sm:p-6">
+                        <div className="min-h-80">
+                            <div className="mx-auto flex min-h-80 w-full max-w-4xl flex-col justify-center p-6 sm:p-10 lg:p-12">
                                 <p className="text-xs uppercase tracking-widest text-(--color-accent-strong)">
                                     {origemApi === 'api'
                                         ? 'Notícia atualizada'
                                         : 'Fonte temporariamente indisponível'}
                                 </p>
-                                <h3 className="mt-2 line-clamp-3 text-xl leading-tight font-semibold text-(--color-primary-strong) sm:text-2xl">
+                                <h3 className="mt-3 max-w-3xl line-clamp-3 text-2xl leading-tight font-semibold text-(--color-primary-strong) sm:text-3xl">
                                     {noticiaAtual.titulo}
                                 </h3>
-                                <p className="mt-3 line-clamp-2 text-sm leading-6 text-(--color-muted)">
+                                <p className="mt-4 max-w-3xl line-clamp-3 text-base leading-7 text-(--color-muted)">
                                     {noticiaAtual.descricao}
                                 </p>
 
-                                <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
+                                <div className="mt-7 flex flex-wrap items-center gap-3 text-sm">
                                     <a
                                         className="primary-button rounded-xl px-4 py-2.5 font-semibold"
                                         href={noticiaAtual.url}
@@ -203,7 +161,11 @@ export default function NoticiasCarousel() {
                                     >
                                         Acessar notícia
                                     </a>
-                                    <span className="text-xs uppercase tracking-widest text-(--color-muted)">
+                                </div>
+                                <div className="mt-4 flex flex-wrap items-center gap-3 text-xs uppercase tracking-widest text-(--color-muted)">
+                                    <span>{noticiaAtual.fonte}</span>
+                                    <span aria-hidden="true">•</span>
+                                    <span>
                                         {new Date(noticiaAtual.publicadoEm).toLocaleDateString(
                                             'pt-BR',
                                             {
@@ -242,9 +204,6 @@ export default function NoticiasCarousel() {
                                     <span className="min-w-0 flex-1">
                                         <span className="line-clamp-2 block text-xs leading-5 font-semibold">
                                             {noticia.titulo}
-                                        </span>
-                                        <span className="mt-1 block text-[0.65rem] tracking-widest text-white/55 uppercase">
-                                            {noticia.fonte}
                                         </span>
                                     </span>
                                 </button>
