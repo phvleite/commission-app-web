@@ -5,6 +5,7 @@ import {
     getEffectiveMonthlyPriceCents,
     getServicePlan,
 } from '@/lib/service-plans'
+import type { ITenantDiscount } from '@/models/Tenant'
 
 const validData = {
     name: 'Empresa ABC',
@@ -59,9 +60,11 @@ describe('Tenant model', () => {
         expect(doc.phone).toBe('(11) 99999-0000')
         expect(doc.email).toBe('contato@empresa.com')
         expect(doc.planCode).toBe('plan_50')
-        expect(doc.discounts.map((discount) => discount.toObject())).toEqual([
-            { code: 'abrasel', percentage: 5, isAbrasel: true },
-        ])
+        expect(
+            doc.discounts.map((discount: ITenantDiscount & { toObject: () => unknown }) =>
+                discount.toObject(),
+            ),
+        ).toEqual([{ code: 'abrasel', percentage: 5, isAbrasel: true }])
         expect(doc.billingStatus).toBe('active')
         expect(doc.nextBillingAt?.toISOString()).toBe(nextBillingAt.toISOString())
         expect(doc.monthlyPriceOverrideCents).toBe(19990)
@@ -122,19 +125,19 @@ describe('Tenant model', () => {
     })
 
     it('rejeita quando name está ausente', async () => {
-        const sem = { ...validData }
+        const sem: Partial<typeof validData> = { ...validData }
         delete sem.name
         await expect(Tenant.create(sem)).rejects.toThrow()
     })
 
     it('rejeita quando legalName está ausente', async () => {
-        const sem = { ...validData }
+        const sem: Partial<typeof validData> = { ...validData }
         delete sem.legalName
         await expect(Tenant.create(sem)).rejects.toThrow()
     })
 
     it('rejeita quando slug está ausente', async () => {
-        const sem = { ...validData }
+        const sem: Partial<typeof validData> = { ...validData }
         delete sem.slug
         await expect(Tenant.create(sem)).rejects.toThrow()
     })

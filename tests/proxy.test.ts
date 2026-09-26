@@ -2,7 +2,12 @@ jest.mock('@/auth', () => ({
     auth: (handler: (req: { nextUrl: URL; auth?: unknown }) => Response) => handler,
 }))
 
-import middleware, { config } from '@/proxy'
+import middlewareImplementation, { config } from '@/proxy'
+
+function middleware(request: unknown): Response {
+    const handler = middlewareImplementation as unknown as (request: unknown) => Response
+    return handler(request)
+}
 
 function buildRequest(url: string, authValue: unknown, cookies?: Record<string, string>) {
     return {
