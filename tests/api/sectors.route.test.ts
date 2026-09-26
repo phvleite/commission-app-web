@@ -75,6 +75,33 @@ describe('API sectors routes', () => {
         expect(res.status).toBe(403)
     })
 
+    it('POST retorna 503 ao perder a conexão com o banco ao criar setor', async () => {
+        const tenantId = new Types.ObjectId().toString()
+        setSession(tenantId, 'admin')
+
+        const createSpy = jest.spyOn(Sector, 'create').mockRejectedValueOnce(
+            Object.assign(new Error('MongoDB connection lost'), {
+                name: 'MongoNetworkError',
+                code: 'ECONNRESET',
+            }),
+        )
+
+        const res = await POST(
+            new Request('http://localhost/api/sectors', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: 'Falha Banco', percentage: 20 }),
+            }),
+        )
+
+        expect(res.status).toBe(503)
+        await expect(res.json()).resolves.toMatchObject({
+            errorCode: 'database_connection_lost',
+        })
+
+        createSpy.mockRestore()
+    })
+
     it('GET lista somente setores do tenant autenticado', async () => {
         const tenantA = new Types.ObjectId()
         const tenantB = new Types.ObjectId()

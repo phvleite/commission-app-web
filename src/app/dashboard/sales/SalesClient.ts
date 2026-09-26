@@ -23,6 +23,15 @@ interface PaginatedSalesResponse {
     error?: string
 }
 
+export interface PendingSaleItem {
+    date: string
+    value: number
+    totalCommissionValue: number
+    status: 'processing' | 'failed' | 'cancelled' | 'network_lost' | 'process_not_found'
+    startedAt: string
+    recoverable: boolean
+}
+
 const PAGE_SIZE = 50
 
 export interface ISaleClientProps {
@@ -75,7 +84,13 @@ export function useSalesClient(
     const [endDate, setEndDate] = useState(initialEndDate)
     const [modalDate, setModalDate] = useState<string | null>(null)
     const [isSaving, setIsSaving] = useState(false)
+    const [isResolvingPending, setIsResolvingPending] = useState(false)
+    const [pendingSale, setPendingSale] = useState<PendingSaleItem | null>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [operationStatus, setOperationStatus] = useState<{
+        status: 'idle' | 'processing' | 'success' | 'error' | 'offline'
+        message: string
+    }>({ status: 'idle', message: '' })
 
     const fetchSales = useCallback(
         async (pageToLoad: number) => {
@@ -118,6 +133,22 @@ export function useSalesClient(
         [startDate, endDate],
     )
 
+    const fetchPendingSale = useCallback(async () => {
+        try {
+            const response = await fetch('/api/sales/pending', withTimeZoneHeader())
+            const payload = await readJsonResponse<{ pending?: PendingSaleItem | null }>(
+                response,
+                'Erro ao verificar lançamentos pendentes.',
+            )
+
+            if (response.ok) {
+                setPendingSale(payload.pending ?? null)
+            }
+        } catch {
+            // A próxima reconexão ou tentativa de salvar repetirá a verificação.
+        }
+    }, [])
+
     useEffect(() => {
         let isCancelled = false
 
@@ -140,13 +171,47 @@ export function useSalesClient(
         }
     }, [fetchSales, currentPage])
 
+    useEffect(() => {
+        void fetchPendingSale()
+
+        const handleOnline = () => void fetchPendingSale()
+        window.addEventListener('online', handleOnline)
+        return () => window.removeEventListener('online', handleOnline)
+    }, [fetchPendingSale])
+
+    useEffect(() => {
+        if (!pendingSale || pendingSale.recoverable) return
+
+        const timeout = window.setTimeout(() => void fetchPendingSale(), 5_000)
+        return () => window.clearTimeout(timeout)
+    }, [fetchPendingSale, pendingSale])
+
     return {
         sales,
         editId,
+        pendingSale,
+        operationStatus,
         beginEdit: setEditId,
-        cancelEdit: () => setEditId(null),
+        cancelEdit: () => {
+            setEditId(null)
+            setOperationStatus({ status: 'idle', message: '' })
+        },
         saveSale: async (date: string, value: number) => {
+            const offlineMessage =
+                'Sem conexão. A operação foi cancelada e os dados não foram salvos.'
+
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                const error = new Error(offlineMessage)
+                setOperationStatus({ status: 'offline', message: offlineMessage })
+                setIsSaving(false)
+                throw error
+            }
+
             setIsSaving(true)
+            setOperationStatus({
+                status: 'processing',
+                message: editId ? 'Salvando alterações da venda...' : 'Salvando nova venda...',
+            })
             const body = JSON.stringify({ date, value })
             let res
 
@@ -171,19 +236,92 @@ export function useSalesClient(
                     )
                 }
 
-                const json = await readJsonResponse<{ error?: string }>(
-                    res,
-                    'Erro ao salvar venda.',
-                )
-                if (!res.ok) throw new Error(json.error)
+                const json = await readJsonResponse<{
+                    error?: string
+                    errorCode?: string
+                    pending?: PendingSaleItem
+                }>(res, 'Erro ao salvar venda.')
+
+                if (!res.ok) {
+                    if (json.errorCode === 'pending_sale_recovery' && json.pending) {
+                        setPendingSale(json.pending)
+                    }
+                    const message = json.error ?? 'Erro ao salvar venda.'
+                    setOperationStatus({ status: 'error', message })
+                    throw new Error(message)
+                }
+
+                const successMessage = editId
+                    ? 'Venda atualizada e comissões validadas com sucesso.'
+                    : 'Venda lançada e comissões validadas com sucesso.'
+
                 setEditId(null)
+                setOperationStatus({ status: 'success', message: successMessage })
                 const nextPayload = await fetchSales(currentPage)
                 setSales(nextPayload.sales)
                 setCurrentPage(nextPayload.currentPage)
                 setTotalPages(nextPayload.totalPages)
                 setTotalItems(nextPayload.totalItems)
+                await fetchPendingSale()
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Erro ao salvar venda.'
+
+                const isNetworkFailure =
+                    !navigator.onLine ||
+                    /falha de rede|failed to fetch|network|offline|load failed/i.test(message)
+
+                setOperationStatus({
+                    status: isNetworkFailure ? 'offline' : 'error',
+                    message: isNetworkFailure ? offlineMessage : message,
+                })
+                throw error
             } finally {
                 setIsSaving(false)
+            }
+        },
+
+        resolvePendingSale: async (action: 'complete' | 'discard') => {
+            if (!pendingSale || isResolvingPending) return
+
+            setIsResolvingPending(true)
+            try {
+                const response = await fetch(
+                    '/api/sales/pending',
+                    withTimeZoneHeader({
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action, date: pendingSale.date.slice(0, 10) }),
+                    }),
+                )
+                const payload = await readJsonResponse<{ error?: string }>(
+                    response,
+                    'Erro ao resolver lançamento pendente.',
+                )
+
+                if (!response.ok) {
+                    throw new Error(payload.error ?? 'Erro ao resolver lançamento pendente.')
+                }
+
+                setPendingSale(null)
+                setOperationStatus({
+                    status: 'success',
+                    message:
+                        action === 'complete'
+                            ? 'Lançamento pendente concluído com sucesso.'
+                            : 'Lançamento pendente desconsiderado.',
+                })
+                const nextPayload = await fetchSales(currentPage)
+                setSales(nextPayload.sales)
+                setCurrentPage(nextPayload.currentPage)
+                setTotalPages(nextPayload.totalPages)
+                setTotalItems(nextPayload.totalItems)
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Erro ao resolver lançamento pendente.'
+                setOperationStatus({ status: 'error', message })
+                toast.error(message)
+            } finally {
+                setIsResolvingPending(false)
             }
         },
 
@@ -207,6 +345,7 @@ export function useSalesClient(
         openModal: setModalDate,
         closeModal: () => setModalDate(null),
         isSaving,
+        isResolvingPending,
         isLoading,
         currentPage,
         totalPages,

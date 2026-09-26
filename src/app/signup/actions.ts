@@ -10,6 +10,7 @@ import { isValidCpf, normalizeCpf } from '@/lib/validators/cpf'
 import { Tenant } from '@/models/Tenant'
 import { SignupVerification } from '@/models/SignupVerification'
 import { User } from '@/models/User'
+import { seedSituationTypesForTenant } from '@/services/situations/seedSituationTypes'
 
 export interface SignupFormState {
     error?: string
@@ -422,6 +423,13 @@ export async function confirmTenantAndAdminSignup(
                 },
             },
         )
+
+        // Os tipos padrao sao uma conveniencia: falhar aqui nao pode invalidar o cadastro.
+        try {
+            await seedSituationTypesForTenant(tenant._id)
+        } catch (seedError) {
+            console.error('Falha ao criar tipos de situacao padrao.', seedError)
+        }
 
         await SignupVerification.deleteOne({ _id: signupRequest._id })
 

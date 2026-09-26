@@ -428,7 +428,7 @@ export function useSituationClient({
         if (situations.length === 0) {
             setFeedback({
                 type: 'error',
-                message: 'Nao ha situacoes para exportar no momento.',
+                message: 'Não há situações para exportar no momento.',
             })
             return
         }
@@ -453,7 +453,7 @@ export function useSituationClient({
                     : (sectors.find((sector) => sector._id === filterSector)?.name ?? 'Todos')
 
             const payload = {
-                title: 'Relatorio de Situacoes',
+                title: 'Relatório de Situações',
                 generatedAt: new Date().toISOString(),
                 filters: {
                     employee: employeeLabel,
@@ -474,7 +474,7 @@ export function useSituationClient({
             })
 
             if (!response.ok) {
-                throw new Error('Nao foi possivel gerar o PDF de situacoes.')
+                throw new Error('Não foi possível gerar o PDF de situações.')
             }
 
             const blob = await response.blob()
@@ -491,7 +491,7 @@ export function useSituationClient({
         } catch (error) {
             setFeedback({
                 type: 'error',
-                message: error instanceof Error ? error.message : 'Erro ao gerar PDF de situacoes.',
+                message: error instanceof Error ? error.message : 'Erro ao gerar PDF de situações.',
             })
         } finally {
             setIsExportingPdf(false)

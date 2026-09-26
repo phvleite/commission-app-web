@@ -2,6 +2,19 @@ jest.mock('@/auth', () => ({
     auth: jest.fn(),
 }))
 
+jest.mock('@/lib/db', () => ({
+    connectDB: jest.fn().mockResolvedValue(undefined),
+}))
+
+jest.mock('@/models/Tenant', () => ({
+    Tenant: {
+        findById: jest.fn(() => ({
+            select: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue({ name: 'Empresa Exemplo' }),
+        })),
+    },
+}))
+
 jest.mock('puppeteer', () => ({
     __esModule: true,
     default: {
@@ -37,7 +50,7 @@ describe('API pdf/situations route', () => {
     })
 
     it('returns 400 for invalid payload', async () => {
-        authMock.mockResolvedValue({ user: { id: 'u1' } })
+        authMock.mockResolvedValue({ user: { id: 'u1', tenantId: 'tenant-1' } })
 
         const res = await POST(
             new Request('http://localhost/api/pdf/situations', {
@@ -48,11 +61,11 @@ describe('API pdf/situations route', () => {
         )
 
         expect(res.status).toBe(400)
-        await expect(res.json()).resolves.toEqual({ error: 'Payload invalido.' })
+        await expect(res.json()).resolves.toEqual({ error: 'Payload inválido.' })
     })
 
     it('returns a PDF when payload is valid', async () => {
-        authMock.mockResolvedValue({ user: { id: 'u1' } })
+        authMock.mockResolvedValue({ user: { id: 'u1', tenantId: 'tenant-1' } })
 
         const setContentMock = jest.fn().mockResolvedValue(undefined)
         const pdfMock = jest.fn().mockResolvedValue(Buffer.from('fake-pdf'))
@@ -91,6 +104,9 @@ describe('API pdf/situations route', () => {
         expect(res.headers.get('content-type')).toBe('application/pdf')
         expect(res.headers.get('content-disposition')).toContain('relatorio-situacoes.pdf')
         expect(setContentMock).toHaveBeenCalled()
+        expect(setContentMock.mock.calls[0][0]).toContain('Empresa Exemplo')
+        expect(setContentMock.mock.calls[0][0]).toContain('www.commission.com.br')
+        expect(setContentMock.mock.calls[0][0]).toContain('contato@commission.com.br')
         expect(pdfMock).toHaveBeenCalled()
         expect(pageCloseMock).toHaveBeenCalled()
         expect(browserCloseMock).toHaveBeenCalled()

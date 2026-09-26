@@ -24,7 +24,7 @@ export function getInactivityCookieOptions(secure: boolean) {
 
 export function isInactivityExpired(lastActivityAt: number, now = Date.now()): boolean {
     if (!Number.isFinite(lastActivityAt) || lastActivityAt <= 0) {
-        return false
+        return true
     }
 
     return now - lastActivityAt > getInactivityTimeoutMs()

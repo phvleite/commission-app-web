@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
 import { auth } from '@/auth'
+import { connectDB } from '@/lib/db'
+import { Tenant } from '@/models/Tenant'
 
 interface SituationPdfRow {
     employeeName: string
@@ -23,6 +25,11 @@ interface SituationPdfPayload {
         year?: string
     }
     situations: SituationPdfRow[]
+}
+
+interface InstitutionalSignature {
+    companyName: string
+    website: string
 }
 
 function escapeHtml(value: string): string {
@@ -55,8 +62,8 @@ function renderFilterDateValue(value?: string): string {
     return escapeHtml(toBrDate(normalized))
 }
 
-function renderHtml(payload: SituationPdfPayload): string {
-    const title = payload.title?.trim() || 'Relatorio de Situacoes'
+function renderHtml(payload: SituationPdfPayload, signature: InstitutionalSignature): string {
+    const title = payload.title?.trim() || 'Relatório de Situações'
     const generatedAt = payload.generatedAt ? new Date(payload.generatedAt) : new Date()
     const generatedLabel = generatedAt.toLocaleString('pt-BR')
 
@@ -137,6 +144,14 @@ function renderHtml(payload: SituationPdfPayload): string {
             font-size: 11px;
             color: #495057;
         }
+        .institutional-signature {
+            margin-top: 18px;
+            padding-top: 8px;
+            border-top: 1px solid #d3dce8;
+            text-align: center;
+            font-size: 10px;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
@@ -150,13 +165,13 @@ function renderHtml(payload: SituationPdfPayload): string {
             <div><span class="label">Colaborador:</span> ${renderFilterValue(payload.filters?.employee)}</div>
             <div><span class="label">Tipo:</span> ${renderFilterValue(payload.filters?.type)}</div>
             <div><span class="label">Setor:</span> ${renderFilterValue(payload.filters?.sector)}</div>
-            <div><span class="label">Periodo:</span> ${renderFilterDateValue(payload.filters?.startDate)} ate ${renderFilterDateValue(payload.filters?.endDate)}</div>
-            <div><span class="label">Mes:</span> ${renderFilterValue(payload.filters?.month)}</div>
+            <div><span class="label">Período:</span> ${renderFilterDateValue(payload.filters?.startDate)} até ${renderFilterDateValue(payload.filters?.endDate)}</div>
+            <div><span class="label">Mês:</span> ${renderFilterValue(payload.filters?.month)}</div>
             <div><span class="label">Ano:</span> ${renderFilterValue(payload.filters?.year)}</div>
         </div>
     </div>
 
-    <h2>Situacões exibidas (${payload.situations.length})</h2>
+    <h2>Situações exibidas (${payload.situations.length})</h2>
     <table>
         <thead>
             <tr>
@@ -172,7 +187,8 @@ function renderHtml(payload: SituationPdfPayload): string {
         </tbody>
     </table>
 
-    <p class="footer">Relatório baseado na listagem exibida na tela no momento da exportacão.</p>
+    <p class="footer">Relatório baseado na listagem exibida na tela no momento da exportação.</p>
+    <p class="institutional-signature">${escapeHtml(signature.companyName)} | ${escapeHtml(signature.website)} | contato@commission.com.br</p>
 </body>
 </html>`
 }
@@ -193,13 +209,22 @@ export async function POST(request: Request) {
     let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null
 
     try {
+        await connectDB()
+        const tenant = await Tenant.findById(session.user.tenantId).select('name').lean()
+        if (!tenant) {
+            return NextResponse.json({ error: 'Empresa não encontrada.' }, { status: 404 })
+        }
+
         const body: unknown = await request.json()
 
         if (!isValidPayload(body)) {
-            return NextResponse.json({ error: 'Payload invalido.' }, { status: 400 })
+            return NextResponse.json({ error: 'Payload inválido.' }, { status: 400 })
         }
 
-        const html = renderHtml(body)
+        const html = renderHtml(body, {
+            companyName: tenant.name,
+            website: process.env.APP_BASE_URL ?? 'https://www.commission.com.br',
+        })
 
         browser = await puppeteer.launch({
             headless: true,
@@ -220,7 +245,7 @@ export async function POST(request: Request) {
             },
         })
     } catch (error) {
-        console.error('Erro ao gerar PDF de situacoes.', error)
+        console.error('Erro ao gerar PDF de situações.', error)
         return NextResponse.json({ error: 'Erro ao gerar PDF.' }, { status: 500 })
     } finally {
         if (browser) {

@@ -1,12 +1,21 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { LoginForm } from './LoginForm'
 
-export default async function LoginPage() {
-    const session = await auth()
+interface LoginPageProps {
+    searchParams?: Promise<{
+        reason?: string
+    }>
+}
 
-    if (session?.user) {
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+    const session = await auth()
+    const params = await searchParams
+    const isInactivityRedirect = params?.reason === 'inactivity'
+
+    if (session?.user && !isInactivityRedirect) {
         redirect('/dashboard')
     }
 
@@ -56,12 +65,26 @@ export default async function LoginPage() {
                 </div>
 
                 <div className="bg-(--color-surface) px-6 py-8 sm:px-10 sm:py-10">
+                    <Link
+                        href="/"
+                        className="secondary-button mb-6 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+                    >
+                        <span aria-hidden="true">←</span>
+                        Voltar para a página principal
+                    </Link>
+
                     <h2 className="gold-bar-title text-2xl font-semibold text-(--color-primary-strong)">
                         Acesse sua conta
                     </h2>
                     <p className="mt-3 mb-6 text-sm leading-7 text-(--color-muted)">
                         Use o e-mail e a senha do administrador ou usuário autorizado.
                     </p>
+
+                    {isInactivityRedirect ? (
+                        <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                            Sua sessão expirou por inatividade. Entre novamente para continuar.
+                        </p>
+                    ) : null}
 
                     <p className="mb-6 text-sm leading-7 text-(--color-muted)">
                         Não possui cadastro?{' '}

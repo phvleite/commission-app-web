@@ -28,6 +28,8 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
 
     const groupedEmployees = groupByEmployee(result.data)
     const totalGeneral = calculateTotal(result.data)
+    const meritocracyTotal = result.meritocracyTotal ?? 0
+    const totalWithMeritocracy = totalGeneral + meritocracyTotal
 
     const totalSales = result.salesSummary.reduce((acc, v) => acc + v.value, 0)
     const totalSalesCommission = result.salesSummary.reduce(
@@ -95,6 +97,11 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
                 <div className="flex flex-col gap-1">
                     <strong>Gorjetas total do período:</strong>
                     <span>R$ {formatCurrencyFromDatabase(totalSalesCommission)}</span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                    <strong>Meritocracia paga no período:</strong>
+                    <span>R$ {formatCurrencyFromDatabase(meritocracyTotal)}</span>
                 </div>
             </div>
 
@@ -178,7 +185,9 @@ export default function CommissionsReportAll({ result }: CommissionsReportAllPro
 
             {/* TOTAL GERAL */}
             <div className="mt-6 text-lg font-bold">
-                Total Geral: R$ {formatCurrencyFromDatabase(totalGeneral)}
+                {meritocracyTotal > 0
+                    ? `Total Geral (Gorjetas + Meritocracia): R$ ${formatCurrencyFromDatabase(totalWithMeritocracy)}`
+                    : `Total Geral: R$ ${formatCurrencyFromDatabase(totalGeneral)}`}
             </div>
 
             {/* BOTÃO PDF */}

@@ -1,7 +1,9 @@
 'use server'
 
 import { AuthError } from 'next-auth'
+import { cookies } from 'next/headers'
 import { signIn } from '@/auth'
+import { getInactivityCookieOptions, INACTIVITY_COOKIE_NAME } from '@/lib/auth/inactivity'
 
 export interface LoginFormState {
     error?: string
@@ -27,6 +29,13 @@ export async function authenticate(
     }
 
     try {
+        const cookieStore = await cookies()
+        cookieStore.set(
+            INACTIVITY_COOKIE_NAME,
+            String(Date.now()),
+            getInactivityCookieOptions(process.env.NODE_ENV === 'production'),
+        )
+
         await signIn('credentials', {
             email,
             password,

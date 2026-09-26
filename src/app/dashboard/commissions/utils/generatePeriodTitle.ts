@@ -1,39 +1,16 @@
-import { formatDateToBR } from './formatDate'
+import { getPeriodDescription } from './getPeriodDescription'
 
 export function generatePeriodTitle(start: string, end: string) {
-    if (!start || !end) {
-        return 'PERIODO INVALIDO'
+    const period = getPeriodDescription(start, end)
+
+    switch (period.type) {
+        case 'invalid':
+            return 'PERÍODO INVÁLIDO'
+        case 'day':
+            return `GORJETAS DO DIA ${period.date}`
+        case 'month':
+            return `GORJETAS REF. ${period.month}/${period.year}`
+        case 'range':
+            return `GORJETAS DE ${period.start} ATÉ ${period.end}`
     }
-
-    if (start === end) {
-        return `GORJETAS DO DIA ${formatDateToBR(start)}`
-    }
-
-    const [yi, mi, di] = start.split('-')
-    const [yf, mf, df] = end.split('-')
-
-    const lastDay = new Date(Number(yi), Number(mi), 0).getDate()
-
-    if (di === '01' && df === String(lastDay).padStart(2, '0') && mi === mf && yi === yf) {
-        const months = [
-            'JANEIRO',
-            'FEVEREIRO',
-            'MARCO',
-            'ABRIL',
-            'MAIO',
-            'JUNHO',
-            'JULHO',
-            'AGOSTO',
-            'SETEMBRO',
-            'OUTUBRO',
-            'NOVEMBRO',
-            'DEZEMBRO',
-        ]
-
-        const monthName = months[Number(mi) - 1]
-
-        return `GORJETAS REF. ${monthName}/${yi}`
-    }
-
-    return `GORJETAS DE ${formatDateToBR(start)} ATE ${formatDateToBR(end)}`
 }

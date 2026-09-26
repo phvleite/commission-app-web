@@ -1,8 +1,12 @@
 import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 import { Commission } from '@/models/Commission'
-import { Employee } from '@/models/Employee'
-import { Sector } from '@/models/Sector'
+import { MeritocracyAllocation, type IMeritocracyRecipient } from '@/models/MeritocracyAllocation'
+import {
+    collectMissingIds,
+    resolveMissingSnapshotNames,
+} from '@/services/commissions/resolveSnapshotNames'
+import { connectDB } from '@/lib/db'
 import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export async function GET(req: Request) {
@@ -29,24 +33,32 @@ export async function GET(req: Request) {
     const startDate = startRange.start
     const endDate = endRange.end
 
+    await connectDB()
+
     const commissions = await Commission.find({
         tenantId: session.user.tenantId,
         employeeId: id,
         date: { $gte: startDate, $lte: endDate },
     }).lean()
 
-    const enriched = await Promise.all(
-        commissions.map(async (c) => {
-            const employee = await Employee.findById(c.employeeId).lean()
-            const sector = await Sector.findById(c.sectorId).lean()
+    const { employeeNameById, sectorNameById } = await resolveMissingSnapshotNames({
+        employeeIds: collectMissingIds(
+            commissions,
+            (item) => Boolean(item.employeeName),
+            (item) => item.employeeId,
+        ),
+        sectorIds: collectMissingIds(
+            commissions,
+            (item) => Boolean(item.sectorName),
+            (item) => item.sectorId,
+        ),
+    })
 
-            return {
-                ...c,
-                employeeName: employee?.name ?? 'Colaborador',
-                sectorName: sector?.name ?? 'Setor',
-            }
-        }),
-    )
+    const enriched = commissions.map((c) => ({
+        ...c,
+        employeeName: c.employeeName ?? employeeNameById.get(String(c.employeeId)) ?? 'Colaborador',
+        sectorName: c.sectorName ?? sectorNameById.get(String(c.sectorId)) ?? 'Setor',
+    }))
 
     enriched.sort((a, b) => {
         const timeA = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime()
@@ -78,8 +90,44 @@ export async function GET(req: Request) {
 
     const sectorSummary = Array.from(sectorSummaryMap.values())
 
+    const meritocracyAllocations = await MeritocracyAllocation.find({
+        tenantId: session.user.tenantId,
+        status: 'success',
+        paymentDate: { $gte: startDate, $lte: endDate },
+        'recipients.employeeId': id,
+    })
+        .select('recipients paymentDate')
+        .lean()
+
+    const meritocracyEntries = meritocracyAllocations.flatMap((allocation) =>
+        allocation.recipients
+            .filter((recipient: IMeritocracyRecipient) => String(recipient.employeeId) === id)
+            .map((recipient: IMeritocracyRecipient) => ({
+                date: allocation.paymentDate,
+                situation: 'Meritocracia',
+                sectorName: 'MERITOCRACIA',
+                sectorValue: recipient.employeeValue,
+                employeeValue: recipient.employeeValue,
+            })),
+    )
+
+    const meritocracyValue = meritocracyAllocations.reduce(
+        (total, allocation) =>
+            total +
+            allocation.recipients
+                .filter((recipient: IMeritocracyRecipient) => String(recipient.employeeId) === id)
+                .reduce(
+                    (recipientTotal: number, recipient: IMeritocracyRecipient) =>
+                        recipientTotal + recipient.employeeValue,
+                    0,
+                ),
+        0,
+    )
+
     return NextResponse.json({
         data: enriched,
         sectorSummary,
+        meritocracyValue,
+        meritocracyEntries,
     })
 }

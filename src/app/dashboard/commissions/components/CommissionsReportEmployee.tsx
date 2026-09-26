@@ -50,8 +50,20 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
     const title = getEmployeePeriodTitle(employeeName, result.startDate, result.endDate)
 
     const totalGeneral = result.data.reduce((acc, row) => acc + row.employeeValue, 0)
+    const meritocracyValue = result.meritocracyValue ?? 0
+    const totalWithMeritocracy = totalGeneral + meritocracyValue
 
-    const sortedData = [...result.data].sort((a, b) => {
+    const detailData = [
+        ...result.data,
+        ...(result.meritocracyEntries ?? []).map((entry) => ({
+            ...entry,
+            employeeName,
+            eligibleCount: 0,
+            totalCount: 0,
+        })),
+    ]
+
+    const sortedData = detailData.sort((a, b) => {
         const dateCompare = toDateSortKey(a.date) - toDateSortKey(b.date)
         if (dateCompare !== 0) return dateCompare
 
@@ -184,8 +196,25 @@ export default function CommissionsReportEmployee({ result }: CommissionsReportE
 
             {/* TOTAL GERAL */}
             <div className="mt-6 text-lg font-bold">
-                Total Geral: R$ {formatCurrencyFromDatabase(totalGeneral)}
+                Total de Gorjetas: R$ {formatCurrencyFromDatabase(totalGeneral)}
             </div>
+
+            {meritocracyValue > 0 ? (
+                <div className="mt-2 text-lg font-bold">
+                    Meritocracia: R$ {formatCurrencyFromDatabase(meritocracyValue)}
+                </div>
+            ) : null}
+
+            {meritocracyValue > 0 ? (
+                <div className="mt-2 text-lg font-bold">
+                    Total Geral (Gorjetas + Meritocracia): R${' '}
+                    {formatCurrencyFromDatabase(totalWithMeritocracy)}
+                </div>
+            ) : (
+                <div className="mt-6 text-lg font-bold">
+                    Total Geral: R$ {formatCurrencyFromDatabase(totalGeneral)}
+                </div>
+            )}
 
             {/* BOTÃO PDF */}
             <div className="mt-6">

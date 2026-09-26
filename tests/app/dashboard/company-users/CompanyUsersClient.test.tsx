@@ -156,6 +156,11 @@ describe('CompanyUsersClient', () => {
         fireEvent.change(within(createForm).getByPlaceholderText('Email'), {
             target: { value: 'novo@company.com' },
         })
+        const phoneInput = within(createForm).getByPlaceholderText('Celular (opcional)')
+        fireEvent.change(phoneInput, {
+            target: { value: '11988887777' },
+        })
+        expect(phoneInput).toHaveValue('(11) 98888-7777')
         fireEvent.change(within(createForm).getByPlaceholderText('Senha'), {
             target: { value: 'Senha@123' },
         })
@@ -177,7 +182,10 @@ describe('CompanyUsersClient', () => {
         expect(fetchMock).toHaveBeenNthCalledWith(
             1,
             '/api/company-users',
-            expect.objectContaining({ method: 'POST' }),
+            expect.objectContaining({
+                method: 'POST',
+                body: expect.stringContaining('"phone":"(11) 98888-7777"'),
+            }),
         )
         expect(fetchMock).toHaveBeenNthCalledWith(
             2,

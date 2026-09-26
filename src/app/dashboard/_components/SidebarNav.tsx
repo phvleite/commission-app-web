@@ -9,6 +9,8 @@ interface Props {
     userName?: string | null
     role?: string | null
     sectorsOk: boolean
+    hasMeritocraciaSector: boolean
+    onSignOut?: () => Promise<void>
 }
 
 const MENU_ITEMS = [
@@ -18,6 +20,12 @@ const MENU_ITEMS = [
     { href: '/dashboard/situations', label: 'Situações', requiresSectorsOk: true },
     { href: '/dashboard/sales', label: 'Vendas', requiresSectorsOk: true },
     { href: '/dashboard/commissions', label: 'Gorjetas', requiresSectorsOk: true },
+    {
+        href: '/dashboard/meritocracy',
+        label: 'Lançamento Meritocracia',
+        requiresSectorsOk: true,
+        requiresMeritocraciaSector: true,
+    },
     { href: '/dashboard/company-users', label: 'Empresa/Usuários' },
 ]
 
@@ -60,9 +68,14 @@ function ItemLink({
     )
 }
 
-export function SidebarNav({ userName, role, sectorsOk }: Props) {
+export function SidebarNav({ userName, role, sectorsOk, hasMeritocraciaSector, onSignOut }: Props) {
     const pathname = usePathname()
     const [open, setOpen] = useState(false)
+    const handleSignOut = onSignOut ?? (async () => undefined)
+
+    const visibleMenuItems = MENU_ITEMS.filter(
+        (item) => !item.requiresMeritocraciaSector || hasMeritocraciaSector,
+    )
 
     return (
         <>
@@ -95,7 +108,7 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
 
                     <nav>
                         <ul>
-                            {MENU_ITEMS.map((item) => (
+                            {visibleMenuItems.map((item) => (
                                 <ItemLink
                                     key={item.href}
                                     href={item.href}
@@ -122,6 +135,15 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
                         <p className="font-semibold text-white">{userName ?? 'Usuario'}</p>
                         <p className="mt-1 uppercase">Perfil: {role ?? '-'}</p>
                     </div>
+
+                    <form action={handleSignOut} className="mt-3">
+                        <button
+                            type="submit"
+                            className="flex w-full items-center justify-center gap-2 cancel-button rounded-xl px-4 py-2.5 text-sm font-semibold"
+                        >
+                            Sair
+                        </button>
+                    </form>
                 </div>
             </aside>
 
@@ -152,7 +174,7 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
 
                         <nav>
                             <ul>
-                                {MENU_ITEMS.map((item) => (
+                                {visibleMenuItems.map((item) => (
                                     <ItemLink
                                         key={item.href}
                                         href={item.href}
@@ -188,6 +210,15 @@ export function SidebarNav({ userName, role, sectorsOk }: Props) {
                         >
                             Fechar
                         </button>
+
+                        <form action={handleSignOut} className="mt-3">
+                            <button
+                                type="submit"
+                                className="flex w-full items-center justify-center gap-2 cancel-button rounded-xl px-4 py-2.5 text-sm font-semibold"
+                            >
+                                Sair
+                            </button>
+                        </form>
                     </div>
                 </div>
             ) : null}

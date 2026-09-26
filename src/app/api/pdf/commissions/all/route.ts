@@ -2,9 +2,14 @@
 
 import { NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
+import { auth } from '@/auth'
+import { connectDB } from '@/lib/db'
+import { Tenant } from '@/models/Tenant'
 import { formatCurrencyFromDatabase } from '@/app/dashboard/commissions/utils/formatCurrency'
 import { generatePeriodTitle } from '@/app/dashboard/commissions/utils/generatePeriodTitle'
 import { formatDateFromDatabase } from '@/app/dashboard/commissions/utils/formatDate'
+import { MeritocracyAllocation } from '@/models/MeritocracyAllocation'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +36,7 @@ interface PdfAllPayload {
     sectorSummary: SectorSummaryRow[]
     salesSummary: SalesSummaryRow[]
     situations?: SituationPayloadRow[]
+    meritocracyTotal?: number
 }
 
 interface GroupedEmployeeRow {
@@ -84,9 +90,12 @@ function renderReportAllHtml(params: {
     totalSectors: number
     totalSectorsWithoutMerit: number
     totalGeneral: number
+    meritocracyTotal: number
     sectorSummary: SectorSummaryRow[]
     groupedEmployees: GroupedEmployeeRow[]
     situations: SituationPayloadRow[]
+    companyName: string
+    website: string
 }): string {
     const sectorRows = params.sectorSummary
         .map(
@@ -160,7 +169,7 @@ function renderReportAllHtml(params: {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Relatorio Geral de Gorjetas</title>
+    <title>Relatório Geral de Gorjetas</title>
     <style>
         @page {
             size: A4;
@@ -222,6 +231,14 @@ function renderReportAllHtml(params: {
         .situation-table td.situation-date-empty {
             color: transparent;
         }
+        .institutional-signature {
+            margin-top: 20px;
+            padding-top: 8px;
+            border-top: 1px solid #c9d3e0;
+            text-align: center;
+            font-size: 10px;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
@@ -231,7 +248,8 @@ function renderReportAllHtml(params: {
 
     <div class="summary">
         <div><strong>Valor total das vendas:</strong> R$ ${formatCurrencyFromDatabase(params.totalSales)}</div>
-        <div><strong>Gorjetas total do periodo:</strong> R$ ${formatCurrencyFromDatabase(params.totalSalesCommission)}</div>
+        <div><strong>Total de gorjetas do período:</strong> R$ ${formatCurrencyFromDatabase(params.totalSalesCommission)}</div>
+        <div><strong>Meritocracia paga no período:</strong> R$ ${formatCurrencyFromDatabase(params.meritocracyTotal)}</div>
     </div>
 
     <h2 class="center">Resumo por Setor</h2>
@@ -261,7 +279,7 @@ function renderReportAllHtml(params: {
             <tr>
                 <th class="center">Colaborador</th>
                 <th class="center">Setor</th>
-                <th class="center">Total no Periodo</th>
+                <th class="center">Total no Período</th>
             </tr>
         </thead>
         <tbody>
@@ -269,21 +287,21 @@ function renderReportAllHtml(params: {
         </tbody>
     </table>
 
-    <h2>Total Geral: R$ ${formatCurrencyFromDatabase(params.totalGeneral)}</h2>
+    <h2>${params.meritocracyTotal > 0 ? 'Total Geral (Gorjetas + Meritocracia)' : 'Total Geral'}: R$ ${formatCurrencyFromDatabase(params.totalGeneral)}</h2>
 
     ${
         hasSituations
             ? `
-    <h2 class="center">Situacoes do Periodo</h2>
+    <h2 class="center">Situações do Período</h2>
     <table class="situation-table">
         <thead>
             <tr>
                 <th class="center">Data</th>
                 <th class="center">Colaborador</th>
                 <th class="center">Setor</th>
-                <th class="center">Situacao</th>
-                <th class="center">Qtde Total</th>
-                <th class="center">Qtde Aptos</th>
+                <th class="center">Situação</th>
+                <th class="center">Quantidade Total</th>
+                <th class="center">Quantidade de Aptos</th>
             </tr>
         </thead>
         <tbody>
@@ -292,6 +310,7 @@ function renderReportAllHtml(params: {
     </table>`
             : ''
     }
+    <p class="institutional-signature">${escapeHtml(params.companyName)} | ${escapeHtml(params.website)} | contato@commission.com.br</p>
 </body>
 </html>`
 }
@@ -312,6 +331,17 @@ export async function POST(req: Request) {
     let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null
 
     try {
+        const session = await auth()
+        if (!session?.user?.tenantId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        await connectDB()
+        const tenant = await Tenant.findById(session.user.tenantId).select('name').lean()
+        if (!tenant) {
+            return NextResponse.json({ error: 'Empresa não encontrada.' }, { status: 404 })
+        }
+
         const body: unknown = await req.json()
         if (!isValidPayload(body)) {
             return NextResponse.json(
@@ -322,6 +352,28 @@ export async function POST(req: Request) {
 
         const { startDate, endDate, data, sectorSummary, salesSummary } = body
         const { situations = [] } = body
+
+        const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+        const reportStartRange = getUtcRangeForCalendarDay(startDate, timeZone)
+        const reportEndRange = getUtcRangeForCalendarDay(endDate, timeZone)
+        if (!reportStartRange || !reportEndRange) {
+            return NextResponse.json(
+                { error: 'Período inválido para geração de PDF.' },
+                { status: 400 },
+            )
+        }
+
+        const meritocracyAllocations = await MeritocracyAllocation.find({
+            tenantId: session.user.tenantId,
+            status: 'success',
+            paymentDate: { $gte: reportStartRange.start, $lte: reportEndRange.end },
+        })
+            .select('totalMeritocracyValue')
+            .lean()
+        const meritocracyTotal = meritocracyAllocations.reduce(
+            (total, allocation) => total + allocation.totalMeritocracyValue,
+            0,
+        )
 
         const totalSectors = sectorSummary.reduce((acc, sector) => acc + sector.sectorValue, 0)
         const totalSectorsWithoutMerit = sectorSummary
@@ -349,7 +401,7 @@ export async function POST(req: Request) {
 
         const totalGeneral = groupedEmployees.reduce(
             (acc, employee) => acc + employee.totalCommission,
-            0,
+            meritocracyTotal,
         )
 
         const totalSales = salesSummary.reduce((acc, sale) => acc + sale.value, 0)
@@ -366,9 +418,12 @@ export async function POST(req: Request) {
             totalSectors,
             totalSectorsWithoutMerit,
             totalGeneral,
+            meritocracyTotal,
             sectorSummary,
             groupedEmployees,
             situations,
+            companyName: tenant.name,
+            website: process.env.APP_BASE_URL ?? 'https://www.commission.com.br',
         })
 
         browser = await puppeteer.launch({ headless: true })
