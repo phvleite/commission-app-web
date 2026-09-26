@@ -8,8 +8,7 @@
  *   npm run migrate:situation-types -- --apply
  */
 
-import mongoose from 'mongoose'
-import { config } from 'dotenv'
+import { withMigrationDatabase } from '@/lib/migrations/withMigrationDatabase'
 
 const MIGRATION_ID = '004-seed-situation-types'
 
@@ -20,19 +19,7 @@ function normalizeDescription(value: string): string {
 }
 
 async function run(dryRun: boolean) {
-    if (!process.env.MONGODB_URI) {
-        config({ path: '.env.local' })
-    }
-
-    const uri = process.env.MONGODB_URI
-    if (!uri) throw new Error('MONGODB_URI nao definida.')
-
-    await mongoose.connect(uri)
-
-    try {
-        const db = mongoose.connection.db
-        if (!db) throw new Error('Conexao com o banco nao disponivel.')
-
+    await withMigrationDatabase(async (db) => {
         const tenants = db.collection('tenants')
         const situationTypes = db.collection('situationtypes')
 
@@ -103,9 +90,7 @@ async function run(dryRun: boolean) {
         )
 
         console.log(`[${MIGRATION_ID}] Concluido. ${result.upsertedCount} tipos criados.`)
-    } finally {
-        await mongoose.disconnect()
-    }
+    })
 }
 
 if (require.main === module) {

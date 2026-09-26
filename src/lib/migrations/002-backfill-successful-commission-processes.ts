@@ -12,7 +12,7 @@
  */
 
 import mongoose from 'mongoose'
-import { config } from 'dotenv'
+import { withMigrationDatabase } from '@/lib/migrations/withMigrationDatabase'
 
 const MIGRATION_ID = '002-backfill-successful-commission-processes'
 
@@ -90,23 +90,7 @@ export async function findHistoricalSalesWithoutProcess(
 }
 
 async function run(dryRun: boolean, cutoff: Date) {
-    if (!process.env.MONGODB_URI) {
-        config({ path: '.env.local' })
-    }
-
-    const uri = process.env.MONGODB_URI
-    if (!uri) {
-        throw new Error('MONGODB_URI nao definida.')
-    }
-
-    await mongoose.connect(uri)
-
-    try {
-        const db = mongoose.connection.db
-        if (!db) {
-            throw new Error('Conexao com o banco nao disponivel.')
-        }
-
+    await withMigrationDatabase(async (db) => {
         const sales = db.collection('sales')
         const processes = db.collection('commissionprocesses')
         const commissions = db.collection('commissions')
@@ -167,9 +151,7 @@ async function run(dryRun: boolean, cutoff: Date) {
         )
 
         console.log(`[${MIGRATION_ID}] Concluido. ${result.upsertedCount} processos criados.`)
-    } finally {
-        await mongoose.disconnect()
-    }
+    })
 }
 
 if (require.main === module) {

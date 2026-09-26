@@ -8,25 +8,12 @@
  *   npm run migrate:employee-sector-history -- --apply
  */
 
-import mongoose from 'mongoose'
-import { config } from 'dotenv'
+import { withMigrationDatabase } from '@/lib/migrations/withMigrationDatabase'
 
 const MIGRATION_ID = '003-backfill-employee-sector-history'
 
 async function run(dryRun: boolean) {
-    if (!process.env.MONGODB_URI) {
-        config({ path: '.env.local' })
-    }
-
-    const uri = process.env.MONGODB_URI
-    if (!uri) throw new Error('MONGODB_URI nao definida.')
-
-    await mongoose.connect(uri)
-
-    try {
-        const db = mongoose.connection.db
-        if (!db) throw new Error('Conexao com o banco nao disponivel.')
-
+    await withMigrationDatabase(async (db) => {
         const employees = db.collection('employees')
         const histories = db.collection('employeesectorhistories')
         const allEmployees = await employees.find({}).sort({ tenantId: 1, name: 1 }).toArray()
@@ -82,9 +69,7 @@ async function run(dryRun: boolean) {
         )
 
         console.log(`[${MIGRATION_ID}] Concluido. ${result.upsertedCount} historicos criados.`)
-    } finally {
-        await mongoose.disconnect()
-    }
+    })
 }
 
 if (require.main === module) {
