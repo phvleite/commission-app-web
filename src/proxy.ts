@@ -99,12 +99,6 @@ export default auth((req) => {
         return response
     }
 
-    if (!rawLastActivity) {
-        const response = NextResponse.next()
-        response.cookies.set(INACTIVITY_COOKIE_NAME, String(Date.now()), cookieOptions)
-        return response
-    }
-
     return NextResponse.next()
 })
 

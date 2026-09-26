@@ -2,7 +2,12 @@ jest.mock('@/auth', () => ({
     auth: (handler: (req: { nextUrl: URL; auth?: unknown }) => Response) => handler,
 }))
 
-import middleware, { config } from '@/proxy'
+import middlewareImplementation, { config } from '@/proxy'
+
+function middleware(request: unknown): Response {
+    const handler = middlewareImplementation as unknown as (request: unknown) => Response
+    return handler(request)
+}
 
 function buildRequest(url: string, authValue: unknown, cookies?: Record<string, string>) {
     return {
@@ -44,6 +49,18 @@ describe('proxy middleware', () => {
         expect(response.headers.get('location')).toBeNull()
     })
 
+    it.each(['/', '/login'])(
+        'allows public route %s even when an old authenticated cookie remains',
+        (pathname) => {
+            const response = middleware(
+                buildRequest(`http://localhost${pathname}`, { user: { id: 'u1' } }),
+            )
+
+            expect(response.status).toBe(200)
+            expect(response.headers.get('location')).toBeNull()
+        },
+    )
+
     it('redirects unauthenticated user to login with callbackUrl on protected route', () => {
         const response = middleware(buildRequest('http://localhost/dashboard/sales', null))
 
@@ -56,7 +73,11 @@ describe('proxy middleware', () => {
 
     it('allows authenticated user on protected route', () => {
         const response = middleware(
-            buildRequest('http://localhost/dashboard/sales', { user: { id: 'u1' } }),
+            buildRequest(
+                'http://localhost/dashboard/sales',
+                { user: { id: 'u1' } },
+                { last_activity_at: String(Date.now()) },
+            ),
         )
 
         expect(response.status).toBe(200)
@@ -65,7 +86,11 @@ describe('proxy middleware', () => {
 
     it('redirects non-platform user away from /platform-admin', () => {
         const response = middleware(
-            buildRequest('http://localhost/platform-admin', { user: { id: 'u1' } }),
+            buildRequest(
+                'http://localhost/platform-admin',
+                { user: { id: 'u1' } },
+                { last_activity_at: String(Date.now()) },
+            ),
         )
 
         expect(response.status).toBeGreaterThanOrEqual(300)
@@ -75,9 +100,13 @@ describe('proxy middleware', () => {
 
     it('redirects platform user away from /dashboard to /platform-admin', () => {
         const response = middleware(
-            buildRequest('http://localhost/dashboard', {
-                user: { id: 'u1', platformRole: 'platform_admin' },
-            }),
+            buildRequest(
+                'http://localhost/dashboard',
+                {
+                    user: { id: 'u1', platformRole: 'platform_admin' },
+                },
+                { last_activity_at: String(Date.now()) },
+            ),
         )
 
         expect(response.status).toBeGreaterThanOrEqual(300)
@@ -103,6 +132,17 @@ describe('proxy middleware', () => {
         expect(response.headers.get('location')).toBe(
             'http://localhost/login?callbackUrl=%2Fdashboard%2Fsales%3Ftab%3Dlist&reason=inactivity',
         )
+    })
+
+    it('redirects authenticated user when the activity cookie is missing', () => {
+        const response = middleware(
+            buildRequest('http://localhost/dashboard/sales', { user: { id: 'u1' } }),
+        )
+
+        expect(response.status).toBeGreaterThanOrEqual(300)
+        expect(response.status).toBeLessThan(400)
+        expect(response.headers.get('location')).toContain('/login')
+        expect(response.headers.get('location')).toContain('reason=inactivity')
     })
 
     it('keeps expected matcher config', () => {

@@ -4,7 +4,8 @@ import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
 import { Employee } from '@/models/Employee'
 import { Sector } from '@/models/Sector'
 import { getEmployeePlanRangeWarning } from '@/services/employees/getEmployeePlanRangeWarning'
-
+import { isDatabaseConnectionError } from '@/lib/api/db-errors'
+import { createEmployeeWithHistory } from '@/services/employees/createEmployeeWithHistory'
 export async function GET(request: Request) {
     const user = await getRouteSessionUser()
 
@@ -15,16 +16,30 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const includeInactive = searchParams.get('includeInactive') === 'true'
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const employees = await Employee.find({
-        tenantId: user.tenantId,
-        ...(includeInactive ? {} : { active: true }),
-    })
-        .sort({ name: 1 })
-        .lean()
+        const employees = await Employee.find({
+            tenantId: user.tenantId,
+            ...(includeInactive ? {} : { active: true }),
+        })
+            .sort({ name: 1 })
+            .lean()
 
-    return Response.json({ data: employees })
+        return Response.json({ data: employees })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Erro ao consultar colaboradores.' }, { status: 500 })
+    }
 }
 
 export async function POST(request: Request) {
@@ -73,31 +88,55 @@ export async function POST(request: Request) {
         return Response.json({ error: 'dismissalDate invalida.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const sector = await Sector.findOne({ _id: sectorId, tenantId: user.tenantId }).lean()
+        const sector = await Sector.findOne({ _id: sectorId, tenantId: user.tenantId }).lean()
 
-    if (!sector) {
-        return Response.json({ error: 'Setor nao encontrado para este tenant.' }, { status: 404 })
+        if (!sector) {
+            return Response.json(
+                { error: 'Setor nao encontrado para este tenant.' },
+                { status: 404 },
+            )
+        }
+
+        if (sector.isMeritocracia) {
+            return Response.json(
+                { error: 'Setor de meritocracia nao pode ser vinculado a colaborador.' },
+                { status: 400 },
+            )
+        }
+
+        const employee = await createEmployeeWithHistory({
+            tenantId: user.tenantId,
+            name,
+            sectorId,
+            admissionDate: admissionDateParsed,
+            dismissalDate: dismissalDateParsed,
+            createdBy: user.id,
+        })
+
+        let warning: string | undefined
+        try {
+            warning = await getEmployeePlanRangeWarning(user.tenantId)
+        } catch (error) {
+            if (!isDatabaseConnectionError(error)) {
+                throw error
+            }
+        }
+
+        return Response.json({ data: employee, warning }, { status: 201 })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Erro ao criar colaborador.' }, { status: 500 })
     }
-
-    if (sector.isMeritocracia) {
-        return Response.json(
-            { error: 'Setor de meritocracia nao pode ser vinculado a colaborador.' },
-            { status: 400 },
-        )
-    }
-
-    const employee = await Employee.create({
-        tenantId: user.tenantId,
-        name,
-        sectorId,
-        admissionDate: admissionDateParsed,
-        dismissalDate: dismissalDateParsed,
-        active: dismissalDateParsed ? false : true,
-    })
-
-    const warning = await getEmployeePlanRangeWarning(user.tenantId)
-
-    return Response.json({ data: employee, warning }, { status: 201 })
 }

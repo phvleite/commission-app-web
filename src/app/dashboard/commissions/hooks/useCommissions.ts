@@ -83,6 +83,7 @@ export function useCommissions() {
                 data?: CommissionRow[]
                 sectorSummary?: SectorSummaryRow[]
                 salesSummary?: SalesSummaryRow[]
+                meritocracyTotal?: number
                 error?: string
             }>(res, 'Erro ao buscar Gorjetas por período.')
 
@@ -95,6 +96,7 @@ export function useCommissions() {
                 data: (json.data ?? []) as CommissionRow[],
                 sectorSummary: (json.sectorSummary ?? []) as SectorSummaryRow[],
                 salesSummary: (json.salesSummary ?? []) as SalesSummaryRow[],
+                meritocracyTotal: json.meritocracyTotal ?? 0,
             }
         } catch (err) {
             console.error(err)
@@ -117,6 +119,14 @@ export function useCommissions() {
             const json = await readJsonResponse<{
                 data?: CommissionRow[]
                 sectorSummary?: Array<SectorSummaryRow & { employeeValue: number }>
+                meritocracyValue?: number
+                meritocracyEntries?: Array<{
+                    date: string
+                    situation: string
+                    sectorName: string
+                    sectorValue: number
+                    employeeValue: number
+                }>
                 error?: string
             }>(res, 'Erro ao buscar Gorjetas do colaborador.')
 
@@ -140,6 +150,8 @@ export function useCommissions() {
                 sectorSummary: (json.sectorSummary ?? []) as Array<
                     SectorSummaryRow & { employeeValue: number }
                 >,
+                meritocracyValue: json.meritocracyValue ?? 0,
+                meritocracyEntries: json.meritocracyEntries ?? [],
             }
         } catch (err) {
             console.error(err)

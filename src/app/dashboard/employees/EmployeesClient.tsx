@@ -48,6 +48,7 @@ export function EmployeesClient({
     const [submittingMessage, setSubmittingMessage] = useState<string | null>(null)
 
     const canWrite = userRole === 'admin' || userRole === 'manager'
+    const canCorrectHistory = userRole === 'admin'
 
     function toInputDate(value: unknown): string {
         if (!value) {
@@ -121,6 +122,7 @@ export function EmployeesClient({
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editName, setEditName] = useState('')
     const [editSectorId, setEditSectorId] = useState('')
+    const [editSectorChangeDate, setEditSectorChangeDate] = useState('')
     const [editAdmissionDate, setEditAdmissionDate] = useState('')
     const [editDismissalDate, setEditDismissalDate] = useState('')
     const [showForm, setShowForm] = useState(false)
@@ -215,6 +217,7 @@ export function EmployeesClient({
         setEditingId(employee._id)
         setEditName(employee.name)
         setEditSectorId(employee.sectorId)
+        setEditSectorChangeDate('')
         setEditAdmissionDate(employee.admissionDate)
         setEditDismissalDate(employee.dismissalDate || '')
     }
@@ -223,6 +226,7 @@ export function EmployeesClient({
         setEditingId(null)
         setEditName('')
         setEditSectorId('')
+        setEditSectorChangeDate('')
         setEditAdmissionDate('')
         setEditDismissalDate('')
     }
@@ -237,8 +241,8 @@ export function EmployeesClient({
     // ===========================
     // FUNÇÃO: SALVAR EDIÇÃO
     // ===========================
-    async function handleSaveEdition(id: string) {
-        if (!canWrite) return
+    async function handleSaveEdition(id: string): Promise<{ sectorChanged: boolean } | undefined> {
+        if (!canWrite) return undefined
 
         setError(null)
         setSuccess(null)
@@ -263,6 +267,15 @@ export function EmployeesClient({
             return
         }
 
+        const currentEmployee = employees.find((employee) => employee._id === id)
+        const sectorChanged = currentEmployee?.sectorId !== editSectorId
+        if (sectorChanged && !editSectorChangeDate) {
+            setError('Informe a data da mudança de setor.')
+            setIsSubmitting(false)
+            setSubmittingMessage(null)
+            return
+        }
+
         if (editDismissalDate && editDismissalDate < editAdmissionDate) {
             setError('A data de demissão não pode ser menor que a admissão.')
             setIsSubmitting(false)
@@ -276,6 +289,7 @@ export function EmployeesClient({
                 body: JSON.stringify({
                     name: editName.trim(),
                     sectorId: editSectorId,
+                    sectorChangeDate: sectorChanged ? editSectorChangeDate : undefined,
                     admissionDate: editAdmissionDate,
                     dismissalDate: editDismissalDate || null,
                 }),
@@ -299,8 +313,10 @@ export function EmployeesClient({
             setEditingId(null)
             setSuccess('Colaborador atualizado com sucesso.')
             router.refresh()
+            return { sectorChanged }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro ao editar colaborador.')
+            return undefined
         } finally {
             setIsSubmitting(false)
             setSubmittingMessage(null)
@@ -317,6 +333,7 @@ export function EmployeesClient({
         success,
         planRangeWarning,
         canWrite,
+        canCorrectHistory,
         isSubmitting,
         submittingMessage,
 
@@ -344,6 +361,7 @@ export function EmployeesClient({
         editingId,
         editName,
         editSectorId,
+        editSectorChangeDate,
         editAdmissionDate,
         editDismissalDate,
 
@@ -354,6 +372,7 @@ export function EmployeesClient({
 
         setEditName,
         setEditSectorId,
+        setEditSectorChangeDate,
         setEditAdmissionDate,
         setEditDismissalDate,
 

@@ -1,9 +1,10 @@
 import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 import { Sale } from '@/models/Sale'
-import { deleteCommissionsForDate } from '@/services/commissions/delete'
+import { rollbackSaleAndCommissionsForDate } from '@/services/commissions/delete'
 import { generateCommissionsForDate } from '@/services/commissions/generate'
 import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
+import { findPendingSale } from '@/services/sales/pending-sale'
 
 interface SalesQuery {
     tenantId: string
@@ -100,6 +101,25 @@ export async function POST(req: Request) {
     const commissionCentavos = Math.round(valueCentavos * 0.1)
 
     try {
+        const pending = await findPendingSale(session.user.tenantId)
+        if (pending) {
+            return NextResponse.json(
+                {
+                    error: pending.recoverable
+                        ? 'Existe um lançamento anterior pendente de decisão.'
+                        : 'Existe um lançamento de venda ainda em processamento.',
+                    errorCode: 'pending_sale_recovery',
+                    pending: {
+                        date: pending.date.toISOString(),
+                        value: pending.value,
+                        status: pending.status,
+                        recoverable: pending.recoverable,
+                    },
+                },
+                { status: 409 },
+            )
+        }
+
         const exists = await Sale.findOne({
             tenantId: session.user.tenantId,
             date: {
@@ -115,7 +135,7 @@ export async function POST(req: Request) {
             )
         }
 
-        const createdSale = await Sale.create({
+        await Sale.create({
             tenantId: session.user.tenantId,
             date: dateObj,
             value: valueCentavos,
@@ -126,8 +146,7 @@ export async function POST(req: Request) {
             await generateCommissionsForDate(session.user.tenantId, dateObj)
         } catch (error) {
             console.error('Falha ao gerar comissões para a venda.', error)
-            await deleteCommissionsForDate(session.user.tenantId, dateObj)
-            await Sale.deleteOne({ _id: createdSale._id })
+            await rollbackSaleAndCommissionsForDate(session.user.tenantId, dateObj)
             return NextResponse.json(
                 { error: 'Erro ao processar a venda. A operação foi revertida.' },
                 { status: 500 },

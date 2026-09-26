@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db'
 import { getRouteSessionUser } from '@/lib/api/route-auth'
 import { User } from '@/models/User'
 import { hashPassword, verifyPassword } from '@/lib/password'
+import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 
 export interface RouteContext {
     params: Promise<{ id: string }>
@@ -11,7 +12,6 @@ export interface RouteContext {
 function canManageUsers(role: 'admin' | 'manager' | 'seller'): boolean {
     return role === 'admin'
 }
-
 export async function POST(request: Request, context: RouteContext) {
     const sessionUser = await getRouteSessionUser()
 
@@ -57,21 +57,38 @@ export async function POST(request: Request, context: RouteContext) {
         return Response.json({ error: 'A confirmacao da nova senha nao confere.' }, { status: 400 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const targetUser = await User.findOne({ _id: id, tenantId: sessionUser.tenantId })
+        const targetUser = await User.findOne({ _id: id, tenantId: sessionUser.tenantId })
 
-    if (!targetUser) {
-        return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
+        if (!targetUser) {
+            return Response.json({ error: 'Usuario nao encontrado.' }, { status: 404 })
+        }
+
+        const isCurrentPasswordValid = await verifyPassword(
+            currentPassword,
+            targetUser.passwordHash,
+        )
+        if (!isCurrentPasswordValid) {
+            return Response.json({ error: 'Senha atual invalida.' }, { status: 400 })
+        }
+
+        targetUser.passwordHash = await hashPassword(newPassword)
+        await targetUser.save()
+
+        return Response.json({ ok: true })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Nao foi possivel alterar a senha.' }, { status: 500 })
     }
-
-    const isCurrentPasswordValid = await verifyPassword(currentPassword, targetUser.passwordHash)
-    if (!isCurrentPasswordValid) {
-        return Response.json({ error: 'Senha atual invalida.' }, { status: 400 })
-    }
-
-    targetUser.passwordHash = await hashPassword(newPassword)
-    await targetUser.save()
-
-    return Response.json({ ok: true })
 }

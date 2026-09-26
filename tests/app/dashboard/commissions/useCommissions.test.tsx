@@ -48,16 +48,15 @@ describe('useCommissions', () => {
 
         const { result } = renderHook(() => useCommissions())
 
-        let response: Awaited<ReturnType<typeof result.current.listByPeriod>> = null
-
         await act(async () => {
-            response = await result.current.listByPeriod('2026-07-01', '2026-07-01')
+            const response = await result.current.listByPeriod('2026-07-01', '2026-07-01')
+
+            expect(response).not.toBeNull()
+            expect(response?.data).toHaveLength(1)
+            expect(response?.sectorSummary).toEqual([{ sectorName: 'Setor A', sectorValue: 100 }])
+            expect(response?.salesSummary).toEqual([{ value: 1000, totalCommissionValue: 100 }])
         })
 
-        expect(response).not.toBeNull()
-        expect(response?.data).toHaveLength(1)
-        expect(response?.sectorSummary).toEqual([{ sectorName: 'Setor A', sectorValue: 100 }])
-        expect(response?.salesSummary).toEqual([{ value: 1000, totalCommissionValue: 100 }])
         expect(result.current.loading).toBe(false)
         expect(result.current.error).toBeNull()
     })

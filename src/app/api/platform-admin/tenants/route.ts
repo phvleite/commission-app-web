@@ -12,6 +12,7 @@ import {
     type TenantBillingStatus,
 } from '@/models/Tenant'
 import type { PlatformRole } from '@/models/User'
+import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 
 function canManagePlatformTenants(platformRole?: PlatformRole): boolean {
     return platformRole === 'platform_owner' || platformRole === 'platform_admin'
@@ -78,7 +79,6 @@ function normalizeDiscounts(value: unknown): ITenantDiscount[] {
         return normalized
     })
 }
-
 function serializeTenant(tenant: {
     _id: { toString(): string }
     name: string
@@ -123,13 +123,27 @@ export async function GET() {
         return Response.json({ error: 'Sem permissao para acessar.' }, { status: 403 })
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const tenants = await Tenant.find({}).sort({ name: 1 }).lean()
+        const tenants = await Tenant.find({}).sort({ name: 1 }).lean()
 
-    return Response.json({
-        data: tenants.map((tenant) => serializeTenant(tenant)),
-    })
+        return Response.json({
+            data: tenants.map((tenant) => serializeTenant(tenant)),
+        })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Erro ao consultar tenants.' }, { status: 500 })
+    }
 }
 
 export async function PUT(request: Request) {
@@ -221,33 +235,47 @@ export async function PUT(request: Request) {
         )
     }
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const updated = await Tenant.findByIdAndUpdate(
-        id,
-        {
-            $set: {
-                planCode,
-                billingStatus,
-                discounts,
-                ...(typeof monthlyPriceOverrideCents === 'number'
-                    ? { monthlyPriceOverrideCents }
+        const updated = await Tenant.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    planCode,
+                    billingStatus,
+                    discounts,
+                    ...(typeof monthlyPriceOverrideCents === 'number'
+                        ? { monthlyPriceOverrideCents }
+                        : {}),
+                    ...(nextBillingAt instanceof Date ? { nextBillingAt } : {}),
+                },
+                ...(monthlyPriceOverrideCents === null
+                    ? { $unset: { monthlyPriceOverrideCents: 1 } }
                     : {}),
-                ...(nextBillingAt instanceof Date ? { nextBillingAt } : {}),
+                ...(nextBillingAt === null ? { $unset: { nextBillingAt: 1 } } : {}),
             },
-            ...(monthlyPriceOverrideCents === null
-                ? { $unset: { monthlyPriceOverrideCents: 1 } }
-                : {}),
-            ...(nextBillingAt === null ? { $unset: { nextBillingAt: 1 } } : {}),
-        },
-        { returnDocument: 'after' },
-    ).lean()
+            { returnDocument: 'after' },
+        ).lean()
 
-    if (!updated) {
-        return Response.json({ error: 'Tenant nao encontrado.' }, { status: 404 })
+        if (!updated) {
+            return Response.json({ error: 'Tenant nao encontrado.' }, { status: 404 })
+        }
+
+        return Response.json({
+            data: serializeTenant(updated),
+        })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Nao foi possivel atualizar tenant.' }, { status: 500 })
     }
-
-    return Response.json({
-        data: serializeTenant(updated),
-    })
 }

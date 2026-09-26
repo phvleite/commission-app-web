@@ -1,7 +1,7 @@
 import { connectDB } from '@/lib/db'
 import { canWrite, getRouteSessionUser } from '@/lib/api/route-auth'
 import { Sector } from '@/models/Sector'
-
+import { isDatabaseConnectionError } from '@/lib/api/db-errors'
 export async function GET(request: Request) {
     const user = await getRouteSessionUser()
 
@@ -13,17 +13,31 @@ export async function GET(request: Request) {
     const includeInactive = searchParams.get('includeInactive') === 'true'
     const excludeMeritocracia = searchParams.get('excludeMeritocracia') === 'true'
 
-    await connectDB()
+    try {
+        await connectDB()
 
-    const sectors = await Sector.find({
-        tenantId: user.tenantId,
-        ...(includeInactive ? {} : { active: true }),
-        ...(excludeMeritocracia ? { isMeritocracia: { $ne: true } } : {}),
-    })
-        .sort({ name: 1 })
-        .lean()
+        const sectors = await Sector.find({
+            tenantId: user.tenantId,
+            ...(includeInactive ? {} : { active: true }),
+            ...(excludeMeritocracia ? { isMeritocracia: { $ne: true } } : {}),
+        })
+            .sort({ name: 1 })
+            .lean()
 
-    return Response.json({ data: sectors })
+        return Response.json({ data: sectors })
+    } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+            return Response.json(
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
+            )
+        }
+
+        return Response.json({ error: 'Erro ao consultar setores.' }, { status: 500 })
+    }
 }
 
 export async function POST(request: Request) {
@@ -54,43 +68,67 @@ export async function POST(request: Request) {
         return Response.json({ error: 'percentage deve estar entre 0 e 100.' }, { status: 400 })
     }
 
-    await connectDB()
-
-    if (body.isMeritocracia) {
-        const existingMeritocracia = await Sector.findOne({
-            tenantId: user.tenantId,
-            isMeritocracia: true,
-        })
-            .select('_id')
-            .lean()
-
-        if (existingMeritocracia) {
-            return Response.json(
-                { error: 'Ja existe um setor marcado como meritocracia para esta empresa.' },
-                { status: 409 },
-            )
-        }
-    }
-
     try {
-        const sector = await Sector.create({
-            tenantId: user.tenantId,
-            name,
-            percentage,
-            isMeritocracia: Boolean(body.isMeritocracia),
-        })
+        await connectDB()
 
-        return Response.json({ data: sector }, { status: 201 })
+        if (body.isMeritocracia) {
+            const existingMeritocracia = await Sector.findOne({
+                tenantId: user.tenantId,
+                isMeritocracia: true,
+            })
+                .select('_id')
+                .lean()
+
+            if (existingMeritocracia) {
+                return Response.json(
+                    { error: 'Ja existe um setor marcado como meritocracia para esta empresa.' },
+                    { status: 409 },
+                )
+            }
+        }
+
+        try {
+            const sector = await Sector.create({
+                tenantId: user.tenantId,
+                name,
+                percentage,
+                isMeritocracia: Boolean(body.isMeritocracia),
+            })
+
+            return Response.json({ data: sector }, { status: 201 })
+        } catch (error) {
+            if (
+                typeof error === 'object' &&
+                error !== null &&
+                'code' in error &&
+                (error as { code?: number }).code === 11000
+            ) {
+                return Response.json(
+                    { error: 'Setor com este nome ja existe no tenant.' },
+                    { status: 409 },
+                )
+            }
+
+            if (isDatabaseConnectionError(error)) {
+                return Response.json(
+                    {
+                        error: 'Falha de conexão com o banco de dados.',
+                        errorCode: 'database_connection_lost',
+                    },
+                    { status: 503 },
+                )
+            }
+
+            return Response.json({ error: 'Nao foi possivel criar o setor.' }, { status: 500 })
+        }
     } catch (error) {
-        if (
-            typeof error === 'object' &&
-            error !== null &&
-            'code' in error &&
-            (error as { code?: number }).code === 11000
-        ) {
+        if (isDatabaseConnectionError(error)) {
             return Response.json(
-                { error: 'Setor com este nome ja existe no tenant.' },
-                { status: 409 },
+                {
+                    error: 'Falha de conexão com o banco de dados.',
+                    errorCode: 'database_connection_lost',
+                },
+                { status: 503 },
             )
         }
 

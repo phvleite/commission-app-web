@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
+import { auth } from '@/auth'
+import { connectDB } from '@/lib/db'
+import { Tenant } from '@/models/Tenant'
 import { formatCurrencyFromDatabase } from '@/app/dashboard/commissions/utils/formatCurrency'
 import { formatDateFromDatabase } from '@/app/dashboard/commissions/utils/formatDate'
 import { generateEmployeePeriodTitle } from '@/app/dashboard/commissions/utils/generateEmployeePeriodTitle'
+import { MeritocracyAllocation, type IMeritocracyRecipient } from '@/models/MeritocracyAllocation'
+import { getUtcRangeForCalendarDay, resolveRequestTimeZone } from '@/lib/date-timezone'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,8 +31,10 @@ interface SectorSummaryRow {
 interface PdfEmployeePayload {
     startDate: string
     endDate: string
+    employeeId?: string
     data: CommissionPayloadRow[]
     sectorSummary: SectorSummaryRow[]
+    meritocracyValue?: number
 }
 
 function getFilenameTimestamp(date = new Date()): string {
@@ -78,8 +85,11 @@ function toDateSortKey(value: string): number {
 function renderReportEmployeeHtml(params: {
     title: string
     totalGeneral: number
+    meritocracyValue: number
     sectorSummary: SectorSummaryRow[]
     data: CommissionPayloadRow[]
+    companyName: string
+    website: string
 }): string {
     const sectorRows = params.sectorSummary
         .map(
@@ -121,7 +131,7 @@ function renderReportEmployeeHtml(params: {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Relatorio de Gorjetas - Colaborador</title>
+    <title>Relatório de Gorjetas - Colaborador</title>
     <style>
         @page {
             size: A4;
@@ -174,6 +184,14 @@ function renderReportEmployeeHtml(params: {
         .center { text-align: center; }
         .report-row-even td { background: #f5f9ff; }
         .report-row-odd td { background: #ffffff; }
+        .institutional-signature {
+            margin-top: 16px;
+            padding-top: 6px;
+            border-top: 1px solid #c9d3e0;
+            text-align: center;
+            font-size: 9px;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
@@ -200,9 +218,9 @@ function renderReportEmployeeHtml(params: {
         <thead>
             <tr>
                 <th class="center">Data</th>
-                <th class="center">Situacao</th>
-                <th class="center">Qtde Colab.</th>
-                <th class="center">Qtde Aptos</th>
+                <th class="center">Situação</th>
+                <th class="center">Quantidade de Colaboradores</th>
+                <th class="center">Quantidade de Aptos</th>
                 <th class="right">Gorjetas Setor</th>
                 <th class="right">Gorjetas Colaborador</th>
             </tr>
@@ -212,7 +230,14 @@ function renderReportEmployeeHtml(params: {
         </tbody>
     </table>
 
-    <h2>Total Geral: R$ ${formatCurrencyFromDatabase(params.totalGeneral)}</h2>
+    <h2>Total de Gorjetas: R$ ${formatCurrencyFromDatabase(params.totalGeneral - params.meritocracyValue)}</h2>
+    ${
+        params.meritocracyValue > 0
+            ? `<h2>Meritocracia: R$ ${formatCurrencyFromDatabase(params.meritocracyValue)}</h2>
+    <h2>Total Geral (Gorjetas + Meritocracia): R$ ${formatCurrencyFromDatabase(params.totalGeneral)}</h2>`
+            : '<h2>Total Geral: R$ ' + formatCurrencyFromDatabase(params.totalGeneral) + '</h2>'
+    }
+    <p class="institutional-signature">${escapeHtml(params.companyName)} | ${escapeHtml(params.website)} | contato@commission.com.br</p>
 </body>
 </html>`
 }
@@ -233,6 +258,17 @@ export async function POST(req: Request) {
     let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null
 
     try {
+        const session = await auth()
+        if (!session?.user?.tenantId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        await connectDB()
+        const tenant = await Tenant.findById(session.user.tenantId).select('name').lean()
+        if (!tenant) {
+            return NextResponse.json({ error: 'Empresa não encontrada.' }, { status: 404 })
+        }
+
         const body: unknown = await req.json()
         if (!isValidPayload(body)) {
             return NextResponse.json(
@@ -241,10 +277,49 @@ export async function POST(req: Request) {
             )
         }
 
-        const { startDate, endDate, data, sectorSummary } = body
+        const { startDate, endDate, employeeId, data, sectorSummary } = body
+
+        const timeZone = resolveRequestTimeZone(req, session.user.tenantTimeZone)
+        const reportStartRange = getUtcRangeForCalendarDay(startDate, timeZone)
+        const reportEndRange = getUtcRangeForCalendarDay(endDate, timeZone)
+        if (!reportStartRange || !reportEndRange) {
+            return NextResponse.json(
+                { error: 'Período inválido para geração de PDF.' },
+                { status: 400 },
+            )
+        }
+
+        let meritocracyValue = 0
+        if (employeeId) {
+            const meritocracyAllocations = await MeritocracyAllocation.find({
+                tenantId: session.user.tenantId,
+                status: 'success',
+                paymentDate: { $gte: reportStartRange.start, $lte: reportEndRange.end },
+                'recipients.employeeId': employeeId,
+            })
+                .select('recipients')
+                .lean()
+
+            meritocracyValue = meritocracyAllocations.reduce(
+                (total, allocation) =>
+                    total +
+                    allocation.recipients
+                        .filter(
+                            (recipient: IMeritocracyRecipient) =>
+                                String(recipient.employeeId) === employeeId,
+                        )
+                        .reduce(
+                            (recipientTotal: number, recipient: IMeritocracyRecipient) =>
+                                recipientTotal + recipient.employeeValue,
+                            0,
+                        ),
+                0,
+            )
+        }
 
         const employeeName = data.length > 0 ? String(data[0].employeeName) : 'COLABORADOR'
-        const totalGeneral = data.reduce((acc, row) => acc + row.employeeValue, 0)
+        const totalGeneral =
+            data.reduce((acc, row) => acc + row.employeeValue, 0) + meritocracyValue
         const title = generateEmployeePeriodTitle(employeeName.toUpperCase(), startDate, endDate)
 
         const html = renderReportEmployeeHtml({
@@ -252,6 +327,9 @@ export async function POST(req: Request) {
             totalGeneral,
             sectorSummary,
             data,
+            meritocracyValue,
+            companyName: tenant.name,
+            website: process.env.APP_BASE_URL ?? 'https://www.commission.com.br',
         })
 
         browser = await puppeteer.launch({ headless: true })

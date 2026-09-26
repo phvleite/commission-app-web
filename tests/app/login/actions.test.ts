@@ -1,4 +1,5 @@
 const signInMock = jest.fn()
+const cookieSetMock = jest.fn()
 
 jest.mock('next-auth', () => {
     class AuthError extends Error {
@@ -15,6 +16,10 @@ jest.mock('next-auth', () => {
 
 jest.mock('@/auth', () => ({
     signIn: (...args: unknown[]) => signInMock(...args),
+}))
+
+jest.mock('next/headers', () => ({
+    cookies: jest.fn(async () => ({ set: cookieSetMock })),
 }))
 
 import { authenticate } from '@/app/login/actions'
@@ -34,6 +39,7 @@ function makeFormData(values: Record<string, string>) {
 describe('login authenticate action', () => {
     beforeEach(() => {
         signInMock.mockReset()
+        cookieSetMock.mockReset()
     })
 
     it('retorna erro quando faltam campos obrigatorios', async () => {
@@ -58,6 +64,11 @@ describe('login authenticate action', () => {
             password: '123456',
             redirectTo: '/dashboard',
         })
+        expect(cookieSetMock).toHaveBeenCalledWith(
+            'last_activity_at',
+            expect.any(String),
+            expect.objectContaining({ httpOnly: true, path: '/' }),
+        )
     })
 
     it('redireciona usuarios de plataforma para /platform-admin', async () => {

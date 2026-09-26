@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
     formatCurrencyInput,
@@ -14,6 +14,7 @@ interface SalesFormProps {
     onSave: (date: string, value: number) => Promise<void>
     onCancel: () => void
     isSaving?: boolean
+    isBlocked?: boolean
 }
 
 export function SalesForm({
@@ -21,12 +22,14 @@ export function SalesForm({
     onSave,
     onCancel,
     isSaving: externalIsSaving,
+    isBlocked = false,
 }: SalesFormProps) {
+    const valueInputRef = useRef<HTMLInputElement>(null)
     const [date, setDate] = useState('')
     const [value, setValue] = useState('')
     const [localIsSaving, setLocalIsSaving] = useState(false)
     const [feedback, setFeedback] = useState<{
-        type: 'info' | 'success' | 'error'
+        type: 'info' | 'success' | 'error' | 'offline'
         message: string
     } | null>(null)
 
@@ -54,6 +57,7 @@ export function SalesForm({
 
             setDate(sale.date.slice(0, 10))
             setValue(formatCurrencyFromDatabase(sale.value))
+            window.requestAnimationFrame(() => valueInputRef.current?.focus())
         }
 
         loadSale()
@@ -93,12 +97,24 @@ export function SalesForm({
             setValue('')
             setFeedback({
                 type: 'success',
-                message: editMode ? 'Venda atualizada com sucesso.' : 'Venda lançada com sucesso.',
+                message: editMode
+                    ? 'Venda atualizada e comissões validadas com sucesso.'
+                    : 'Venda lançada e comissões validadas com sucesso.',
             })
-            toast.success(editMode ? 'Venda atualizada com sucesso!' : 'Venda lançada com sucesso!')
+            toast.success(
+                editMode
+                    ? 'Venda atualizada e comissões validadas com sucesso!'
+                    : 'Venda lançada e comissões validadas com sucesso!',
+            )
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Erro ao salvar venda.'
-            setFeedback({ type: 'error', message })
+            const isOffline = /Sem conexão|offline|Falha de rede|failed to fetch|network/i.test(
+                message,
+            )
+            setFeedback({
+                type: isOffline ? 'offline' : 'error',
+                message,
+            })
             toast.error(message)
         } finally {
             setLocalIsSaving(false)
@@ -125,6 +141,7 @@ export function SalesForm({
                         type="date"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
+                        disabled={isBlocked}
                         className="w-full border border-(--color-border) rounded-xl p-3 bg-surface-soft"
                     />
                 </div>
@@ -132,9 +149,11 @@ export function SalesForm({
                 <div>
                     <label className="block text-sm font-medium mb-1">Valor:</label>
                     <input
+                        ref={valueInputRef}
                         type="text"
                         value={value}
                         onChange={handleValueChange}
+                        disabled={isBlocked}
                         className="w-full border border-(--color-border) rounded-xl p-3 bg-surface-soft"
                     />
                 </div>
@@ -147,10 +166,19 @@ export function SalesForm({
                             ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                             : feedback.type === 'error'
                               ? 'border-red-200 bg-red-50 text-(--color-danger)'
-                              : 'border-amber-200 bg-amber-50 text-amber-900'
+                              : feedback.type === 'offline'
+                                ? 'border-orange-200 bg-orange-50 text-orange-700'
+                                : 'border-amber-200 bg-amber-50 text-amber-900'
                     }`}
                 >
                     {feedback.message}
+                </p>
+            ) : null}
+
+            {isSaving && editMode ? (
+                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                    Alteração em processamento. As comissões da venda estão sendo recalculadas e
+                    validadas, aguarde...
                 </p>
             ) : null}
 
@@ -158,7 +186,7 @@ export function SalesForm({
                 <button
                     className="primary-button px-5 py-3 rounded-xl disabled:opacity-70"
                     onClick={handleSave}
-                    disabled={isSaving}
+                    disabled={isSaving || isBlocked}
                 >
                     {isSaving ? 'Processando...' : editMode ? 'Salvar Alterações' : 'Salvar'}
                 </button>
