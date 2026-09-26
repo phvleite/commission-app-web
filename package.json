@@ -8,6 +8,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
+        "typecheck": "tsc --noEmit",
         "seed:platform-owner": "node scripts/seed-platform-owner.mjs",
         "migrate:commission-processes": "npx tsx src/lib/migrations/002-backfill-successful-commission-processes.ts",
         "migrate:employee-sector-history": "npx tsx src/lib/migrations/003-backfill-employee-sector-history.ts",

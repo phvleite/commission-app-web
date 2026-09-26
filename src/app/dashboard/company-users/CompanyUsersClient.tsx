@@ -1034,8 +1034,8 @@ export function CompanyUsersClient({ userRole, initialCompany, initialUsers }: P
 
                     {isUserLimitReached ? (
                         <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                            Limite de usuarios atingido. Ajustes de plano serao tratados na task
-                            002.17.
+                            Limite de usuarios atingido. A alteracao do plano e do limite e feita
+                            pelo administrador da plataforma.
                         </p>
                     ) : null}
 

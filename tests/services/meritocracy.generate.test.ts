@@ -188,10 +188,16 @@ describe('generateMeritocracyAllocation', () => {
         expect(allocation.recipientCount).toBe(3)
         expect(allocation.paymentDate.toISOString()).toBe('2027-06-30T03:00:00.000Z')
 
-        const sum = allocation.recipients.reduce((total, r) => total + r.employeeValue, 0)
+        const sum = allocation.recipients.reduce(
+            (total: number, recipient: { employeeValue: number }) =>
+                total + recipient.employeeValue,
+            0,
+        )
         expect(sum).toBe(1001)
 
-        const recipientIds = allocation.recipients.map((r) => r.employeeId.toString()).sort()
+        const recipientIds = allocation.recipients
+            .map((recipient: { employeeId: Types.ObjectId }) => recipient.employeeId.toString())
+            .sort()
         expect(recipientIds).toEqual(
             [alice._id.toString(), bruno._id.toString(), carla._id.toString()].sort(),
         )

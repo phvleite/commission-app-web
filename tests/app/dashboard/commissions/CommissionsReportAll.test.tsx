@@ -141,12 +141,12 @@ describe('CommissionsReportAll', () => {
             blob: async () => blob,
         } as Response)
 
-        let createdAnchor: HTMLAnchorElement | null = null
+        const createdAnchors: HTMLAnchorElement[] = []
         jest.spyOn(document, 'createElement').mockImplementation(((tagName: string) => {
             const element = originalCreateElement(tagName) as HTMLElement
             if (tagName.toLowerCase() === 'a') {
-                createdAnchor = element as HTMLAnchorElement
-                jest.spyOn(createdAnchor, 'click').mockImplementation(() => {})
+                createdAnchors.push(element as HTMLAnchorElement)
+                jest.spyOn(element, 'click').mockImplementation(() => {})
             }
             return element
         }) as typeof document.createElement)
@@ -163,8 +163,7 @@ describe('CommissionsReportAll', () => {
         })
 
         expect(URL.createObjectURL).toHaveBeenCalledWith(blob)
-        expect(createdAnchor).not.toBeNull()
-        expect(createdAnchor?.download).toMatch(/^relatorio-geral-Gorjetas-\d{8}-\d{6}\.pdf$/)
+        expect(createdAnchors[0]?.download).toMatch(/^relatorio-geral-Gorjetas-\d{8}-\d{6}\.pdf$/)
 
         jest.advanceTimersByTime(60_000)
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')
