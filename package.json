@@ -5,7 +5,9 @@
     "scripts": {
         "dev": "next dev --webpack",
         "dev:turbo": "next dev",
-        "build": "next build --webpack",
+        "puppeteer:install": "puppeteer browsers install chrome",
+        "build": "npm run puppeteer:install && npm run build:app",
+        "build:app": "next build --webpack",
         "start": "next start",
         "lint": "eslint",
         "typecheck": "tsc --noEmit",
