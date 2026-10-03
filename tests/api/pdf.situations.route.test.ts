@@ -15,24 +15,16 @@ jest.mock('@/models/Tenant', () => ({
     },
 }))
 
-jest.mock('puppeteer', () => ({
-    __esModule: true,
-    default: {
-        launch: jest.fn(),
-    },
-}))
-
 import { auth } from '@/auth'
-import puppeteer from 'puppeteer'
+import { PDFDocument } from 'pdf-lib'
+import { Tenant } from '@/models/Tenant'
 import { POST } from '@/app/api/pdf/situations/route'
 
 const authMock = auth as unknown as jest.Mock
-const launchMock = puppeteer.launch as unknown as jest.Mock
 
 describe('API pdf/situations route', () => {
     beforeEach(() => {
         authMock.mockReset()
-        launchMock.mockReset()
     })
 
     it('returns 401 when unauthenticated', async () => {
@@ -67,20 +59,6 @@ describe('API pdf/situations route', () => {
     it('returns a PDF when payload is valid', async () => {
         authMock.mockResolvedValue({ user: { id: 'u1', tenantId: 'tenant-1' } })
 
-        const setContentMock = jest.fn().mockResolvedValue(undefined)
-        const pdfMock = jest.fn().mockResolvedValue(Buffer.from('fake-pdf'))
-        const pageCloseMock = jest.fn().mockResolvedValue(undefined)
-        const browserCloseMock = jest.fn().mockResolvedValue(undefined)
-
-        launchMock.mockResolvedValue({
-            newPage: jest.fn().mockResolvedValue({
-                setContent: setContentMock,
-                pdf: pdfMock,
-                close: pageCloseMock,
-            }),
-            close: browserCloseMock,
-        })
-
         const res = await POST(
             new Request('http://localhost/api/pdf/situations', {
                 method: 'POST',
@@ -103,12 +81,41 @@ describe('API pdf/situations route', () => {
         expect(res.status).toBe(200)
         expect(res.headers.get('content-type')).toBe('application/pdf')
         expect(res.headers.get('content-disposition')).toContain('relatorio-situacoes.pdf')
-        expect(setContentMock).toHaveBeenCalled()
-        expect(setContentMock.mock.calls[0][0]).toContain('Empresa Exemplo')
-        expect(setContentMock.mock.calls[0][0]).toContain('www.commission.com.br')
-        expect(setContentMock.mock.calls[0][0]).toContain('contato@commission.com.br')
-        expect(pdfMock).toHaveBeenCalled()
-        expect(pageCloseMock).toHaveBeenCalled()
-        expect(browserCloseMock).toHaveBeenCalled()
+        const bytes = await res.arrayBuffer()
+        expect(Buffer.from(bytes).subarray(0, 5).toString()).toBe('%PDF-')
+        const document = await PDFDocument.load(bytes)
+        expect(document.getPageCount()).toBe(1)
+        expect(document.getTitle()).toBe('Relatorio de Situacoes')
+        expect(document.getAuthor()).toBe('Empresa Exemplo')
+    })
+
+    it('rejects malformed rows instead of failing during rendering', async () => {
+        authMock.mockResolvedValue({ user: { id: 'u1', tenantId: 'tenant-1' } })
+        const response = await POST(
+            new Request('http://localhost/api/pdf/situations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ situations: [{ employeeName: 123 }] }),
+            }),
+        )
+        expect(response.status).toBe(400)
+    })
+
+    it('returns 404 when the session company does not exist', async () => {
+        authMock.mockResolvedValue({ user: { id: 'u1', tenantId: 'tenant-1' } })
+        const tenantMock = Tenant.findById as jest.Mock
+        tenantMock.mockReturnValueOnce({
+            select: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue(null),
+        })
+        const response = await POST(
+            new Request('http://localhost/api/pdf/situations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ situations: [] }),
+            }),
+        )
+        expect(response.status).toBe(404)
+        expect(tenantMock).toHaveBeenCalledWith('tenant-1')
     })
 })
