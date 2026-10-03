@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
+import puppeteer from '@/lib/puppeteer'
 import { auth } from '@/auth'
 import { connectDB } from '@/lib/db'
 import { Tenant } from '@/models/Tenant'
