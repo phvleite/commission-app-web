@@ -15,19 +15,11 @@ jest.mock('@/models/Tenant', () => ({
     },
 }))
 
-jest.mock('puppeteer', () => ({
-    __esModule: true,
-    default: {
-        launch: jest.fn(),
-    },
-}))
-
 import { auth } from '@/auth'
-import puppeteer from 'puppeteer'
 import { POST } from '@/app/api/pdf/meritocracy/route'
+import { PDFDocument } from 'pdf-lib'
 
 const authMock = auth as unknown as jest.Mock
-const launchMock = puppeteer.launch as unknown as jest.Mock
 
 const validPayload = {
     competence: '2027-05',
@@ -50,7 +42,6 @@ const validPayload = {
 describe('API pdf/meritocracy route', () => {
     beforeEach(() => {
         authMock.mockReset()
-        launchMock.mockReset()
     })
 
     it('returns 401 when unauthenticated', async () => {
@@ -82,22 +73,8 @@ describe('API pdf/meritocracy route', () => {
         await expect(res.json()).resolves.toEqual({ error: 'Payload inválido.' })
     })
 
-    it('returns a PDF when payload is valid', async () => {
+    it('returns a valid PDF with company metadata when payload is valid', async () => {
         authMock.mockResolvedValue({ user: { id: 'u1', tenantId: 'tenant-1' } })
-
-        const setContentMock = jest.fn().mockResolvedValue(undefined)
-        const pdfMock = jest.fn().mockResolvedValue(Buffer.from('fake-pdf'))
-        const pageCloseMock = jest.fn().mockResolvedValue(undefined)
-        const browserCloseMock = jest.fn().mockResolvedValue(undefined)
-
-        launchMock.mockResolvedValue({
-            newPage: jest.fn().mockResolvedValue({
-                setContent: setContentMock,
-                pdf: pdfMock,
-                close: pageCloseMock,
-            }),
-            close: browserCloseMock,
-        })
 
         const res = await POST(
             new Request('http://localhost/api/pdf/meritocracy', {
@@ -109,10 +86,31 @@ describe('API pdf/meritocracy route', () => {
 
         expect(res.status).toBe(200)
         expect(res.headers.get('Content-Type')).toBe('application/pdf')
-        expect(setContentMock).toHaveBeenCalled()
-        expect(pdfMock).toHaveBeenCalled()
-        expect(pageCloseMock).toHaveBeenCalled()
-        expect(browserCloseMock).toHaveBeenCalled()
+        expect(res.headers.get('Content-Disposition')).toBe(
+            'inline; filename="relatorio-meritocracia.pdf"',
+        )
+        const pdf = await PDFDocument.load(new Uint8Array(await res.arrayBuffer()))
+        expect(pdf.getPageCount()).toBe(1)
+        expect(pdf.getTitle()).toContain('Maio/2027')
+        expect(pdf.getAuthor()).toBe('Empresa Exemplo')
+    })
+
+    it('returns 400 when recipients do not match the declared total', async () => {
+        authMock.mockResolvedValue({ user: { id: 'u1', tenantId: 'tenant-1' } })
+
+        const res = await POST(
+            new Request('http://localhost/api/pdf/meritocracy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...validPayload,
+                    totalMeritocracyValue: 1500,
+                }),
+            }),
+        )
+
+        expect(res.status).toBe(400)
+        await expect(res.json()).resolves.toEqual({ error: 'Payload inválido.' })
     })
 
     it('returns 404 when tenant is not found', async () => {
