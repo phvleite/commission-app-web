@@ -131,6 +131,14 @@ describe('PDFKit reports', () => {
                 salesSummary: [{ value: 10000, totalCommissionValue: 900 }],
                 situations: [
                     {
+                        date: '2026-07-01T12:00:00.000Z',
+                        employeeName: 'Bruno',
+                        sectorName: 'Atendimento',
+                        totalCount: 2,
+                        eligibleCount: 1,
+                        situation: 'Falta',
+                    },
+                    {
                         date: '2026-07-02',
                         employeeName: 'Zélia',
                         sectorName: 'Vendas',
@@ -163,6 +171,8 @@ describe('PDFKit reports', () => {
         expect(text).toContain('Total Geral (Gorjetas + Meritocracia): R$ 11,50')
         expect(text.indexOf('Ana')).toBeLessThan(text.indexOf('Zélia'))
         expect(text.indexOf('01/07/2026')).toBeLessThan(text.indexOf('02/07/2026'))
+        expect(text.match(/01\/07\/2026/g)).toHaveLength(1)
+        expect(text).toContain('Bruno')
         expect(text).toContain('Qtd. Aptos')
         expect(text).toContain('Férias')
         expect(text).toContain('Empresa São João')

@@ -14,6 +14,14 @@ export interface PdfReportColumn {
     align?: 'left' | 'center' | 'right'
 }
 
+interface PdfReportTableOptions {
+    rowStyles?: (rowIndex: number) => {
+        backgroundColor?: string
+        border?: { top?: number; right?: number; bottom?: number; left?: number }
+        borderColor?: { top?: string; right?: string; bottom?: string; left?: string }
+    }
+}
+
 const COLORS = {
     text: '#1b1f23',
     primary: '#0f2c4d',
@@ -27,6 +35,7 @@ export function drawReportTable(
     doc: PDFKit.PDFDocument,
     columns: PdfReportColumn[],
     rows: string[][],
+    options: PdfReportTableOptions = {},
 ): void {
     const originalTop = doc.page.margins.top
     const tableHeaderHeight = 30
@@ -83,9 +92,11 @@ export function drawReportTable(
                 borderColor: COLORS.border,
                 textColor: COLORS.text,
             },
-            rowStyles: (index) => ({
-                backgroundColor: index % 2 === 0 ? COLORS.alternate : '#ffffff',
-            }),
+            rowStyles:
+                options.rowStyles ??
+                ((index) => ({
+                    backgroundColor: index % 2 === 0 ? COLORS.alternate : '#ffffff',
+                })),
             data: rows.map((row) =>
                 row.map((text) => ({ text, font: { src: 'Helvetica', size: 9 } })),
             ),

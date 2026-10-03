@@ -208,6 +208,33 @@ export function generateCommissionAllPdf(params: {
                     .fillColor('#1b1f23')
                     .text('Situações do Período', { align: 'center' })
                 doc.moveDown(0.5)
+                let previousDate = ''
+                let dateGroupIndex = -1
+                const situationRows = situations.map((situation, index) => {
+                    const dateKey = getDateSortKey(situation.date)
+                    const startsGroup = dateKey !== previousDate
+                    const nextDateKey = situations[index + 1]
+                        ? getDateSortKey(situations[index + 1].date)
+                        : ''
+                    const endsGroup = dateKey !== nextDateKey
+
+                    if (startsGroup) dateGroupIndex += 1
+                    previousDate = dateKey
+
+                    return {
+                        row: [
+                            startsGroup ? normalizeDateForReport(situation.date) : '',
+                            situation.employeeName,
+                            situation.sectorName,
+                            situation.situation,
+                            String(situation.totalCount),
+                            String(situation.eligibleCount),
+                        ],
+                        dateGroupIndex,
+                        startsGroup,
+                        endsGroup,
+                    }
+                })
                 drawReportTable(
                     doc,
                     [
@@ -218,14 +245,28 @@ export function generateCommissionAllPdf(params: {
                         { label: 'Qtd. Total', width: width * 0.15, align: 'center' },
                         { label: 'Qtd. Aptos', width: width * 0.15, align: 'center' },
                     ],
-                    situations.map((situation) => [
-                        normalizeDateForReport(situation.date),
-                        situation.employeeName,
-                        situation.sectorName,
-                        situation.situation,
-                        String(situation.totalCount),
-                        String(situation.eligibleCount),
-                    ]),
+                    situationRows.map(({ row }) => row),
+                    {
+                        rowStyles: (index) => {
+                            const row = situationRows[index]
+                            return {
+                                backgroundColor:
+                                    row.dateGroupIndex % 2 === 0 ? '#f5f9ff' : '#ffffff',
+                                border: {
+                                    top: row.startsGroup ? 2.5 : 0.5,
+                                    right: 0.5,
+                                    bottom: row.endsGroup ? 2.5 : 0.5,
+                                    left: 0.5,
+                                },
+                                borderColor: {
+                                    top: row.startsGroup ? '#4f6f92' : '#d3dce8',
+                                    right: '#d3dce8',
+                                    bottom: row.endsGroup ? '#4f6f92' : '#d3dce8',
+                                    left: '#d3dce8',
+                                },
+                            }
+                        },
+                    },
                 )
             }
         },
